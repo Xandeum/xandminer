@@ -22,6 +22,7 @@ export const getDriveInfo = async () => {
             data: requestBody
         };
         const response = await axios(options);
+        console.log(response?.data?.data?.drives)
         return { ok: true, data: response?.data?.data?.drives }
     } catch (error) {
         throw new Error(error.message)
