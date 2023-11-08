@@ -5,7 +5,7 @@ import React from "react";
 
 const Home: NextPage = (props) => {
   return (
-    <div>
+    <div className="w-full md:w-3/4">
       <Head>
         <title>Xandminer</title>
         <meta
