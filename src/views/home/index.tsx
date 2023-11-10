@@ -141,7 +141,7 @@ export const HomeView: FC = ({ }) => {
                             });
                           }}
 
-                          onBlur={forceToMax(index, drive?.capacity, dedicatingAmnt[index]?.amount)}
+                          onBlur={() => { forceToMax(index, drive?.capacity, dedicatingAmnt[index]?.amount) }}
                           InputProps={{
                             inputProps: { min: 1000000000 },
                             endAdornment: (
