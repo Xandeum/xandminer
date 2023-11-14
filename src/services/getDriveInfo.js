@@ -16,7 +16,7 @@ export const getDriveInfo = async () => {
         };
         const options = {
             method: 'POST',
-            url: 'http://localhost:4000/drives',
+            url: 'http://nixagent.xandeum.com/drives',
             headers,
             data: requestBody
         };
