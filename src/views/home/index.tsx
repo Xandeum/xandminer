@@ -5,7 +5,7 @@ import LinearProgress, { LinearProgressProps } from '@mui/material/LinearProgres
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
 import Slider from '@mui/material/Slider';
-import { Input } from '@mui/base';
+import StorageIcon from '@mui/icons-material/Storage';
 import { TextField } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { AddBox, IndeterminateCheckBox } from '@mui/icons-material';
@@ -64,24 +64,30 @@ export const HomeView: FC = ({ }) => {
           driveInfo.length > 0 ?
             driveInfo.map((drive, index) => {
               return (
-                <div key={index} className="relative group lg:min-w-[20rem] min-w-full">
+                <div key={index} className="relative group lg:min-w-[22rem] min-w-full">
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-indigo-500 rounded-lg blur opacity-40 animate-tilt"></div>
                   <div className="card bg-base-100 shadow-xl items-start flex">
                     <div className="card-body w-full">
                       {/* <div className="bg-black p-4 rounded-lg shadow-md min-w-[20rem] border-white border"> */}
                       {/* <h2 className="text-2xl font-bold mb-4">Drive {index + 1}</h2> */}
-                      <h2 className="text-2xl font-bold mb-4">{drive?.name}</h2>
+                      <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
+                        <StorageIcon color='primary' fontSize='large' />
+                        <h2 className="text-2xl font-bold ">{drive?.name}</h2>
+                      </Box>
                       {/* <p>Total Space: {prettyBytes(drive.capacity)}</p> */}
                       <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ width: '100%' }}>
+                          {/* <span>{drive.used}GB</span> */}
+                        </Box>
                         <Box sx={{ width: '100%', mr: 1 }}>
                           <LinearProgress variant="determinate" value={normalise(drive.used, 0, drive.capacity)} />
                         </Box>
                         <Box sx={{ width: '100%' }}>
                           {/* <span>{drive.used}GB</span> */}
-                          <span>{prettyBytes(drive?.used)} of {prettyBytes(drive?.capacity)} used</span>
+                          <span>{prettyBytes(drive?.free)} available of {prettyBytes(drive?.capacity)} </span>
                         </Box>
                       </Box>
-                      <div className='border-b border-[#4a4a4a] my-4 w-full' />
+                      <div className='border-b border-[#4a4a4a] my-8 w-full' />
                       <p>Dedicate space</p>
 
                       <Box sx={{ width: '100%' }}>
@@ -137,33 +143,6 @@ export const HomeView: FC = ({ }) => {
                         >
                           <IndeterminateCheckBox />
                         </IconButton>
-                        {/* <TextField
-                          id="outlined-basic"
-                          variant='outlined'
-                          value={(dedicatingAmnt[index]?.amount / 1000000000).toFixed(0)}
-                          size="small"
-                          onChange={(e) => {
-                            setDedicatingAmnt(prevState => {
-                              const updatedArray = [...prevState];
-                              updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000) };
-                              return updatedArray;
-                            });
-                          }}
-
-                          onBlur={() => { forceToMax(index, (drive?.capacity - 10000000000), dedicatingAmnt[index]?.amount) }}
-                          InputProps={{
-                            inputProps: { min: 1000000000 },
-                            endAdornment: (
-                              <div className='flex flex-row items-center ml-1  text-white'>
-                                <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
-                              </div>
-                            ),
-                          }}
-                          className='text-white bg-black w-1/2'
-                          sx={{
-                            input: { color: 'white', textAlign: 'right', width: '50%' },
-                          }}
-                        /> */}
                         <TextField
                           id="outlined-basic"
                           variant='outlined'
