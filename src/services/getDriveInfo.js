@@ -8,6 +8,7 @@ export const getDriveInfo = async () => {
         const requestBody = {
             query: `query {
             drives {
+                name
                 capacity
                 used
                 free
@@ -16,7 +17,8 @@ export const getDriveInfo = async () => {
         };
         const options = {
             method: 'POST',
-            url: 'https://nixagent.xandeum.com/drives',
+            // url: 'https://nixagent.xandeum.com/drives',
+            url: 'http://localhost:4000/drives',
             headers,
             data: requestBody
         };

@@ -59,7 +59,7 @@ export const HomeView: FC = ({ }) => {
         <p>Drive Information</p>
       </h4>
       <div className='border-b border-[#4a4a4a] mb-8 mt-2 w-full' />
-      <div className="flex flex-row items-start justify-start flex-wrap gap-8 w-full px-4 md:min-h-[45vh]">
+      <div className="flex flex-row items-start justify-evenly flex-wrap gap-8 w-full px-4 md:min-h-[45vh]">
         {
           driveInfo.length > 0 ?
             driveInfo.map((drive, index) => {
@@ -69,17 +69,16 @@ export const HomeView: FC = ({ }) => {
                   <div className="card bg-base-100 shadow-xl items-start flex">
                     <div className="card-body w-full">
                       {/* <div className="bg-black p-4 rounded-lg shadow-md min-w-[20rem] border-white border"> */}
-                      <h2 className="text-2xl font-bold mb-4">Drive {index + 1}</h2>
-                      <p>Total Space: {prettyBytes(drive.capacity)}</p>
-                      <Box sx={{ width: '100%' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Box sx={{ width: '100%', mr: 1 }}>
-                            <LinearProgress variant="determinate" value={normalise(drive.used, 0, drive.capacity)} />
-                          </Box>
-                          <Box sx={{ minWidth: 65 }}>
-                            {/* <span>{drive.used}GB</span> */}
-                            <span>{prettyBytes(drive.used)}</span>
-                          </Box>
+                      {/* <h2 className="text-2xl font-bold mb-4">Drive {index + 1}</h2> */}
+                      <h2 className="text-2xl font-bold mb-4">{drive?.name}</h2>
+                      {/* <p>Total Space: {prettyBytes(drive.capacity)}</p> */}
+                      <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ width: '100%', mr: 1 }}>
+                          <LinearProgress variant="determinate" value={normalise(drive.used, 0, drive.capacity)} />
+                        </Box>
+                        <Box sx={{ width: '100%' }}>
+                          {/* <span>{drive.used}GB</span> */}
+                          <span>{prettyBytes(drive?.used)} of {prettyBytes(drive?.capacity)} used</span>
                         </Box>
                       </Box>
                       <div className='border-b border-[#4a4a4a] my-4 w-full' />
@@ -92,7 +91,7 @@ export const HomeView: FC = ({ }) => {
                               size="medium"
                               defaultValue={0}
                               min={1000000000}
-                              max={drive?.capacity}
+                              max={drive?.capacity - 10000000000}
                               aria-label="Small"
                               valueLabelDisplay="off"
                               value={dedicatingAmnt[index]?.amount}
@@ -103,8 +102,18 @@ export const HomeView: FC = ({ }) => {
                                   return updatedArray;
                                 });
                               }}
-
-
+                              marks={[
+                                {
+                                  value: 1000000000,
+                                  label: '0',
+                                },
+                                {
+                                  value: drive?.capacity,
+                                  label: prettyBytes(drive?.capacity),
+                                },
+                              ]}
+                              step={5000000000}
+                              disabled={drive?.capacity - 10000000000 <= 0}
                             />
                           </Box>
                           {/* <span>{(prettyBytes(dedicatingAmnt[index]?.amount)).split(" ")[1]}</span> */}
@@ -113,7 +122,7 @@ export const HomeView: FC = ({ }) => {
                         </Box>
                       </Box>
 
-                      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%', }}>
+                      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%', marginBottom: 5 }}>
                         <IconButton
                           aria-label="delete"
                           color='info'
@@ -128,7 +137,7 @@ export const HomeView: FC = ({ }) => {
                         >
                           <IndeterminateCheckBox />
                         </IconButton>
-                        <TextField
+                        {/* <TextField
                           id="outlined-basic"
                           variant='outlined'
                           value={(dedicatingAmnt[index]?.amount / 1000000000).toFixed(0)}
@@ -141,7 +150,7 @@ export const HomeView: FC = ({ }) => {
                             });
                           }}
 
-                          onBlur={() => { forceToMax(index, drive?.capacity, dedicatingAmnt[index]?.amount) }}
+                          onBlur={() => { forceToMax(index, (drive?.capacity - 10000000000), dedicatingAmnt[index]?.amount) }}
                           InputProps={{
                             inputProps: { min: 1000000000 },
                             endAdornment: (
@@ -154,13 +163,55 @@ export const HomeView: FC = ({ }) => {
                           sx={{
                             input: { color: 'white', textAlign: 'right', width: '50%' },
                           }}
+                        /> */}
+                        <TextField
+                          id="outlined-basic"
+                          variant='outlined'
+                          value={(dedicatingAmnt[index]?.amount / 1000000000).toFixed(0)}
+                          size="small"
+                          onChange={(e) => {
+                            setDedicatingAmnt(prevState => {
+                              const updatedArray = [...prevState];
+                              updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000) };
+                              return updatedArray;
+                            });
+                          }}
+                          onBlur={() => { forceToMax(index, (drive?.capacity - 10000000000), dedicatingAmnt[index]?.amount) }}
+                          InputProps={{
+                            inputProps: { min: 1000000000 },
+                            endAdornment: (
+                              (drive?.capacity - 10000000000 >= 0) ?
+                                <div className='flex flex-row items-center ml-1 text-white'>
+                                  <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
+                                </div>
+                                :
+                                null
+
+                            ),
+                          }}
+                          className='text-white bg-black w-1/2'
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              '& fieldset': {
+                                borderBottom: '1px solid #2196f3',  // Customize the border style
+                              },
+                            },
+                            input: {
+                              color: 'white',
+                              textAlign: 'right',
+                              width: '50%',
+                            },
+                          }}
+                          disabled={drive?.capacity - 10000000000 <= 0}
                         />
                         <IconButton
                           aria-label="delete"
                           color='info'
+                          disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.capacity - 10000000000}
                           onClick={() => {
                             setDedicatingAmnt(prevState => {
                               const updatedArray = [...prevState];
+                              if (dedicatingAmnt[index]?.amount + 10000000000 > drive?.capacity - 10000000000) return;
                               updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10000000000 };
                               return updatedArray;
                             });
@@ -169,6 +220,28 @@ export const HomeView: FC = ({ }) => {
                           <AddBox />
                         </IconButton>
                       </Box>
+                      {
+                        (drive?.capacity - 10000000000 <= 0) ?
+
+                          <button
+                            className="w-full btn bg-[#808080] text-slate-600"
+                            onClick={undefined}
+                          >
+                            <span>
+                              unavailable
+                            </span>
+                          </button>
+                          :
+                          <button
+                            className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#622657] hover:from-[#622657] hover:to-[#fda31b] text-white hover:animate-pulse"
+                            onClick={undefined}
+                          >
+                            <span>
+                              Dedicate and Earn
+                            </span>
+                          </button>
+
+                      }
                     </div>
                   </div>
                 </div>
