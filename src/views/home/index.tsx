@@ -146,7 +146,7 @@ export const HomeView: FC = ({ }) => {
                         <TextField
                           id="outlined-basic"
                           variant='outlined'
-                          value={(dedicatingAmnt[index]?.amount / 1000000000).toFixed(0)}
+                          value={(dedicatingAmnt[index]?.amount / (((prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1]) == "GB" ? 1000000000 : 1000000000000)).toFixed(2)}
                           size="small"
                           onChange={(e) => {
                             setDedicatingAmnt(prevState => {
