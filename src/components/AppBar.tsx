@@ -44,9 +44,9 @@ export const AppBar: React.FC = () => {
 
         </div>
 
-        <div className="navbar-center items-center">
+        <div className="navbar-center items-center flex-col">
           {/* <div className="hidden md:flex flex-row items-center justify-between  h-22 md:p-2 ml-10"> */}
-          <Link href="https://xandeum.com" target="_blank" rel="noopener noreferrer" passHref className="text-secondary hover:text-white  flex flex-row items-end md:p-2 ">
+          <Link href="/" target="_self" rel="noopener noreferrer" passHref className="text-secondary hover:text-white  flex flex-row items-end md:p-2 ">
             <Image
               src={logo}
               alt="Xandeum logo"
@@ -70,57 +70,14 @@ export const AppBar: React.FC = () => {
             </Link> */}
         </div>
 
-        {/* Nav Links */}
-        {/* Wallet & Settings */}
-        {/* <div className="navbar-end">
-          <div className="hidden md:flex flex-row items-center justify-between  h-22 md:p-2 ml-10">
-            <NetworkSwitcher />
-            <WalletMultiButtonDynamic />
-            <div className="flex flex-row items-center justify-between  h-22 md:p-2 ml-10">
-              <label className="cursor-pointer label">
-                <input
-                  type="checkbox"
-                  checked={autoConnect}
-                  onChange={(e) => setAutoConnect(e.target.checked)}
-                  className="toggle toggle-primary"
-                />
-                <span className="label-text text-white">Auto Connect</span>
-              </label>
-            </div>
-          </div>
-        </div> */}
+        {/* Navbar end */}
 
-        <div className="navbar-end">
-          <div className="inline-flex items-center justify-center gap-6">
-            {/* <NavElement
-              label="Home"
-              href="/"
-              navigationStarts={() => setIsNavOpen(false)}
-            />
-            <NavElement
-              label="Basics"
-              href="/basics"
-              navigationStarts={() => setIsNavOpen(false)}
-            /> */}
-            <WalletMultiButtonDynamic className="btn-ghost btn-sm rounded-btn text-lg mr-6 " />
+        <div className="navbar-end pr-10">
+          <div className="hidden md:inline-flex items-center justify-center gap-6">
+            <span>Devnet Version</span>
+            {/* <WalletMultiButtonDynamic className="btn-ghost btn-sm rounded-btn text-lg mr-6 " /> */}
           </div>
-          {/* <label
-            htmlFor="my-drawer"
-            className="btn-gh items-center justify-between md:hidden mr-6"
-            onClick={() => setIsNavOpen(!isNavOpen)}>
-            <div className="HAMBURGER-ICON space-y-2.5 ml-5">
-              <div className={`h-0.5 w-8 bg-purple-600 ${isNavOpen ? 'hidden' : ''}`} />
-              <div className={`h-0.5 w-8 bg-purple-600 ${isNavOpen ? 'hidden' : ''}`} />
-              <div className={`h-0.5 w-8 bg-purple-600 ${isNavOpen ? 'hidden' : ''}`} />
-            </div>
-            <div className={`absolute block h-0.5 w-8 animate-pulse bg-purple-600 ${isNavOpen ? "" : "hidden"}`}
-              style={{ transform: "rotate(45deg)" }}>
-            </div>
-            <div className={`absolute block h-0.5 w-8 animate-pulse bg-purple-600 ${isNavOpen ? "" : "hidden"}`}
-              style={{ transform: "rotate(135deg)" }}>
-            </div>
-          </label> */}
-          <div>
+          {/* <div>
             <span className="absolute block h-0.5 w-12 bg-zinc-600 rotate-90 right-14"></span>
           </div>
           <div className="dropdown dropdown-end">
@@ -141,7 +98,7 @@ export const AppBar: React.FC = () => {
                 </div>
               </li>
             </ul>
-          </div>
+          </div> */}
         </div>
       </div>
     </div >

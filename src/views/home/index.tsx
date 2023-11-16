@@ -72,7 +72,7 @@ export const HomeView: FC = ({ }) => {
                       {/* <h2 className="text-2xl font-bold mb-4">Drive {index + 1}</h2> */}
                       <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
                         <StorageIcon color='primary' fontSize='large' />
-                        <h2 className="text-2xl font-bold ">{drive?.name}</h2>
+                        <h2 className="text-2xl font-bold ">{drive?.name || "Drive " + (index + 1)}</h2>
                       </Box>
                       {/* <p>Total Space: {prettyBytes(drive.capacity)}</p> */}
                       <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
@@ -207,12 +207,12 @@ export const HomeView: FC = ({ }) => {
                             onClick={undefined}
                           >
                             <span>
-                              unavailable
+                              Unavailable
                             </span>
                           </button>
                           :
                           <button
-                            className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#622657] hover:from-[#622657] hover:to-[#fda31b] text-white hover:animate-pulse"
+                            className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-black hover:animate-pulse hover:text-white"
                             onClick={undefined}
                           >
                             <span>
