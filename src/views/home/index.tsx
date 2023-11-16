@@ -212,7 +212,7 @@ export const HomeView: FC = ({ }) => {
                           </button>
                           :
                           <button
-                            className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-black hover:animate-pulse hover:text-white"
+                            className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-black hover:text-white"
                             onClick={undefined}
                           >
                             <span>
