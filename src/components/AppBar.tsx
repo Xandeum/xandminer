@@ -22,13 +22,31 @@ export const AppBar: React.FC = () => {
         <div className="navbar-start items-center">
           {/* <div className="hidden md:flex flex-row items-center justify-between  h-22 md:p-2 ml-10"> */}
           <Link href="https://xandeum.com" target="_blank" rel="noopener noreferrer" passHref className="text-secondary hover:text-white hidden md:flex flex-row items-end md:p-2 ml-10">
+            <Image
+              src={logoText}
+              alt="Xandeum logo"
+              width={240}
+              height={40}
+              priority
+            />
             {/* <Image
-                src={logoText}
-                alt="Xandeum logo"
-                width={240}
-                height={40}
-                priority
-              /> */}
+              src={logo}
+              alt="Xandeum logo"
+              width={60}
+              height={40}
+              priority
+            />
+            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-[#fff] to-[#fff]">
+              XandMiner
+            </h1> */}
+          </Link>
+          {/* </div> */}
+
+        </div>
+
+        <div className="navbar-center items-center">
+          {/* <div className="hidden md:flex flex-row items-center justify-between  h-22 md:p-2 ml-10"> */}
+          <Link href="https://xandeum.com" target="_blank" rel="noopener noreferrer" passHref className="text-secondary hover:text-white  flex flex-row items-end md:p-2 ">
             <Image
               src={logo}
               alt="Xandeum logo"
@@ -40,8 +58,7 @@ export const AppBar: React.FC = () => {
               XandMiner
             </h1>
           </Link>
-          {/* </div> */}
-          <div className="inline-flex md:hidden w-22 h-22 md:p-2 ml-4">
+          {/* <div className="inline-flex md:hidden w-22 h-22 md:p-2 ml-4">
             <Link href="https://xandeum.com" target="_blank" rel="noopener noreferrer" passHref className="text-secondary hover:text-white">
               <Image
                 src={logo}
@@ -50,16 +67,83 @@ export const AppBar: React.FC = () => {
                 height={40}
                 priority
               />
-            </Link>
-          </div>
+            </Link> */}
         </div>
 
         {/* Nav Links */}
         {/* Wallet & Settings */}
-        <div className="navbar-end">
+        {/* <div className="navbar-end">
+          <div className="hidden md:flex flex-row items-center justify-between  h-22 md:p-2 ml-10">
+            <NetworkSwitcher />
+            <WalletMultiButtonDynamic />
+            <div className="flex flex-row items-center justify-between  h-22 md:p-2 ml-10">
+              <label className="cursor-pointer label">
+                <input
+                  type="checkbox"
+                  checked={autoConnect}
+                  onChange={(e) => setAutoConnect(e.target.checked)}
+                  className="toggle toggle-primary"
+                />
+                <span className="label-text text-white">Auto Connect</span>
+              </label>
+            </div>
+          </div>
+        </div> */}
 
+        <div className="navbar-end">
+          <div className="inline-flex items-center justify-center gap-6">
+            {/* <NavElement
+              label="Home"
+              href="/"
+              navigationStarts={() => setIsNavOpen(false)}
+            />
+            <NavElement
+              label="Basics"
+              href="/basics"
+              navigationStarts={() => setIsNavOpen(false)}
+            /> */}
+            <WalletMultiButtonDynamic className="btn-ghost btn-sm rounded-btn text-lg mr-6 " />
+          </div>
+          {/* <label
+            htmlFor="my-drawer"
+            className="btn-gh items-center justify-between md:hidden mr-6"
+            onClick={() => setIsNavOpen(!isNavOpen)}>
+            <div className="HAMBURGER-ICON space-y-2.5 ml-5">
+              <div className={`h-0.5 w-8 bg-purple-600 ${isNavOpen ? 'hidden' : ''}`} />
+              <div className={`h-0.5 w-8 bg-purple-600 ${isNavOpen ? 'hidden' : ''}`} />
+              <div className={`h-0.5 w-8 bg-purple-600 ${isNavOpen ? 'hidden' : ''}`} />
+            </div>
+            <div className={`absolute block h-0.5 w-8 animate-pulse bg-purple-600 ${isNavOpen ? "" : "hidden"}`}
+              style={{ transform: "rotate(45deg)" }}>
+            </div>
+            <div className={`absolute block h-0.5 w-8 animate-pulse bg-purple-600 ${isNavOpen ? "" : "hidden"}`}
+              style={{ transform: "rotate(135deg)" }}>
+            </div>
+          </label> */}
+          <div>
+            <span className="absolute block h-0.5 w-12 bg-zinc-600 rotate-90 right-14"></span>
+          </div>
+          <div className="dropdown dropdown-end">
+            <div tabIndex={0} className="btn btn-square btn-ghost text-right mr-4">
+              <svg className="w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <ul tabIndex={0} className="p-2 shadow menu dropdown-content bg-base-100 rounded-box sm:w-52">
+              <li>
+                <div className="form-control bg-opacity-100">
+                  <label className="cursor-pointer label">
+                    <a>Autoconnect</a>
+                    <input type="checkbox" checked={autoConnect} onChange={(e) => setAutoConnect(e.target.checked)} className="toggle" />
+                  </label>
+                  <NetworkSwitcher />
+                </div>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
