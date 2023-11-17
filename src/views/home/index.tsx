@@ -9,8 +9,11 @@ import StorageIcon from '@mui/icons-material/Storage';
 import { TextField } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { AddBox, IndeterminateCheckBox } from '@mui/icons-material';
+import { useUrlConfiguration } from '../../contexts/UrlProvider';
 
 export const HomeView: FC = ({ }) => {
+
+  const { urlConfiguration } = useUrlConfiguration();
 
   const [driveInfo, setDriveInfo] = React.useState<Array<any>>([]);
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
@@ -18,7 +21,7 @@ export const HomeView: FC = ({ }) => {
 
   React.useEffect(() => {
     setIsFetching(true);
-    getDriveInfo().then((response) => {
+    getDriveInfo(urlConfiguration).then((response) => {
       if (response.ok) {
         setDriveInfo(response.data);
         setDedicatedInitialAmnt(response.data)
@@ -28,7 +31,7 @@ export const HomeView: FC = ({ }) => {
       setIsFetching(false);
       console.log("error while fetching drive info", error);
     })
-  }, []);
+  }, [urlConfiguration]);
 
   const setDedicatedInitialAmnt = (data: Array<any>) => {
     let drives = [];

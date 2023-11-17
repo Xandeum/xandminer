@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 import Link from "next/link";
 import dynamic from 'next/dynamic';
 import React from "react";
@@ -7,6 +7,9 @@ import NetworkSwitcher from './NetworkSwitcher';
 import logo from "../assets/XANDEUM_Logo.png"
 import logoText from "../assets/XANDEUM_LOGO_WHITE.png"
 import Image from 'next/image';
+import { UrlUpdateModal } from 'modals/urlUpdateModal';
+import { TextField } from '@mui/material';
+import { useUrlConfiguration } from '../contexts/UrlProvider';
 
 const WalletMultiButtonDynamic = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -15,6 +18,18 @@ const WalletMultiButtonDynamic = dynamic(
 
 export const AppBar: React.FC = () => {
   const { autoConnect, setAutoConnect } = useAutoConnect();
+  const { urlConfiguration } = useUrlConfiguration()
+  const [showUrlModal, setShowUrlModal] = React.useState(true);
+
+  const [storedText, setStoredText] = useState<string | null>('');
+
+  useEffect(() => {
+    if (urlConfiguration) {
+      setStoredText(urlConfiguration)
+    }
+  }, [urlConfiguration])
+
+
   return (
     <div>
       {/* NavBar / Header */}
@@ -74,8 +89,12 @@ export const AppBar: React.FC = () => {
 
         <div className="navbar-end pr-10">
           <div className="hidden md:inline-flex items-center justify-center gap-6">
-            <span>Devnet Version</span>
+            <span className='text-[#fda31b] hover:text-white hover:cursor-pointer' onClick={() => { setShowUrlModal(true) }}>
+              {storedText}
+            </span>
+            <span className='hover:cursor-default'>Devnet Version</span>
             {/* <WalletMultiButtonDynamic className="btn-ghost btn-sm rounded-btn text-lg mr-6 " /> */}
+
           </div>
           {/* <div>
             <span className="absolute block h-0.5 w-12 bg-zinc-600 rotate-90 right-14"></span>
@@ -101,6 +120,9 @@ export const AppBar: React.FC = () => {
           </div> */}
         </div>
       </div>
+      {showUrlModal &&
+        <UrlUpdateModal openModal={() => setShowUrlModal(true)} closeModal={() => setShowUrlModal(false)} />
+      }
     </div >
   );
 };

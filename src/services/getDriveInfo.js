@@ -1,5 +1,5 @@
 import axios from "axios"
-export const getDriveInfo = async () => {
+export const getDriveInfo = async (API_ENDPOINT) => {
     try {
 
         const headers = {
@@ -17,7 +17,8 @@ export const getDriveInfo = async () => {
         };
         const options = {
             method: 'POST',
-            url: 'https://nixagent.xandeum.com/drives',
+            url: API_ENDPOINT,
+            // url: 'https://nixagent.xandeum.com/drives',
             // url: 'http://localhost:4000/drives',
             headers,
             data: requestBody
