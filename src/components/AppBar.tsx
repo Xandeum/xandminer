@@ -19,7 +19,7 @@ const WalletMultiButtonDynamic = dynamic(
 export const AppBar: React.FC = () => {
   const { autoConnect, setAutoConnect } = useAutoConnect();
   const { urlConfiguration } = useUrlConfiguration()
-  const [showUrlModal, setShowUrlModal] = React.useState(true);
+  const [showUrlModal, setShowUrlModal] = React.useState(false);
 
   const [storedText, setStoredText] = useState<string | null>('');
 
