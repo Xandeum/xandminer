@@ -6,6 +6,7 @@ import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
 import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
+import SpeedIcon from '@mui/icons-material/Speed';
 import { TextField } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import { AddBox, IndeterminateCheckBox } from '@mui/icons-material';
@@ -77,6 +78,10 @@ export const HomeView: FC = ({ }) => {
                         <StorageIcon color='primary' fontSize='large' />
                         <h2 className="text-2xl font-bold ">{drive?.name || "Drive " + (index + 1)}</h2>
                       </Box>
+                      <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
+                        <SpeedIcon color='primary' fontSize='medium' />
+                        <h2 className="text-xl font-bold ">SSD / NVMe</h2>
+                      </Box>
                       {/* <p>Total Space: {prettyBytes(drive.capacity)}</p> */}
                       <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                         <Box sx={{ width: '100%' }}>
@@ -99,7 +104,7 @@ export const HomeView: FC = ({ }) => {
                             <Slider
                               size="medium"
                               defaultValue={0}
-                              min={1000000000}
+                              min={10000000000}
                               max={drive?.capacity - 10000000000}
                               aria-label="Small"
                               valueLabelDisplay="off"
@@ -214,14 +219,24 @@ export const HomeView: FC = ({ }) => {
                             </span>
                           </button>
                           :
-                          <button
-                            className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-black hover:text-white"
-                            onClick={undefined}
-                          >
-                            <span>
-                              Dedicate and Earn
-                            </span>
-                          </button>
+                          <div className='max-w-xs'>
+                            <button
+                              className="w-full btn bg-gradient-to-br from-[#198476] to-[#198476] hover:from-[#129f8c] hover:to-[#129f8c] text-white hover:text-black"
+                              onClick={undefined}
+                            >
+                              <span>
+                                Dedicate whole Drive for Rewards Boost
+                              </span>
+                            </button>
+                            <button
+                              className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
+                              onClick={undefined}
+                            >
+                              <span>
+                                Dedicate and Earn
+                              </span>
+                            </button>
+                          </div>
 
                       }
                     </div>
