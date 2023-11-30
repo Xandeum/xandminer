@@ -8,6 +8,8 @@ import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
 import { TextField } from '@mui/material';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 import { AddBox, IndeterminateCheckBox } from '@mui/icons-material';
 import { useUrlConfiguration } from '../../contexts/UrlProvider';
@@ -18,7 +20,8 @@ export const HomeView: FC = ({ }) => {
 
   const [driveInfo, setDriveInfo] = React.useState<Array<any>>([]);
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
-  const [dedicatingAmnt, setDedicatingAmnt] = React.useState([{ disk: 0, amount: 0 }]);
+  const [dedicatingAmnt, setDedicatingAmnt] = React.useState([{ disk: 0, amount: 0, type: "GB" }]);
+  const [type, setType] = React.useState("GB");
 
   React.useEffect(() => {
     setIsFetching(true);
@@ -37,7 +40,7 @@ export const HomeView: FC = ({ }) => {
   const setDedicatedInitialAmnt = (data: Array<any>) => {
     let drives = [];
     data.forEach((drive, index) => {
-      drives.push({ disk: index, amount: 0 });
+      drives.push({ disk: index, amount: 0, type: "GB" });
     });
     setDedicatingAmnt(drives);
     return;
@@ -51,7 +54,7 @@ export const HomeView: FC = ({ }) => {
     if (input > max) {
       setDedicatingAmnt(prevState => {
         const updatedArray = [...prevState];
-        updatedArray[index] = { disk: index, amount: max };
+        updatedArray[index] = { disk: index, amount: max, type: "GB" };
         return updatedArray;
       });
     }
@@ -112,7 +115,7 @@ export const HomeView: FC = ({ }) => {
                               onChange={(event, value) => {
                                 setDedicatingAmnt(prevState => {
                                   const updatedArray = [...prevState];
-                                  updatedArray[index] = { disk: index, amount: value as number };
+                                  updatedArray[index] = { disk: index, amount: value as number, type: ((prettyBytes(value as number || 0))?.split(" ")[1]) };
                                   return updatedArray;
                                 });
                               }}
@@ -143,7 +146,10 @@ export const HomeView: FC = ({ }) => {
                           onClick={() => {
                             setDedicatingAmnt(prevState => {
                               const updatedArray = [...prevState];
-                              updatedArray[index] = { disk: index, amount: updatedArray[index].amount - 10000000000 };
+                              if (dedicatingAmnt[index]?.amount - 10000000000 > drive?.capacity + 10000000000) {
+                                console.log()
+                              };
+                              updatedArray[index] = { disk: index, amount: updatedArray[index].amount - 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount - 10000000000 || 0))?.split(" ")[1]) };
                               return updatedArray;
                             });
                           }}
@@ -154,12 +160,13 @@ export const HomeView: FC = ({ }) => {
                         <TextField
                           id="outlined-basic"
                           variant='outlined'
-                          value={(dedicatingAmnt[index]?.amount / (((prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1]) == "GB" ? 1000000000 : 1000000000000)).toFixed(2)}
+                          // value={(dedicatingAmnt[index]?.amount / (dedicatingAmnt[index]?.type == "TB" ? 1000000000000 : 1000000000)).toFixed(2)}
+                          value={(dedicatingAmnt[index]?.amount / 1000000000)}
                           size="small"
                           onChange={(e) => {
                             setDedicatingAmnt(prevState => {
                               const updatedArray = [...prevState];
-                              updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000) };
+                              updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
                               return updatedArray;
                             });
                           }}
@@ -168,9 +175,25 @@ export const HomeView: FC = ({ }) => {
                             inputProps: { min: 1000000000 },
                             endAdornment: (
                               (drive?.capacity - 10000000000 >= 0) ?
-                                <div className='flex flex-row items-center ml-1 text-white'>
-                                  <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
-                                </div>
+                                // <div className='flex flex-row items-center ml-1 text-white'>
+                                //   <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
+                                // </div>
+                                <Select
+                                  sx={{ color: 'white', minWidth: '4.35rem' }}
+                                  value={dedicatingAmnt[index]?.type}
+                                  onChange={(event: SelectChangeEvent) => {
+                                    setDedicatingAmnt(prevState => {
+                                      const updatedArray = [...prevState];
+                                      updatedArray[index] = { type: event.target.value, disk: index, amount: updatedArray[index].amount };
+                                      return updatedArray;
+                                    });
+                                  }}
+                                  displayEmpty
+                                  inputProps={{ 'aria-label': 'Without label' }}
+                                >
+                                  <MenuItem value="GB">GB</MenuItem>
+                                  <MenuItem value="TB">TB</MenuItem>
+                                </Select>
                                 :
                                 null
 
@@ -199,7 +222,7 @@ export const HomeView: FC = ({ }) => {
                             setDedicatingAmnt(prevState => {
                               const updatedArray = [...prevState];
                               if (dedicatingAmnt[index]?.amount + 10000000000 > drive?.capacity - 10000000000) return;
-                              updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10000000000 };
+                              updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount + 10000000000 || 0))?.split(" ")[1]) };
                               return updatedArray;
                             });
                           }}
