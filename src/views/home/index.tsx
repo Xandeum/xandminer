@@ -11,7 +11,7 @@ import { TextField } from '@mui/material';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
-import { AddBox, IndeterminateCheckBox } from '@mui/icons-material';
+import { AddBox, IndeterminateCheckBox, Edit, CheckBox } from '@mui/icons-material';
 import { useUrlConfiguration } from '../../contexts/UrlProvider';
 
 export const HomeView: FC = ({ }) => {
@@ -20,7 +20,8 @@ export const HomeView: FC = ({ }) => {
 
   const [driveInfo, setDriveInfo] = React.useState<Array<any>>([]);
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
-  const [dedicatingAmnt, setDedicatingAmnt] = React.useState([{ disk: 0, amount: 0, type: "GB" }]);
+  const [dedicatingAmnt, setDedicatingAmnt] = React.useState([{ disk: 0, amount: 0, type: "GB", isEditing: false }]);
+  const [inputValue, setInputValue] = React.useState([{ index: 0, amount: 0, type: "GB" }]);
   const [type, setType] = React.useState("GB");
 
   React.useEffect(() => {
@@ -40,7 +41,7 @@ export const HomeView: FC = ({ }) => {
   const setDedicatedInitialAmnt = (data: Array<any>) => {
     let drives = [];
     data.forEach((drive, index) => {
-      drives.push({ disk: index, amount: 0, type: "GB" });
+      drives.push({ disk: index, amount: 0, type: "GB", isEditing: false });
     });
     setDedicatingAmnt(drives);
     return;
@@ -54,10 +55,44 @@ export const HomeView: FC = ({ }) => {
     if (input > max) {
       setDedicatingAmnt(prevState => {
         const updatedArray = [...prevState];
-        updatedArray[index] = { disk: index, amount: max, type: "GB" };
+        updatedArray[index] = { disk: index, amount: max, type: "GB", isEditing: false };
         return updatedArray;
       });
     }
+  }
+
+  const setDedicatingAmntOnEdit = (index) => {
+
+    let amountToDedicate = inputValue[index]?.amount;
+
+    //if input value is 0 then ingore it and keep the previous value as it is
+    if (inputValue[index]?.amount == 0) {
+      setDedicatingAmnt(prevState => {
+        const updatedArray = [...prevState];
+        updatedArray[index] = { disk: index, amount: dedicatingAmnt[index]?.amount, type: dedicatingAmnt[index]?.type, isEditing: !dedicatingAmnt[index]?.isEditing };
+        return updatedArray;
+      });
+      return;
+    }
+    if (inputValue[index]?.type == "TB") {
+      amountToDedicate = inputValue[index]?.amount * 1000000000000;
+    }
+
+    //if input value is greater than max value then set max value
+    if (amountToDedicate > driveInfo[index]?.available) {
+      setDedicatingAmnt(prevState => {
+        const updatedArray = [...prevState];
+        updatedArray[index] = { disk: index, amount: driveInfo[index]?.available, type: dedicatingAmnt[index]?.type, isEditing: !dedicatingAmnt[index]?.isEditing };
+        return updatedArray;
+      });
+      return;
+    }
+    setDedicatingAmnt(prevState => {
+      const updatedArray = [...prevState];
+      updatedArray[index] = { disk: index, amount: amountToDedicate, type: inputValue[index]?.type, isEditing: !dedicatingAmnt[index]?.isEditing };
+      return updatedArray;
+    });
+
   }
 
   return (
@@ -115,7 +150,7 @@ export const HomeView: FC = ({ }) => {
                               onChange={(event, value) => {
                                 setDedicatingAmnt(prevState => {
                                   const updatedArray = [...prevState];
-                                  updatedArray[index] = { disk: index, amount: value as number, type: ((prettyBytes(value as number || 0))?.split(" ")[1]) };
+                                  updatedArray[index] = { disk: index, amount: value as number, type: ((prettyBytes(value as number || 0))?.split(" ")[1]), isEditing: false };
                                   return updatedArray;
                                 });
                               }}
@@ -149,7 +184,7 @@ export const HomeView: FC = ({ }) => {
                               if (dedicatingAmnt[index]?.amount - 10000000000 > drive?.available + 10000000000) {
                                 return;
                               };
-                              updatedArray[index] = { disk: index, amount: updatedArray[index].amount - 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount - 10000000000 || 0))?.split(" ")[1]) };
+                              updatedArray[index] = { disk: index, amount: updatedArray[index].amount - 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount - 10000000000 || 0))?.split(" ")[1]), isEditing: false };
                               return updatedArray;
                             });
                           }}
@@ -157,64 +192,103 @@ export const HomeView: FC = ({ }) => {
                         >
                           <IndeterminateCheckBox />
                         </IconButton>
-                        <TextField
-                          id="outlined-basic"
-                          variant='outlined'
-                          // value={(dedicatingAmnt[index]?.amount / (dedicatingAmnt[index]?.type == "TB" ? 1000000000000 : 1000000000)).toFixed(2)}
-                          value={(dedicatingAmnt[index]?.amount / 1000000000)}
-                          size="small"
-                          onChange={(e) => {
-                            setDedicatingAmnt(prevState => {
-                              const updatedArray = [...prevState];
-                              // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
-                              updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000)), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
-                              return updatedArray;
-                            });
-                          }}
-                          onBlur={() => { forceToMax(index, (drive?.available - 10000000000), dedicatingAmnt[index]?.amount) }}
-                          InputProps={{
-                            inputProps: { min: 1000000000 },
-                            endAdornment: (
-                              (drive?.size - 10000000000 >= 0) ?
-                                // <div className='flex flex-row items-center ml-1 text-white'>
-                                //   <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
-                                // </div>
-                                <Select
-                                  sx={{ color: 'white', minWidth: '4.35rem' }}
-                                  value={dedicatingAmnt[index]?.type}
-                                  onChange={(event: SelectChangeEvent) => {
-                                    setDedicatingAmnt(prevState => {
-                                      const updatedArray = [...prevState];
-                                      updatedArray[index] = { type: event.target.value, disk: index, amount: updatedArray[index].amount };
-                                      return updatedArray;
-                                    });
-                                  }}
-                                  displayEmpty
-                                  inputProps={{ 'aria-label': 'Without label' }}
-                                >
-                                  <MenuItem value="GB">GB</MenuItem>
-                                  <MenuItem value="TB">TB</MenuItem>
-                                </Select>
-                                :
-                                null
+                        {dedicatingAmnt[index]?.isEditing
+                          ?
+                          <TextField
+                            id="outlined-basic"
+                            variant='outlined'
+                            // value={(dedicatingAmnt[index]?.amount / (dedicatingAmnt[index]?.type == "TB" ? 1000000000000 : 1000000000)).toFixed(2)}
+                            value={(inputValue[index]?.amount / 1000000000)}
+                            size="small"
+                            onChange={(e) => {
+                              setInputValue(prevState => {
+                                const updatedArray = [...prevState];
+                                // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
+                                updatedArray[index] = { index: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000)), type: dedicatingAmnt[index]?.type };
+                                return updatedArray;
+                              });
+                            }}
+                            onBlur={() => { forceToMax(index, (drive?.available - 10000000000), dedicatingAmnt[index]?.amount) }}
+                            InputProps={{
+                              inputProps: { min: 1000000000 },
+                              endAdornment: (
+                                (drive?.size - 10000000000 >= 0) ?
+                                  // <div className='flex flex-row items-center ml-1 text-white'>
+                                  //   <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
+                                  // </div>
+                                  <div className='flex flex-row items-center ml-1 text-white'>
 
-                            ),
-                          }}
-                          className='text-white bg-black w-1/2'
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              '& fieldset': {
-                                borderBottom: '1px solid #2196f3',  // Customize the border style
+                                    <Select
+                                      sx={{ color: 'white', minWidth: '4.35rem' }}
+                                      value={inputValue[index]?.type}
+                                      onChange={(event: SelectChangeEvent) => {
+                                        setInputValue(prevState => {
+                                          const updatedArray = [...prevState];
+                                          updatedArray[index] = { type: event.target.value, index: index, amount: updatedArray[index].amount };
+                                          return updatedArray;
+                                        });
+                                      }}
+                                      displayEmpty
+                                      inputProps={{ 'aria-label': 'Without label' }}
+                                    >
+                                      <MenuItem value="GB">GB</MenuItem>
+                                      <MenuItem value="TB">TB</MenuItem>
+                                    </Select>
+                                    <IconButton
+                                      aria-label="delete"
+                                      color='info'
+                                      disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available - 10000000000}
+                                      onClick={() => { setDedicatingAmntOnEdit(index) }}
+                                    >
+                                      <CheckBox />
+                                    </IconButton>
+                                  </div>
+                                  :
+                                  null
+
+                              ),
+                            }}
+                            className='text-white bg-black w-1/2'
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '& fieldset': {
+                                  borderBottom: '1px solid #2196f3',  // Customize the border style
+                                },
                               },
-                            },
-                            input: {
-                              color: 'white',
-                              textAlign: 'right',
-                              width: '50%',
-                            },
-                          }}
-                          disabled={drive?.size - 10000000000 <= 0}
-                        />
+                              input: {
+                                color: 'white',
+                                textAlign: 'right',
+                                width: '50%',
+                              },
+                            }}
+                            disabled={drive?.size - 10000000000 <= 0}
+                          />
+                          :
+                          <div className='flex flex-row items-center ml-1 text-white'>
+                            <span className='pb-1'>{(dedicatingAmnt[index]?.amount / 1000000000)}</span>
+                            <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
+                            <IconButton
+                              aria-label="delete"
+                              color='info'
+                              onClick={() => {
+                                setInputValue(prevState => {
+                                  const updatedArray = [...prevState];
+                                  updatedArray[index] = { index: index, amount: dedicatingAmnt[index]?.amount, type: dedicatingAmnt[index]?.type };
+                                  return updatedArray;
+                                });
+                                setDedicatingAmnt(prevState => {
+                                  const updatedArray = [...prevState];
+                                  updatedArray[index] = { disk: index, amount: dedicatingAmnt[index]?.amount, type: dedicatingAmnt[index]?.type, isEditing: !dedicatingAmnt[index]?.isEditing };
+                                  return updatedArray;
+                                });
+                              }}
+                            >
+                              <Edit />
+                            </IconButton>
+
+                          </div>
+                        }
+
                         <IconButton
                           aria-label="delete"
                           color='info'
@@ -225,7 +299,7 @@ export const HomeView: FC = ({ }) => {
                               console.log("drive?.size - 10000000000 >>", drive?.size - 10000000000)
                               const updatedArray = [...prevState];
                               if (dedicatingAmnt[index]?.amount + 10000000000 > drive?.size - 10000000000) return;
-                              updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount + 10000000000 || 0))?.split(" ")[1]) };
+                              updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount + 10000000000 || 0))?.split(" ")[1]), isEditing: false };
                               return updatedArray;
                             });
                           }}
@@ -248,7 +322,15 @@ export const HomeView: FC = ({ }) => {
                           <div className='max-w-xs'>
                             <button
                               className="w-full btn bg-gradient-to-br from-[#198476] to-[#198476] hover:from-[#129f8c] hover:to-[#129f8c] text-white hover:text-black"
-                              onClick={undefined}
+                              onClick={() => {
+                                setDedicatingAmnt(prevState => {
+                                  const updatedArray = [...prevState];
+                                  // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
+                                  updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(drive?.available)) ? 0 : parseFloat(drive?.available) * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000)), type: ((prettyBytes((parseFloat(drive?.available) * 1000000000) || 0))?.split(" ")[1]), isEditing: false };
+                                  return updatedArray;
+                                });
+                              }
+                              }
                             >
                               <span>
                                 Dedicate whole Drive for Rewards Boost
