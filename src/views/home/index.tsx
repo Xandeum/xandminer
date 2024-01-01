@@ -53,17 +53,13 @@ export const HomeView: FC = ({ }) => {
   //check the input value is greater than max value
   const forceToMax = (index, max, input) => {
     if (input > max) {
-      setDedicatingAmnt(prevState => {
-        const updatedArray = [...prevState];
-        updatedArray[index] = { disk: index, amount: max, type: "GB", isEditing: false };
-        return updatedArray;
-      });
+      dedicateWholeDrive(index, true);
     }
   }
 
   const setDedicatingAmntOnEdit = (index) => {
 
-    let amountToDedicate = inputValue[index]?.amount;
+    let amountToDedicate = inputValue[index]?.amount * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000);
 
     //if input value is 0 then ingore it and keep the previous value as it is
     if (inputValue[index]?.amount == 0) {
@@ -80,11 +76,7 @@ export const HomeView: FC = ({ }) => {
 
     //if input value is greater than max value then set max value
     if (amountToDedicate > driveInfo[index]?.available) {
-      setDedicatingAmnt(prevState => {
-        const updatedArray = [...prevState];
-        updatedArray[index] = { disk: index, amount: driveInfo[index]?.available, type: dedicatingAmnt[index]?.type, isEditing: !dedicatingAmnt[index]?.isEditing };
-        return updatedArray;
-      });
+      dedicateWholeDrive(index, true);
       return;
     }
     setDedicatingAmnt(prevState => {
@@ -93,6 +85,27 @@ export const HomeView: FC = ({ }) => {
       return updatedArray;
     });
 
+  }
+
+  const dedicateWholeDrive = (index, isMax) => {
+    let dedicatingAmnt = (driveInfo[index]?.available - 1000000000);;
+    if (dedicatingAmnt[index]?.type == "TB" && !isMax) {
+      dedicatingAmnt = driveInfo[index]?.available - 100000000000;
+      return;
+    }
+
+    setDedicatingAmnt(prevState => {
+      const updatedArray = [...prevState];
+      updatedArray[index] = { disk: index, amount: dedicatingAmnt, type: inputValue[index]?.type, isEditing: false };
+      return updatedArray;
+    });
+  }
+
+  const formatAmount = (index, amount) => {
+    if (dedicatingAmnt[index]?.type == "TB") {
+      return (amount / 1000000000000)?.toFixed(2);
+    }
+    return (amount / 1000000000)?.toFixed(2);
   }
 
   return (
@@ -106,7 +119,7 @@ export const HomeView: FC = ({ }) => {
           driveInfo?.length > 0 ?
             driveInfo?.map((drive, index) => {
               return (
-                <div key={index} className="relative group lg:min-w-[22rem] min-w-full">
+                <div key={index} className="relative group lg:min-w-[22rem] min-w-full max-w-md">
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-indigo-500 rounded-lg blur opacity-40 animate-tilt"></div>
                   <div className="card bg-base-100 shadow-xl items-start flex">
                     <div className="card-body w-full">
@@ -198,13 +211,19 @@ export const HomeView: FC = ({ }) => {
                             id="outlined-basic"
                             variant='outlined'
                             // value={(dedicatingAmnt[index]?.amount / (dedicatingAmnt[index]?.type == "TB" ? 1000000000000 : 1000000000)).toFixed(2)}
-                            value={(inputValue[index]?.amount / 1000000000)}
+                            // value={(inputValue[index]?.amount / 1000000000)}
+                            value={(inputValue[index]?.amount)}
                             size="small"
+                            inputMode='decimal'
                             onChange={(e) => {
                               setInputValue(prevState => {
                                 const updatedArray = [...prevState];
+                                if (isNaN(parseFloat(e.target.value))) {
+                                  return updatedArray;
+
+                                }
                                 // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
-                                updatedArray[index] = { index: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000)), type: dedicatingAmnt[index]?.type };
+                                updatedArray[index] = { index: index, amount: Math.abs(parseFloat(e.target.value)), type: dedicatingAmnt[index]?.type };
                                 return updatedArray;
                               });
                             }}
@@ -212,40 +231,36 @@ export const HomeView: FC = ({ }) => {
                             InputProps={{
                               inputProps: { min: 1000000000 },
                               endAdornment: (
-                                (drive?.size - 10000000000 >= 0) ?
-                                  // <div className='flex flex-row items-center ml-1 text-white'>
-                                  //   <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
-                                  // </div>
-                                  <div className='flex flex-row items-center ml-1 text-white'>
+                                // <div className='flex flex-row items-center ml-1 text-white'>
+                                //   <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
+                                // </div>
 
-                                    <Select
-                                      sx={{ color: 'white', minWidth: '4.35rem' }}
-                                      value={inputValue[index]?.type}
-                                      onChange={(event: SelectChangeEvent) => {
-                                        setInputValue(prevState => {
-                                          const updatedArray = [...prevState];
-                                          updatedArray[index] = { type: event.target.value, index: index, amount: updatedArray[index].amount };
-                                          return updatedArray;
-                                        });
-                                      }}
-                                      displayEmpty
-                                      inputProps={{ 'aria-label': 'Without label' }}
-                                    >
-                                      <MenuItem value="GB">GB</MenuItem>
-                                      <MenuItem value="TB">TB</MenuItem>
-                                    </Select>
-                                    <IconButton
-                                      aria-label="delete"
-                                      color='info'
-                                      disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available - 10000000000}
-                                      onClick={() => { setDedicatingAmntOnEdit(index) }}
-                                    >
-                                      <CheckBox />
-                                    </IconButton>
-                                  </div>
-                                  :
-                                  null
-
+                                <div className='flex flex-row items-center ml-1 text-white'>
+                                  <Select
+                                    sx={{ color: 'white', minWidth: '4.35rem' }}
+                                    value={inputValue[index]?.type}
+                                    onChange={(event: SelectChangeEvent) => {
+                                      setInputValue(prevState => {
+                                        const updatedArray = [...prevState];
+                                        updatedArray[index] = { type: event.target.value, index: index, amount: updatedArray[index].amount };
+                                        return updatedArray;
+                                      });
+                                    }}
+                                    displayEmpty
+                                    inputProps={{ 'aria-label': 'Without label' }}
+                                  >
+                                    <MenuItem value="GB">GB</MenuItem>
+                                    <MenuItem value="TB">TB</MenuItem>
+                                  </Select>
+                                  <IconButton
+                                    aria-label="delete"
+                                    color='info'
+                                    // disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available - 10000000000}
+                                    onClick={() => { setDedicatingAmntOnEdit(index) }}
+                                  >
+                                    <CheckBox />
+                                  </IconButton>
+                                </div>
                               ),
                             }}
                             className='text-white bg-black w-1/2'
@@ -265,15 +280,15 @@ export const HomeView: FC = ({ }) => {
                           />
                           :
                           <div className='flex flex-row items-center ml-1 text-white'>
-                            <span className='pb-1'>{(dedicatingAmnt[index]?.amount / 1000000000)}</span>
+                            <span className='pb-1'>{formatAmount(index, dedicatingAmnt[index]?.amount)}&nbsp;</span>
                             <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
                             <IconButton
-                              aria-label="delete"
+                              aria-label="edit"
                               color='info'
                               onClick={() => {
                                 setInputValue(prevState => {
                                   const updatedArray = [...prevState];
-                                  updatedArray[index] = { index: index, amount: dedicatingAmnt[index]?.amount, type: dedicatingAmnt[index]?.type };
+                                  updatedArray[index] = { index: index, amount: parseFloat(formatAmount(index, dedicatingAmnt[index]?.amount)), type: dedicatingAmnt[index]?.type };
                                   return updatedArray;
                                 });
                                 setDedicatingAmnt(prevState => {
@@ -292,7 +307,7 @@ export const HomeView: FC = ({ }) => {
                         <IconButton
                           aria-label="delete"
                           color='info'
-                          disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available - 10000000000}
+                          disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available}
                           onClick={() => {
                             setDedicatingAmnt(prevState => {
                               console.log("dedicatingAmnt[index]?.amount + 10000000000 >>", dedicatingAmnt[index]?.amount + 10000000000)
@@ -319,16 +334,17 @@ export const HomeView: FC = ({ }) => {
                             </span>
                           </button>
                           :
-                          <div className='max-w-xs'>
+                          <div className='w-full'>
                             <button
-                              className="w-full btn bg-gradient-to-br from-[#198476] to-[#198476] hover:from-[#129f8c] hover:to-[#129f8c] text-white hover:text-black"
+                              className="w-full btn bg-gradient-to-br from-[#198476] to-[#198476] hover:from-[#129f8c] hover:to-[#129f8c] text-white hover:text-black mb-4"
                               onClick={() => {
-                                setDedicatingAmnt(prevState => {
-                                  const updatedArray = [...prevState];
-                                  // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
-                                  updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(drive?.available)) ? 0 : parseFloat(drive?.available) * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000)), type: ((prettyBytes((parseFloat(drive?.available) * 1000000000) || 0))?.split(" ")[1]), isEditing: false };
-                                  return updatedArray;
-                                });
+                                dedicateWholeDrive(index, false);
+                                // setDedicatingAmnt(prevState => {
+                                //   const updatedArray = [...prevState];
+                                //   // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
+                                //   updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(drive?.available)) ? 0 : parseFloat(drive?.available) * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000)), type: ((prettyBytes((parseFloat(drive?.available) * 1000000000) || 0))?.split(" ")[1]), isEditing: false };
+                                //   return updatedArray;
+                                // });
                               }
                               }
                             >
