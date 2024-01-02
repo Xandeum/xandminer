@@ -1,5 +1,6 @@
 import axios from "axios"
-export const getDriveInfo = async (API_ENDPOINT) => {
+export const getNetworkInfo = async (API_ENDPOINT) => {
+    console.log("calling getNetworkInfo")
     try {
 
         const headers = {
@@ -16,15 +17,14 @@ export const getDriveInfo = async (API_ENDPOINT) => {
         }`
         };
         const options = {
-            method: 'POST',
-            url: API_ENDPOINT,
-            // url: 'https://nixagent.xandeum.com/drives',
+            method: 'GET',
+            url: `${API_ENDPOINT}network`,
             // url: 'http://localhost:4000/drives',
             headers,
             data: requestBody
         };
         const response = await axios(options);
-        console.log("res >>> ", response?.data?.data)
+        console.log("network info >>> ", response?.data?.data)
         // console.log(response?.data?.data?.drives)
 
         // return { ok: true, data: response?.data?.data?.drives }

@@ -4,10 +4,13 @@ import Box from '@mui/material/Box';
 import LinearProgress, { LinearProgressProps } from '@mui/material/LinearProgress';
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
+import { getNetworkInfo } from '../../services/getNetworkInfo';
 import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
-import { TextField } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+
+import { CircularProgress, TextField } from '@mui/material';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
@@ -22,8 +25,10 @@ export const HomeView: FC = ({ }) => {
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
   const [dedicatingAmnt, setDedicatingAmnt] = React.useState([{ disk: 0, amount: 0, type: "GB", isEditing: false }]);
   const [inputValue, setInputValue] = React.useState([{ index: 0, amount: 0, type: "GB" }]);
-  const [type, setType] = React.useState("GB");
+  const [showNetworkSpeedModal, setShowNetworkSpeedModal] = React.useState(false);
+  const [networkStats, setNetworkStats] = React.useState({ isFetching: false, data: {} })
 
+  //read the drive info from the server on page load
   React.useEffect(() => {
     setIsFetching(true);
     getDriveInfo(urlConfiguration).then((response) => {
@@ -38,6 +43,7 @@ export const HomeView: FC = ({ }) => {
     })
   }, [urlConfiguration]);
 
+  //function to set the initial values for dedicating amnt
   const setDedicatedInitialAmnt = (data: Array<any>) => {
     let drives = [];
     data.forEach((drive, index) => {
@@ -45,6 +51,21 @@ export const HomeView: FC = ({ }) => {
     });
     setDedicatingAmnt(drives);
     return;
+  }
+
+  //function related to read the network stats
+  const getNetworkStats = async () => {
+    setShowNetworkSpeedModal(true);
+    setNetworkStats({ isFetching: true, data: {} });
+    try {
+      const response = await getNetworkInfo(urlConfiguration);
+      if (response.ok) {
+        setNetworkStats({ isFetching: false, data: response.data });
+        return;
+      }
+    } catch (error) {
+      setNetworkStats({ isFetching: false, data: {} });
+    }
   }
 
   // Function to normalise the values (MIN / MAX could be integrated)
@@ -57,8 +78,8 @@ export const HomeView: FC = ({ }) => {
     }
   }
 
+  //set the dedicating amnt and type on edit
   const setDedicatingAmntOnEdit = (index) => {
-
     let amountToDedicate = inputValue[index]?.amount * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000);
 
     //if input value is 0 then ingore it and keep the previous value as it is
@@ -87,6 +108,7 @@ export const HomeView: FC = ({ }) => {
 
   }
 
+  //dedicate the whole drive
   const dedicateWholeDrive = (index, isMax) => {
     let dedicatingAmnt = (driveInfo[index]?.available - 1000000000);;
     if (dedicatingAmnt[index]?.type == "TB" && !isMax) {
@@ -101,6 +123,7 @@ export const HomeView: FC = ({ }) => {
     });
   }
 
+  //format the amount to GB or TB
   const formatAmount = (index, amount) => {
     if (dedicatingAmnt[index]?.type == "TB") {
       return (amount / 1000000000000)?.toFixed(2);
@@ -335,6 +358,19 @@ export const HomeView: FC = ({ }) => {
                           </button>
                           :
                           <div className='w-full'>
+                            {
+                              index == 0 ?
+                                <button
+                                  className="w-full btn bg-gradient-to-br from-[#622657] to-[#622657] hover:from-[#742f68] hover:to-[#742f68] text-white hover:text-white mb-4"
+                                  onClick={() => { getNetworkStats() }}
+                                >
+                                  <span>
+                                    Test Network Speed
+                                  </span>
+                                </button>
+                                :
+                                null
+                            }
                             <button
                               className="w-full btn bg-gradient-to-br from-[#198476] to-[#198476] hover:from-[#129f8c] hover:to-[#129f8c] text-white hover:text-black mb-4"
                               onClick={() => {
@@ -365,6 +401,7 @@ export const HomeView: FC = ({ }) => {
                       }
                     </div>
                   </div>
+
                 </div>
               )
             })
@@ -375,6 +412,47 @@ export const HomeView: FC = ({ }) => {
         }
       </div>
       {/* <div className='border-b border-[#4a4a4a] mb-8 mt-2 w-full' /> */}
+
+      {
+        showNetworkSpeedModal ?
+          <div className="flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 focus:outline-none bg-[#0000009b] opacity-100">
+            <div className="justify-center items-center flex-col overflow-x-hidden overflow-y-auto fixed  z-9999 rounded-lg px-10 py-5 bg-[#08113b]">
+              <div className="absolute top-0 right-0 p-5 ">
+                <CloseIcon sx={[{ color: "#b7094c", transform: "scale(1.5)" },
+                { transition: "transform .1s" },
+                {
+                  '&:hover': {
+                    // color: 'white',
+                    cursor: 'pointer',
+                    transform: "scale(1.7)"
+                  },
+                }]}
+                  onClick={() => {
+                    setShowNetworkSpeedModal(false);
+                    setNetworkStats({ isFetching: false, data: {} });
+                  }}
+                >
+                </CloseIcon>
+              </div>
+              {
+                networkStats?.isFetching ?
+                  <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
+                    <CircularProgress />
+                  </div>
+                  :
+                  <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
+                    <p className='text-2xl font-bold mb-4'>Network Speed Status</p>
+                    <div className='border-b border-[#4a4a4a] my-2 w-full' />
+                    <p className='text-xl font-bold mb-4'>Download Speed: {networkStats?.data?.downloadSpeed?.toFixed(2)} Mbps</p>
+                    <p className='text-xl font-bold mb-4'>Upload Speed: {networkStats?.data?.uploadSpeed?.toFixed(2)} Mbps</p>
+                  </div>
+              }
+
+            </div>
+          </div>
+          :
+          null
+      }
 
     </div>
   );
