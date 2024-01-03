@@ -1,7 +1,7 @@
 // Next, React
 import React, { FC } from 'react';
 import Box from '@mui/material/Box';
-import LinearProgress, { LinearProgressProps } from '@mui/material/LinearProgress';
+import LinearProgress from '@mui/material/LinearProgress';
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
 import { getNetworkInfo } from '../../services/getNetworkInfo';
@@ -9,6 +9,9 @@ import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CloseIcon from '@mui/icons-material/Close';
+import TimerOutlinedIcon from '@mui/icons-material/TimerOutlined';
+import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
+import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
 import { CircularProgress, TextField } from '@mui/material';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
@@ -26,7 +29,15 @@ export const HomeView: FC = ({ }) => {
   const [dedicatingAmnt, setDedicatingAmnt] = React.useState([{ disk: 0, amount: 0, type: "GB", isEditing: false }]);
   const [inputValue, setInputValue] = React.useState([{ index: 0, amount: 0, type: "GB" }]);
   const [showNetworkSpeedModal, setShowNetworkSpeedModal] = React.useState(false);
-  const [networkStats, setNetworkStats] = React.useState({ isFetching: false, data: {} })
+  const [networkStats, setNetworkStats] = React.useState({
+    isFetching: false,
+    isError: false,
+    data: {
+      downloadSpeed: 0,
+      uploadSpeed: 0,
+      latency: 0
+    }
+  })
 
   //read the drive info from the server on page load
   React.useEffect(() => {
@@ -56,15 +67,15 @@ export const HomeView: FC = ({ }) => {
   //function related to read the network stats
   const getNetworkStats = async () => {
     setShowNetworkSpeedModal(true);
-    setNetworkStats({ isFetching: true, data: {} });
+    setNetworkStats({ isFetching: true, isError: false, data: null });
     try {
       const response = await getNetworkInfo(urlConfiguration);
       if (response.ok) {
-        setNetworkStats({ isFetching: false, data: response.data });
+        setNetworkStats({ isFetching: false, isError: false, data: response.data });
         return;
       }
     } catch (error) {
-      setNetworkStats({ isFetching: false, data: {} });
+      setNetworkStats({ isFetching: false, isError: true, data: null });
     }
   }
 
@@ -435,7 +446,12 @@ export const HomeView: FC = ({ }) => {
                 }]}
                   onClick={() => {
                     setShowNetworkSpeedModal(false);
-                    setNetworkStats({ isFetching: false, data: {} });
+                    networkStats?.data?.downloadSpeed == 0 ?
+                      setNetworkStats({
+                        isFetching: false, isError: false, data: null
+                      })
+                      :
+                      null
                   }}
                 >
                 </CloseIcon>
@@ -446,12 +462,61 @@ export const HomeView: FC = ({ }) => {
                     <CircularProgress />
                   </div>
                   :
-                  <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
-                    <p className='text-2xl font-bold mb-4'>Network Speed Status</p>
-                    <div className='border-b border-[#4a4a4a] my-2 w-full' />
-                    <p className='text-xl font-bold mb-4'>Download Speed: {networkStats?.data?.downloadSpeed?.toFixed(2)} Mbps</p>
-                    <p className='text-xl font-bold mb-4'>Upload Speed: {networkStats?.data?.uploadSpeed?.toFixed(2)} Mbps</p>
-                  </div>
+                  networkStats?.isError ?
+                    <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
+                      <p className='text-2xl mb-4 '>Something went wrong. Please try again...</p>
+                      <button
+                        className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
+                        onClick={() => { getNetworkStats() }}
+                      >
+                        <span>
+                          Retry
+                        </span>
+                      </button>
+                    </div>
+                    :
+                    <div className='text-left font-normal my-5 mt-10 w-[50ch]'>
+                      <p className='text-2xl mb-4 text-center'>Network Speed Status</p>
+                      <div className='border-b border-[#4a4a4a] my-4 w-full' />
+                      <div className='flex flex-row items-center justify-between mb-4'>
+                        <div className="flex flex-col gap-4">
+                          <p className='text-xl'>
+                            <span className='mr-2'><DownloadOutlinedIcon /></span>
+                            Download Speed
+                          </p>
+                          <p className='text-xl'>
+                            <span className='mr-2'><PublishOutlinedIcon /></span>
+                            Upload Speed
+                          </p>
+                          <p className='text-xl'>
+                            <span className='mr-2'><TimerOutlinedIcon /></span>
+                            Latency
+                          </p>
+                        </div>
+                        <div className="flex flex-col  gap-4">
+                          <p className='text-xl'>
+                            :
+                          </p>
+                          <p className='text-xl'>
+                            :
+                          </p>
+                          <p className='text-xl'>
+                            :
+                          </p>
+                        </div>
+                        <div className="flex flex-col  gap-4">
+                          <p className='text-xl'>
+                            {networkStats?.data?.downloadSpeed?.toFixed(2)} Mbps
+                          </p>
+                          <p className='text-xl'>
+                            {networkStats?.data?.uploadSpeed?.toFixed(2)} Mbps
+                          </p>
+                          <p className='text-xl'>
+                            {networkStats?.data?.latency} ms
+                          </p>
+                        </div>
+                      </div>
+                    </div>
               }
 
             </div>

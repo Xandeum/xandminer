@@ -17,7 +17,7 @@ export const getDriveInfo = async (API_ENDPOINT) => {
         };
         const options = {
             method: 'POST',
-            url: API_ENDPOINT,
+            url: `${API_ENDPOINT}`,
             // url: 'https://nixagent.xandeum.com/drives',
             // url: 'http://localhost:4000/drives',
             headers,

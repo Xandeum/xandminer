@@ -24,10 +24,6 @@ export const getNetworkInfo = async (API_ENDPOINT) => {
             data: requestBody
         };
         const response = await axios(options);
-        console.log("network info >>> ", response?.data?.data)
-        // console.log(response?.data?.data?.drives)
-
-        // return { ok: true, data: response?.data?.data?.drives }
         return { ok: true, data: response?.data?.data }
     } catch (error) {
         throw new Error(error.message)
