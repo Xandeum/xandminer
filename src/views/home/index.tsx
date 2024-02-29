@@ -148,315 +148,333 @@ export const HomeView: FC = ({ }) => {
   }
 
   return (
-    <div className="flex mx-auto flex-col items-center md:items-start w-full md:px-16 p-8">
+    <div className="flex mx-auto flex-col items-center md:items-start w-full md:px-16 py-8">
 
-      <div className="w-full  rounded-lg h-60 mt-5 mb-8">
-        <div className='w-full flex flex-row items-center justify-end gap-4'>
-          <span className="text-4xl  text-white flex flex-row items-center gap-2">
-            Service Status :
-            {
-              isServiceOnline ?
-                <div className='flex flex-row items-center gap-2'>
-                  <span className="text-4xl text-white ">Online<Brightness1RoundedIcon color='success' className='animate-pulse' /> </span>
-                  <button className='btn bg-[#b7094c] text-white'>Stop</button>
-                </div>
-                :
-                <div className='flex flex-row items-center gap-2'>
-                  <span className="text-4xl text-white ">Stopped<RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' /></span>
-                  <button className='btn bg-[#129f8c] text-white'>Start</button>
-                </div>
-            }
-          </span>
+      {/* div with one side is 1/3 of the full screen with and rest with another div */}
+      <div className="w-full h-full flex md:flex-row items-start justify-between gap-4 flex-col-reverse">
+
+        {/* left side column */}
+        <div className="w-full md:w-3/4 flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-2">
+          <h4 className="md:w-full text-4xl text-left text-slate-300 ">
+            <p>Drive Information</p>
+          </h4>
+          <div className='border-b border-[#4a4a4a] mb-4 mt-2 w-full' />
+          {
+            isFetching ?
+              <div className="flex flex-col justify-center items-center w-full">
+                <CircularProgress />
+              </div>
+              :
+              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-4 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5">
+                {
+                  driveInfo?.length > 0 ?
+                    driveInfo?.map((drive, index) => {
+                      return (
+                        // <div key={index} className="relative group lg:min-w-[22rem] min-w-full max-w-md">
+                        <div key={index} className="card relative flex gap-3 w-full project-card min-w-full min-h-[7rem] rounded-xl overflow-hidden items-center justify-between">
+
+                          <div className="card-body w-full">
+                            {/* <div className="bg-black p-4 rounded-lg shadow-md min-w-[20rem] border-white border"> */}
+                            {/* <h2 className="text-2xl font-bold mb-4">Drive {index + 1}</h2> */}
+                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
+                              <StorageIcon color='primary' fontSize='large' />
+                              <h2 className="text-2xl font-bold ">{drive?.name || "Drive " + (index + 1)}</h2>
+                            </Box>
+                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
+                              <SpeedIcon color='primary' fontSize='medium' />
+                              <h2 className="text-xl font-bold ">{drive?.type}</h2>
+                            </Box>
+                            {/* <p>Total Space: {prettyBytes(drive?.capacity)}</p> */}
+                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                              <Box sx={{ width: '100%' }}>
+                                {/* <span>{drive.used}GB</span> */}
+                              </Box>
+                              <Box sx={{ width: '100%', mr: 1 }}>
+                                <LinearProgress variant="determinate" value={normalise((drive?.capacity - drive?.available), 0, drive?.capacity)} />
+                              </Box>
+                              <Box sx={{ width: '100%' }}>
+                                {/* <span>{drive.used}GB</span> */}
+                                <span>{prettyBytes(drive?.available ?? 0)} available of {prettyBytes(drive?.capacity || drive?.capacity)} </span>
+                              </Box>
+                            </Box>
+                            <div className='border-b border-[#4a4a4a] my-8 w-full' />
+                            <p>Dedicate space</p>
+
+                            <Box sx={{ width: '100%' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Box sx={{ width: '100%', mx: '0.35rem' }}>
+                                  <Slider
+                                    size="medium"
+                                    defaultValue={0}
+                                    min={10000000000}
+                                    max={drive?.available - 10000000000}
+                                    aria-label="Small"
+                                    valueLabelDisplay="off"
+                                    value={dedicatingAmnt[index]?.amount}
+                                    onChange={(event, value) => {
+                                      setDedicatingAmnt(prevState => {
+                                        const updatedArray = [...prevState];
+                                        updatedArray[index] = { disk: index, amount: value as number, type: ((prettyBytes(value as number || 0))?.split(" ")[1]), isEditing: false };
+                                        return updatedArray;
+                                      });
+                                    }}
+                                    marks={[
+                                      {
+                                        value: 1000000000,
+                                        label: '0',
+                                      },
+                                      {
+                                        value: drive?.capacity,
+                                        label: prettyBytes(drive?.capacity ?? 0),
+                                      },
+                                    ]}
+                                    step={5000000000}
+                                    disabled={drive?.capacity - 10000000000 <= 0}
+                                  />
+                                </Box>
+                                {/* <span>{(prettyBytes(dedicatingAmnt[index]?.amount)).split(" ")[1]}</span> */}
+
+
+                              </Box>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%', marginBottom: 5 }}>
+                              <IconButton
+                                aria-label="delete"
+                                color='info'
+                                onClick={() => {
+                                  setDedicatingAmnt(prevState => {
+                                    const updatedArray = [...prevState];
+                                    if (dedicatingAmnt[index]?.amount - 10000000000 > drive?.available + 10000000000) {
+                                      return;
+                                    };
+                                    updatedArray[index] = { disk: index, amount: updatedArray[index].amount - 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount - 10000000000 || 0))?.split(" ")[1]), isEditing: false };
+                                    return updatedArray;
+                                  });
+                                }}
+                                disabled={dedicatingAmnt[index]?.amount - 10000000000 <= 0}
+                              >
+                                <IndeterminateCheckBox />
+                              </IconButton>
+                              {dedicatingAmnt[index]?.isEditing
+                                ?
+                                <TextField
+                                  id="outlined-basic"
+                                  variant='outlined'
+                                  // value={(dedicatingAmnt[index]?.amount / (dedicatingAmnt[index]?.type == "TB" ? 1000000000000 : 1000000000)).toFixed(2)}
+                                  // value={(inputValue[index]?.amount / 1000000000)}
+                                  value={(inputValue[index]?.amount)}
+                                  size="small"
+                                  inputMode='decimal'
+                                  onChange={(e) => {
+                                    setInputValue(prevState => {
+                                      const updatedArray = [...prevState];
+                                      if (isNaN(parseFloat(e.target.value))) {
+                                        return updatedArray;
+
+                                      }
+                                      // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
+                                      updatedArray[index] = { index: index, amount: Math.abs(parseFloat(e.target.value)), type: dedicatingAmnt[index]?.type };
+                                      return updatedArray;
+                                    });
+                                  }}
+                                  onBlur={() => { forceToMax(index, (drive?.available - 10000000000), dedicatingAmnt[index]?.amount) }}
+                                  InputProps={{
+                                    inputProps: { min: 1000000000 },
+                                    endAdornment: (
+                                      // <div className='flex flex-row items-center ml-1 text-white'>
+                                      //   <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
+                                      // </div>
+
+                                      <div className='flex flex-row items-center ml-1 text-white'>
+                                        <Select
+                                          sx={{ color: 'white', minWidth: '4.35rem' }}
+                                          value={inputValue[index]?.type}
+                                          onChange={(event: SelectChangeEvent) => {
+                                            setInputValue(prevState => {
+                                              const updatedArray = [...prevState];
+                                              updatedArray[index] = { type: event.target.value, index: index, amount: updatedArray[index].amount };
+                                              return updatedArray;
+                                            });
+                                          }}
+                                          displayEmpty
+                                          inputProps={{ 'aria-label': 'Without label' }}
+                                        >
+                                          <MenuItem value="GB">GB</MenuItem>
+                                          <MenuItem value="TB">TB</MenuItem>
+                                        </Select>
+                                        <IconButton
+                                          aria-label="delete"
+                                          color='info'
+                                          // disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available - 10000000000}
+                                          onClick={() => { setDedicatingAmntOnEdit(index) }}
+                                        >
+                                          <CheckBox />
+                                        </IconButton>
+                                      </div>
+                                    ),
+                                  }}
+                                  className='text-white bg-black w-1/2'
+                                  sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                      '& fieldset': {
+                                        borderBottom: '1px solid #2196f3',  // Customize the border style
+                                      },
+                                    },
+                                    input: {
+                                      color: 'white',
+                                      textAlign: 'right',
+                                      width: '50%',
+                                    },
+                                  }}
+                                  disabled={drive?.capacity - 10000000000 <= 0}
+                                />
+                                :
+                                <div className='flex flex-row items-center ml-1 text-white'>
+                                  <span className='pb-1'>{formatAmount(index, dedicatingAmnt[index]?.amount)}&nbsp;</span>
+                                  <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
+                                  <IconButton
+                                    aria-label="edit"
+                                    color='info'
+                                    onClick={() => {
+                                      setInputValue(prevState => {
+                                        const updatedArray = [...prevState];
+                                        updatedArray[index] = { index: index, amount: parseFloat(formatAmount(index, dedicatingAmnt[index]?.amount)), type: dedicatingAmnt[index]?.type };
+                                        return updatedArray;
+                                      });
+                                      setDedicatingAmnt(prevState => {
+                                        const updatedArray = [...prevState];
+                                        updatedArray[index] = { disk: index, amount: dedicatingAmnt[index]?.amount, type: dedicatingAmnt[index]?.type, isEditing: !dedicatingAmnt[index]?.isEditing };
+                                        return updatedArray;
+                                      });
+                                    }}
+                                  >
+                                    <Edit />
+                                  </IconButton>
+
+                                </div>
+                              }
+
+                              <IconButton
+                                aria-label="delete"
+                                color='info'
+                                disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available}
+                                onClick={() => {
+                                  setDedicatingAmnt(prevState => {
+                                    const updatedArray = [...prevState];
+                                    if (dedicatingAmnt[index]?.amount + 10000000000 > drive?.capacity - 10000000000) return;
+                                    updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount + 10000000000 || 0))?.split(" ")[1]), isEditing: false };
+                                    return updatedArray;
+                                  });
+                                }}
+                              >
+                                <AddBox />
+                              </IconButton>
+                            </Box>
+                            {
+                              (drive?.capacity - 10000000000 <= 0) ?
+
+                                <button
+                                  className="w-full btn bg-[#808080] text-slate-600"
+                                  onClick={undefined}
+                                >
+                                  <span>
+                                    Unavailable
+                                  </span>
+                                </button>
+                                :
+                                <div className='w-full'>
+                                  {
+                                    index == 0 ?
+                                      <button
+                                        className="w-full btn bg-gradient-to-br from-[#622657] to-[#622657] hover:from-[#742f68] hover:to-[#742f68] text-white hover:text-white mb-4"
+                                        onClick={() => { getNetworkStats() }}
+                                      >
+                                        <span>
+                                          Test Network Speed
+                                        </span>
+                                      </button>
+                                      :
+                                      null
+                                  }
+                                  <button
+                                    className="w-full btn bg-gradient-to-br from-[#198476] to-[#198476] hover:from-[#129f8c] hover:to-[#129f8c] text-white hover:text-black mb-4"
+                                    onClick={() => {
+                                      dedicateWholeDrive(index, false);
+                                      // setDedicatingAmnt(prevState => {
+                                      //   const updatedArray = [...prevState];
+                                      //   // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
+                                      //   updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(drive?.available)) ? 0 : parseFloat(drive?.available) * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000)), type: ((prettyBytes((parseFloat(drive?.available) * 1000000000) || 0))?.split(" ")[1]), isEditing: false };
+                                      //   return updatedArray;
+                                      // });
+                                    }
+                                    }
+                                  >
+                                    <span>
+                                      Dedicate whole Drive for Rewards Boost
+                                    </span>
+                                  </button>
+                                  <button
+                                    className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
+                                    onClick={undefined}
+                                  >
+                                    <span>
+                                      Dedicate and Earn
+                                    </span>
+                                  </button>
+                                </div>
+
+                            }
+                          </div>
+
+
+                        </div>
+                      )
+                    })
+                    :
+                    <div className="flex flex-col justify-center items-center">
+                      <p className="text-2xl font-bold">No Drives Found</p>
+                    </div>
+                }
+              </div>
+          }
+        </div>
+
+
+        {/* right side column */}
+
+        <div className="w-full md:w-1/4 flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-2">
+          <div className='w-full flex flex-row items-center justify-end gap-4 border-b border-[#4a4a4a]'>
+            <span className="text-4xl  text-white flex flex-row items-center gap-2">
+              Service Status :
+              {
+                isServiceOnline ?
+                  <div className='flex flex-row items-center gap-2'>
+                    <span className="text-4xl text-white ">Online<Brightness1RoundedIcon color='success' className='animate-pulse' /> </span>
+                    <button className='btn bg-[#b7094c] text-white'>Stop</button>
+                  </div>
+                  :
+                  <div className='flex flex-row items-center gap-2'>
+                    <span className="text-4xl text-white ">Stopped<RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' /></span>
+                    <button className='btn bg-[#129f8c] text-white'>Start</button>
+                  </div>
+              }
+            </span>
+          </div>
+
+
+          <div className='w-full flex flex-col items-center justify-between mt-8 gap-5'>
+            <button className='btn bg-[#622657] text-white w-full'>Claim Rewards</button>
+            <button className='btn bg-[#622657] text-white w-full'>Register PNode</button>
+            <button className='btn bg-[#622657] text-white w-full'>Generate Identity Key-pair</button>
+          </div>
         </div>
       </div>
 
 
-      <h4 className="md:w-full text-4xl text-left text-slate-300 ">
-        <p>Drive Information</p>
-      </h4>
-      <div className='border-b border-[#4a4a4a] mb-8 mt-2 w-full' />
-
-      <>
-        {
-          isFetching ?
-            <div className="flex flex-col justify-center items-center w-full">
-              <CircularProgress />
-            </div>
-            :
-            <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-4 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5">
-              {
-                driveInfo?.length > 0 ?
-                  driveInfo?.map((drive, index) => {
-                    return (
-                      // <div key={index} className="relative group lg:min-w-[22rem] min-w-full max-w-md">
-                      <div key={index} className="card relative flex gap-3 w-full project-card min-w-full min-h-[7rem] rounded-xl overflow-hidden items-center justify-between">
-
-                        <div className="card-body w-full">
-                          {/* <div className="bg-black p-4 rounded-lg shadow-md min-w-[20rem] border-white border"> */}
-                          {/* <h2 className="text-2xl font-bold mb-4">Drive {index + 1}</h2> */}
-                          <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
-                            <StorageIcon color='primary' fontSize='large' />
-                            <h2 className="text-2xl font-bold ">{drive?.name || "Drive " + (index + 1)}</h2>
-                          </Box>
-                          <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
-                            <SpeedIcon color='primary' fontSize='medium' />
-                            <h2 className="text-xl font-bold ">{drive?.type}</h2>
-                          </Box>
-                          {/* <p>Total Space: {prettyBytes(drive?.capacity)}</p> */}
-                          <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                            <Box sx={{ width: '100%' }}>
-                              {/* <span>{drive.used}GB</span> */}
-                            </Box>
-                            <Box sx={{ width: '100%', mr: 1 }}>
-                              <LinearProgress variant="determinate" value={normalise((drive?.capacity - drive?.available), 0, drive?.capacity)} />
-                            </Box>
-                            <Box sx={{ width: '100%' }}>
-                              {/* <span>{drive.used}GB</span> */}
-                              <span>{prettyBytes(drive?.available ?? 0)} available of {prettyBytes(drive?.capacity || drive?.capacity)} </span>
-                            </Box>
-                          </Box>
-                          <div className='border-b border-[#4a4a4a] my-8 w-full' />
-                          <p>Dedicate space</p>
-
-                          <Box sx={{ width: '100%' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                              <Box sx={{ width: '100%', mx: '0.35rem' }}>
-                                <Slider
-                                  size="medium"
-                                  defaultValue={0}
-                                  min={10000000000}
-                                  max={drive?.available - 10000000000}
-                                  aria-label="Small"
-                                  valueLabelDisplay="off"
-                                  value={dedicatingAmnt[index]?.amount}
-                                  onChange={(event, value) => {
-                                    setDedicatingAmnt(prevState => {
-                                      const updatedArray = [...prevState];
-                                      updatedArray[index] = { disk: index, amount: value as number, type: ((prettyBytes(value as number || 0))?.split(" ")[1]), isEditing: false };
-                                      return updatedArray;
-                                    });
-                                  }}
-                                  marks={[
-                                    {
-                                      value: 1000000000,
-                                      label: '0',
-                                    },
-                                    {
-                                      value: drive?.capacity,
-                                      label: prettyBytes(drive?.capacity ?? 0),
-                                    },
-                                  ]}
-                                  step={5000000000}
-                                  disabled={drive?.capacity - 10000000000 <= 0}
-                                />
-                              </Box>
-                              {/* <span>{(prettyBytes(dedicatingAmnt[index]?.amount)).split(" ")[1]}</span> */}
 
 
-                            </Box>
-                          </Box>
 
-                          <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%', marginBottom: 5 }}>
-                            <IconButton
-                              aria-label="delete"
-                              color='info'
-                              onClick={() => {
-                                setDedicatingAmnt(prevState => {
-                                  const updatedArray = [...prevState];
-                                  if (dedicatingAmnt[index]?.amount - 10000000000 > drive?.available + 10000000000) {
-                                    return;
-                                  };
-                                  updatedArray[index] = { disk: index, amount: updatedArray[index].amount - 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount - 10000000000 || 0))?.split(" ")[1]), isEditing: false };
-                                  return updatedArray;
-                                });
-                              }}
-                              disabled={dedicatingAmnt[index]?.amount - 10000000000 <= 0}
-                            >
-                              <IndeterminateCheckBox />
-                            </IconButton>
-                            {dedicatingAmnt[index]?.isEditing
-                              ?
-                              <TextField
-                                id="outlined-basic"
-                                variant='outlined'
-                                // value={(dedicatingAmnt[index]?.amount / (dedicatingAmnt[index]?.type == "TB" ? 1000000000000 : 1000000000)).toFixed(2)}
-                                // value={(inputValue[index]?.amount / 1000000000)}
-                                value={(inputValue[index]?.amount)}
-                                size="small"
-                                inputMode='decimal'
-                                onChange={(e) => {
-                                  setInputValue(prevState => {
-                                    const updatedArray = [...prevState];
-                                    if (isNaN(parseFloat(e.target.value))) {
-                                      return updatedArray;
-
-                                    }
-                                    // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
-                                    updatedArray[index] = { index: index, amount: Math.abs(parseFloat(e.target.value)), type: dedicatingAmnt[index]?.type };
-                                    return updatedArray;
-                                  });
-                                }}
-                                onBlur={() => { forceToMax(index, (drive?.available - 10000000000), dedicatingAmnt[index]?.amount) }}
-                                InputProps={{
-                                  inputProps: { min: 1000000000 },
-                                  endAdornment: (
-                                    // <div className='flex flex-row items-center ml-1 text-white'>
-                                    //   <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
-                                    // </div>
-
-                                    <div className='flex flex-row items-center ml-1 text-white'>
-                                      <Select
-                                        sx={{ color: 'white', minWidth: '4.35rem' }}
-                                        value={inputValue[index]?.type}
-                                        onChange={(event: SelectChangeEvent) => {
-                                          setInputValue(prevState => {
-                                            const updatedArray = [...prevState];
-                                            updatedArray[index] = { type: event.target.value, index: index, amount: updatedArray[index].amount };
-                                            return updatedArray;
-                                          });
-                                        }}
-                                        displayEmpty
-                                        inputProps={{ 'aria-label': 'Without label' }}
-                                      >
-                                        <MenuItem value="GB">GB</MenuItem>
-                                        <MenuItem value="TB">TB</MenuItem>
-                                      </Select>
-                                      <IconButton
-                                        aria-label="delete"
-                                        color='info'
-                                        // disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available - 10000000000}
-                                        onClick={() => { setDedicatingAmntOnEdit(index) }}
-                                      >
-                                        <CheckBox />
-                                      </IconButton>
-                                    </div>
-                                  ),
-                                }}
-                                className='text-white bg-black w-1/2'
-                                sx={{
-                                  '& .MuiOutlinedInput-root': {
-                                    '& fieldset': {
-                                      borderBottom: '1px solid #2196f3',  // Customize the border style
-                                    },
-                                  },
-                                  input: {
-                                    color: 'white',
-                                    textAlign: 'right',
-                                    width: '50%',
-                                  },
-                                }}
-                                disabled={drive?.capacity - 10000000000 <= 0}
-                              />
-                              :
-                              <div className='flex flex-row items-center ml-1 text-white'>
-                                <span className='pb-1'>{formatAmount(index, dedicatingAmnt[index]?.amount)}&nbsp;</span>
-                                <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
-                                <IconButton
-                                  aria-label="edit"
-                                  color='info'
-                                  onClick={() => {
-                                    setInputValue(prevState => {
-                                      const updatedArray = [...prevState];
-                                      updatedArray[index] = { index: index, amount: parseFloat(formatAmount(index, dedicatingAmnt[index]?.amount)), type: dedicatingAmnt[index]?.type };
-                                      return updatedArray;
-                                    });
-                                    setDedicatingAmnt(prevState => {
-                                      const updatedArray = [...prevState];
-                                      updatedArray[index] = { disk: index, amount: dedicatingAmnt[index]?.amount, type: dedicatingAmnt[index]?.type, isEditing: !dedicatingAmnt[index]?.isEditing };
-                                      return updatedArray;
-                                    });
-                                  }}
-                                >
-                                  <Edit />
-                                </IconButton>
-
-                              </div>
-                            }
-
-                            <IconButton
-                              aria-label="delete"
-                              color='info'
-                              disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available}
-                              onClick={() => {
-                                setDedicatingAmnt(prevState => {
-                                  const updatedArray = [...prevState];
-                                  if (dedicatingAmnt[index]?.amount + 10000000000 > drive?.capacity - 10000000000) return;
-                                  updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount + 10000000000 || 0))?.split(" ")[1]), isEditing: false };
-                                  return updatedArray;
-                                });
-                              }}
-                            >
-                              <AddBox />
-                            </IconButton>
-                          </Box>
-                          {
-                            (drive?.capacity - 10000000000 <= 0) ?
-
-                              <button
-                                className="w-full btn bg-[#808080] text-slate-600"
-                                onClick={undefined}
-                              >
-                                <span>
-                                  Unavailable
-                                </span>
-                              </button>
-                              :
-                              <div className='w-full'>
-                                {
-                                  index == 0 ?
-                                    <button
-                                      className="w-full btn bg-gradient-to-br from-[#622657] to-[#622657] hover:from-[#742f68] hover:to-[#742f68] text-white hover:text-white mb-4"
-                                      onClick={() => { getNetworkStats() }}
-                                    >
-                                      <span>
-                                        Test Network Speed
-                                      </span>
-                                    </button>
-                                    :
-                                    null
-                                }
-                                <button
-                                  className="w-full btn bg-gradient-to-br from-[#198476] to-[#198476] hover:from-[#129f8c] hover:to-[#129f8c] text-white hover:text-black mb-4"
-                                  onClick={() => {
-                                    dedicateWholeDrive(index, false);
-                                    // setDedicatingAmnt(prevState => {
-                                    //   const updatedArray = [...prevState];
-                                    //   // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
-                                    //   updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(drive?.available)) ? 0 : parseFloat(drive?.available) * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000)), type: ((prettyBytes((parseFloat(drive?.available) * 1000000000) || 0))?.split(" ")[1]), isEditing: false };
-                                    //   return updatedArray;
-                                    // });
-                                  }
-                                  }
-                                >
-                                  <span>
-                                    Dedicate whole Drive for Rewards Boost
-                                  </span>
-                                </button>
-                                <button
-                                  className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
-                                  onClick={undefined}
-                                >
-                                  <span>
-                                    Dedicate and Earn
-                                  </span>
-                                </button>
-                              </div>
-
-                          }
-                        </div>
-
-
-                      </div>
-                    )
-                  })
-                  :
-                  <div className="flex flex-col justify-center items-center">
-                    <p className="text-2xl font-bold">No Drives Found</p>
-                  </div>
-              }
-            </div>
-        }
-      </>
       {/* <div className='border-b border-[#4a4a4a] mb-8 mt-2 w-full' /> */}
 
       {
