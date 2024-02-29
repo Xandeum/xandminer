@@ -27,8 +27,8 @@ export const getDriveInfo = async (API_ENDPOINT) => {
         console.log("res >>> ", response?.data?.data)
         // console.log(response?.data?.data?.drives)
 
-        // return { ok: true, data: response?.data?.data?.drives }
-        return { ok: true, data: response?.data?.data }
+        return { ok: true, data: response?.data?.data?.drives }
+        // return { ok: true, data: response?.data?.data }
     } catch (error) {
         throw new Error(error.message)
     }

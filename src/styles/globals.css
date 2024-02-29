@@ -32,3 +32,13 @@ a {
   background-color: #707070;
 }
 
+.project-card {
+  background: linear-gradient(150deg,
+      #08113b74 0%,
+      transparent 85%);
+  border-radius: 10px;
+  box-shadow: 0 4px 10px #FDA31B74;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid #FDA31B74;
+}
