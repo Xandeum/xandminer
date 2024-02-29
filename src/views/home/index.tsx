@@ -42,7 +42,7 @@ export const HomeView: FC = ({ }) => {
     }
   })
 
-  const [isServiceOnline, setIsServiceOnline] = React.useState(false);
+  const [isServiceOnline, setIsServiceOnline] = React.useState(true);
 
   //read the drive info from the server on page load
   React.useEffect(() => {
@@ -148,13 +148,13 @@ export const HomeView: FC = ({ }) => {
   }
 
   return (
-    <div className="flex mx-auto flex-col items-center md:items-start w-full md:px-16 py-8">
+    <div className="flex mx-auto flex-col items-center md:items-start w-full md:px-16 p-4 ">
 
       {/* div with one side is 1/3 of the full screen with and rest with another div */}
       <div className="w-full h-full flex md:flex-row items-start justify-between gap-4 flex-col-reverse">
 
         {/* left side column */}
-        <div className="w-full md:w-3/4 flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-2">
+        <div className="w-full md:w-[80%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-2">
           <h4 className="md:w-full text-4xl text-left text-slate-300 ">
             <p>Drive Information</p>
           </h4>
@@ -443,30 +443,34 @@ export const HomeView: FC = ({ }) => {
 
         {/* right side column */}
 
-        <div className="w-full md:w-1/4 flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-2">
-          <div className='w-full flex flex-row items-center justify-end gap-4 border-b border-[#4a4a4a]'>
-            <span className="text-4xl  text-white flex flex-row items-center gap-2">
-              Service Status :
-              {
-                isServiceOnline ?
-                  <div className='flex flex-row items-center gap-2'>
-                    <span className="text-4xl text-white ">Online<Brightness1RoundedIcon color='success' className='animate-pulse' /> </span>
-                    <button className='btn bg-[#b7094c] text-white'>Stop</button>
-                  </div>
-                  :
-                  <div className='flex flex-row items-center gap-2'>
-                    <span className="text-4xl text-white ">Stopped<RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' /></span>
-                    <button className='btn bg-[#129f8c] text-white'>Start</button>
-                  </div>
-              }
+        <div className="w-full md:w-[20%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-2">
+          <div className='w-full flex flex-row items-center justify-around gap-4 border-b border-[#4a4a4a] pb-2'>
+            <span className="text-4xl  text-slate-300 flex flex-row items-center gap-2">
+              Status :
             </span>
+            {
+              isServiceOnline ?
+                <div className='flex flex-col items-center gap-2'>
+                  <span className="text-4xl text-slate-300 ">Online<Brightness1RoundedIcon color='success' className='animate-pulse' /> </span>
+                </div>
+                :
+                <div className='flex flex-row items-center gap-2'>
+                  <span className="text-4xl text-slate-300 ">Stopped<RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' /></span>
+                </div>
+            }
           </div>
 
 
-          <div className='w-full flex flex-col items-center justify-between mt-8 gap-5'>
-            <button className='btn bg-[#622657] text-white w-full'>Claim Rewards</button>
-            <button className='btn bg-[#622657] text-white w-full'>Register PNode</button>
-            <button className='btn bg-[#622657] text-white w-full'>Generate Identity Key-pair</button>
+          <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>
+            {
+              isServiceOnline ?
+                <button className='btn bg-[#b7094c] text-white w-full'>Stop the service</button>
+                :
+                <button className='btn bg-[#129f8c] text-white w-full'>Start the service</button>
+            }
+            <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full mt-5'>Claim Rewards</button>
+            <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full'>Register PNode</button>
+            <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full'>Generate Identity Key-pair</button>
           </div>
         </div>
       </div>
