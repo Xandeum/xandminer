@@ -31,7 +31,6 @@ export const HomeView: FC = ({ }) => {
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
   const [dedicatingAmnt, setDedicatingAmnt] = React.useState([{ disk: 0, amount: 0, type: "GB", isEditing: false }]);
   const [inputValue, setInputValue] = React.useState([{ index: 0, amount: 0, type: "GB" }]);
-  const [showNetworkSpeedModal, setShowNetworkSpeedModal] = React.useState(false);
   const [networkStats, setNetworkStats] = React.useState({
     isFetching: false,
     isError: false,
@@ -41,6 +40,8 @@ export const HomeView: FC = ({ }) => {
       latency: 0
     }
   })
+  const [showNetworkSpeedModal, setShowNetworkSpeedModal] = React.useState(false);
+  const [showKeypairModal, setShowKeypairModal] = React.useState(false);
 
   const [isServiceOnline, setIsServiceOnline] = React.useState(true);
 
@@ -148,13 +149,13 @@ export const HomeView: FC = ({ }) => {
   }
 
   return (
-    <div className="flex mx-auto flex-col items-center md:items-start w-full md:px-16 p-4 ">
+    <div className="flex mx-auto flex-col items-center md:items-start w-full p-4 ">
 
       {/* div with one side is 1/3 of the full screen with and rest with another div */}
       <div className="w-full h-full flex md:flex-row items-start justify-between gap-4 flex-col-reverse">
 
         {/* left side column */}
-        <div className="w-full md:w-[80%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-2">
+        <div className="w-full flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-2">
           <h4 className="md:w-full text-4xl text-left text-slate-300 ">
             <p>Drive Information</p>
           </h4>
@@ -165,7 +166,7 @@ export const HomeView: FC = ({ }) => {
                 <CircularProgress />
               </div>
               :
-              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-4 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5">
+              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-4 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5">
                 {
                   driveInfo?.length > 0 ?
                     driveInfo?.map((drive, index) => {
@@ -445,17 +446,17 @@ export const HomeView: FC = ({ }) => {
 
         <div className="w-full md:w-[20%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-2">
           <div className='w-full flex flex-row items-center justify-around gap-4 border-b border-[#4a4a4a] pb-2'>
-            <span className="text-4xl  text-slate-300 flex flex-row items-center gap-2">
+            {/* <span className="text-4xl  text-slate-300 flex flex-row items-center gap-2">
               Status :
-            </span>
+            </span> */}
             {
               isServiceOnline ?
                 <div className='flex flex-col items-center gap-2'>
-                  <span className="text-4xl text-slate-300 ">Online<Brightness1RoundedIcon color='success' className='animate-pulse' /> </span>
+                  <span className="text-4xl text-slate-300 "><Brightness1RoundedIcon color='success' className='animate-pulse' /> Online</span>
                 </div>
                 :
                 <div className='flex flex-row items-center gap-2'>
-                  <span className="text-4xl text-slate-300 ">Stopped<RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' /></span>
+                  <span className="text-4xl text-slate-300 "><RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' /> Stopped</span>
                 </div>
             }
           </div>
@@ -464,23 +465,20 @@ export const HomeView: FC = ({ }) => {
           <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>
             {
               isServiceOnline ?
-                <button className='btn bg-[#b7094c] text-white w-full'>Stop the service</button>
+                <button className='btn bg-[#b7094c] text-white w-full' onClick={() => { setIsServiceOnline(false) }}>Stop the service</button>
                 :
-                <button className='btn bg-[#129f8c] text-white w-full'>Start the service</button>
+                <button className='btn bg-[#129f8c] text-white w-full' onClick={() => { setIsServiceOnline(true) }}>Start the service</button>
             }
             <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full mt-5'>Claim Rewards</button>
             <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full'>Register PNode</button>
-            <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full'>Generate Identity Key-pair</button>
+            <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full' onClick={() => { setShowKeypairModal(true) }}>Generate Identity Key-pair</button>
           </div>
         </div>
       </div>
 
+      {/* Modals */}
 
-
-
-
-      {/* <div className='border-b border-[#4a4a4a] mb-8 mt-2 w-full' /> */}
-
+      {/* network speed check modal */}
       {
         showNetworkSpeedModal ?
           <div className="flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 focus:outline-none bg-[#0000009b] opacity-100">
@@ -569,6 +567,63 @@ export const HomeView: FC = ({ }) => {
                       </div>
                     </div>
               }
+
+            </div>
+          </div>
+          :
+          null
+      }
+
+      {/* network speed check modal */}
+      {
+        showKeypairModal ?
+          <div className="flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 focus:outline-none bg-[#0000009b] opacity-100">
+            <div className="justify-center items-center flex-col overflow-x-hidden overflow-y-auto fixed  z-9999 rounded-lg px-10 py-5 bg-[#08113b]">
+              <div className="absolute top-0 right-0 p-5 ">
+                <CloseIcon sx={[{ color: "#b7094c", transform: "scale(1.5)" },
+                { transition: "transform .1s" },
+                {
+                  '&:hover': {
+                    // color: 'white',
+                    cursor: 'pointer',
+                    transform: "scale(1.7)"
+                  },
+                }]}
+                  onClick={() => {
+                    setShowKeypairModal(false);
+                  }}
+                >
+                </CloseIcon>
+              </div>
+              {/* {
+                networkStats?.isFetching ?
+                  <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
+                    <CircularProgress />
+                  </div>
+                  :
+                  networkStats?.isError ?
+                    <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
+                      <p className='text-2xl mb-4 '>Something went wrong. Please try again...</p>
+                      <button
+                        className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
+                        onClick={() => { getNetworkStats() }}
+                      >
+                        <span>
+                          Retry
+                        </span>
+                      </button>
+                    </div>
+                    : */}
+              <div className='text-left font-normal my-5 mt-10 w-[50ch]'>
+                <p className='text-2xl mb-4 text-center'>Generate Identity Key-Pair</p>
+                <div className='border-b border-[#4a4a4a] my-4 w-full' />
+                <div className='flex flex-col items-center justify-between mb-4'>
+
+                  <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full' onClick={() => { setShowKeypairModal(true) }}>Generate Identity Key-pair</button>
+
+                </div>
+              </div>
+              {/* } */}
 
             </div>
           </div>
