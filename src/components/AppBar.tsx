@@ -89,11 +89,13 @@ export const AppBar: React.FC = () => {
 
         <div className="navbar-end pr-10">
           <div className="hidden md:inline-flex items-center justify-center gap-6">
+            <Link href={"/store"} className='text-white hover:text-[#fda31b]'>Store</Link>
+
             <span className='text-[#fda31b] hover:text-white hover:cursor-pointer' onClick={() => { setShowUrlModal(true) }}>
               {storedText}
             </span>
-            <span className='hover:cursor-default'>Devnet Version</span>
-            {/* <WalletMultiButtonDynamic className="btn-ghost btn-sm rounded-btn text-lg mr-6 " /> */}
+            {/* <span className='hover:cursor-default'>Devnet Version</span> */}
+            <WalletMultiButtonDynamic className="btn-ghost btn-sm rounded-btn text-lg mr-6 " />
 
           </div>
           {/* <div>

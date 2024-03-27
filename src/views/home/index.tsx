@@ -148,6 +148,11 @@ export const HomeView: FC = ({ }) => {
     return (amount / 1000000000)?.toFixed(2);
   }
 
+  //register the PNode
+  const onRegisterPNode = () => {
+    console.log('Register PNode')
+  }
+
   return (
     <div className="flex mx-auto flex-col items-center md:items-start w-full p-4 ">
 
@@ -470,7 +475,7 @@ export const HomeView: FC = ({ }) => {
                 <button className='btn bg-[#129f8c] text-white w-full' onClick={() => { setIsServiceOnline(true) }}>Start the service</button>
             }
             <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full mt-5'>Claim Rewards</button>
-            <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full'>Register PNode</button>
+            <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full' onClick={onRegisterPNode}>Register PNode</button>
             <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full' onClick={() => { setShowKeypairModal(true) }}>Generate Identity Key-pair</button>
           </div>
         </div>
