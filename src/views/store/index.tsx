@@ -6,8 +6,6 @@ import * as anchor from '@project-serum/anchor';
 import { createAssociatedTokenAccountInstruction, getAssociatedTokenAddress, createMintToInstruction, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token"
 import { Keypair, Transaction, sendAndConfirmTransaction, Connection, clusterApiUrl } from "@solana/web3.js";
 
-import * as fs from 'fs';
-
 import mintkeypair from "../../mint.json";
 
 export const StoreView: FC = ({ }) => {
@@ -34,17 +32,7 @@ export const StoreView: FC = ({ }) => {
             const publicKey = new Uint8Array(Object.values(mintkeypair._keypair.publicKey));
             const secretKey = new Uint8Array(Object.values(mintkeypair._keypair.secretKey));
 
-            console.log("publicKey >>> ", publicKey)
-            console.log("secretKey >>> ", secretKey)
-
             const mint = new Keypair({ publicKey, secretKey });
-
-            console.log("mint >>> ", mint)
-
-            // const kp = JSON.parse(fs.readFileSync("wallet2.json", "utf-8"));
-
-            // const wallet = Keypair.fromSecretKey(Uint8Array.from(kp));
-
 
             const ata = await getAssociatedTokenAddress(
                 mint.publicKey,
@@ -52,8 +40,6 @@ export const StoreView: FC = ({ }) => {
                 undefined,
                 TOKEN_2022_PROGRAM_ID
             );
-
-            console.log("ata >>> ", ata)
 
             const ataInstruction = createAssociatedTokenAccountInstruction(
                 wallet.publicKey,
@@ -79,12 +65,14 @@ export const StoreView: FC = ({ }) => {
 
             tx.feePayer = wallet.publicKey;
 
+            tx.partialSign(mint);
+
             const signedTransaction = await wallet.signTransaction(tx);
 
             const txid = await connection.sendRawTransaction(signedTransaction.serialize(), { skipPreflight: true });
             await connection.confirmTransaction(txid, "confirmed");
 
-            console.log("Transaction confirmed", txid);
+            notify({ type: "success", message: "Transaction confirmed", description: `Transaction ID: ${txid}` });
 
         } catch (error) {
             console.error("Error buying PNode >>> ", error)

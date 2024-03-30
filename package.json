@@ -27,6 +27,7 @@
     "@solana/web3.js": "^1.73.0",
     "@tailwindcss/typography": "^0.5.9",
     "axios": "^1.6.0",
+    "crypto": "^1.0.1",
     "daisyui": "^1.24.3",
     "date-fns": "^2.29.3",
     "humanize-duration-ts": "^2.1.1",

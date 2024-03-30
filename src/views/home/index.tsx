@@ -23,7 +23,59 @@ import IconButton from '@mui/material/IconButton';
 import { AddBox, IndeterminateCheckBox, Edit, CheckBox } from '@mui/icons-material';
 import { useUrlConfiguration } from '../../contexts/UrlProvider';
 
+
+
+
+//related to token token burn & nft minting
+import { PublicKey } from "@metaplex-foundation/js";
+import {
+  TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  TokenInstruction,
+  createInitializeInstruction,
+  createInitializeMetadataPointerInstruction,
+  createInitializeMintInstruction,
+  createMint,
+  initializeMetadataPointerData,
+  tokenMetadataInitialize,
+  getMintLen,
+  ExtensionType,
+  mintTo,
+  createAssociatedTokenAccount,
+  getAssociatedTokenAddress,
+  createInitializeNonTransferableMintInstruction,
+  getOrCreateAssociatedTokenAccount,
+  setAuthority,
+  AuthorityType,
+  createSetAuthorityInstruction,
+  createMintToInstruction,
+  createAssociatedTokenAccountInstruction,
+  createInitializeGroupMemberPointerInstruction,
+  createInitializeGroupPointerInstruction,
+  createBurnInstruction
+} from "@solana/spl-token";
+import {
+  Connection,
+  Keypair,
+  Transaction,
+  clusterApiUrl,
+  sendAndConfirmTransaction,
+  SystemProgram,
+} from "@solana/web3.js";
+import { createPublicKey } from "crypto";
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import * as anchor from '@project-serum/anchor';
+import { notify } from 'utils/notifications';
+
+
+
+
+
 export const HomeView: FC = ({ }) => {
+
+  const wallet = useWallet();
+  const { connection } = useConnection();
+  const provider = new anchor.AnchorProvider(connection, wallet, { commitment: "confirmed" });
 
   const { urlConfiguration } = useUrlConfiguration();
 
@@ -149,8 +201,145 @@ export const HomeView: FC = ({ }) => {
   }
 
   //register the PNode
-  const onRegisterPNode = () => {
-    console.log('Register PNode')
+  const onRegisterPNode = async () => {
+
+
+    try {
+
+      if (!wallet.publicKey) {
+        notify({
+          message: "Error buying PNode",
+          description: "Wallet not connected",
+          type: "error",
+        });
+        return;
+      }
+
+      const token = new PublicKey("FvcA3xNQAhULxwhJZbFths87CgBVDW4qPTjVLV9CJEwD");
+
+
+      const burnAta = await getAssociatedTokenAddress(token, wallet.publicKey, undefined, TOKEN_2022_PROGRAM_ID)
+
+
+      const burnIx = createBurnInstruction(burnAta, token, wallet.publicKey, 1, undefined, TOKEN_2022_PROGRAM_ID);
+
+
+      const mint = Keypair.generate();
+
+      const mintLen = getMintLen([
+        ExtensionType.MetadataPointer,
+        ExtensionType.GroupMemberPointer,
+      ]);
+
+      const lamports = await connection.getMinimumBalanceForRentExemption(mintLen);
+
+      const createAccountInstruction = SystemProgram.createAccount({
+        fromPubkey: wallet.publicKey,
+        newAccountPubkey: mint.publicKey,
+        space: mintLen,
+        lamports: lamports * 2,
+        programId: TOKEN_2022_PROGRAM_ID,
+      });
+
+      const nft = createInitializeMintInstruction(
+        mint.publicKey,
+        0,
+        wallet.publicKey,
+        wallet.publicKey,
+        TOKEN_2022_PROGRAM_ID
+      );
+
+      const metaPoniter = createInitializeMetadataPointerInstruction(
+        mint.publicKey,
+        wallet.publicKey,
+        mint.publicKey,
+        TOKEN_2022_PROGRAM_ID
+      );
+
+      const meta = createInitializeInstruction({
+        programId: TOKEN_2022_PROGRAM_ID,
+        metadata: mint.publicKey,
+        updateAuthority: wallet.publicKey,
+        mint: mint.publicKey,
+        mintAuthority: wallet.publicKey,
+        name: "myToken",
+        symbol: "MTK",
+        uri: "https://okupub.gitlab.io/enometa/ENO.json",
+      });
+
+      // const group = createInitializeGroupPointerInstruction(mint.publicKey,wallet.publicKey,null,TOKEN_2022_PROGRAM_ID)
+
+      const group = createInitializeGroupMemberPointerInstruction(
+        mint.publicKey,
+        wallet.publicKey,
+        new PublicKey("9XXnieS6yaxa3aDsBDc3fYxsR43PJhbkigvBC7sVB4Xz"),
+        TOKEN_2022_PROGRAM_ID
+      );
+
+      const ata = await getAssociatedTokenAddress(
+        mint.publicKey,
+        wallet.publicKey,
+        undefined,
+        TOKEN_2022_PROGRAM_ID
+      );
+
+      const createAta = createAssociatedTokenAccountInstruction(
+        wallet.publicKey,
+        ata,
+        wallet.publicKey,
+        mint.publicKey,
+        TOKEN_2022_PROGRAM_ID
+      );
+
+      const mintTokens = createMintToInstruction(
+        mint.publicKey,
+        ata,
+        wallet.publicKey,
+        1,
+        undefined,
+        TOKEN_2022_PROGRAM_ID
+      );
+
+      const disableMint = createSetAuthorityInstruction(
+        mint.publicKey,
+        wallet.publicKey,
+        AuthorityType.MintTokens,
+        null,
+        undefined,
+        TOKEN_2022_PROGRAM_ID
+      );
+
+      const tx = new Transaction().add(
+        burnIx,
+        createAccountInstruction,
+        metaPoniter,
+        group,
+        nft,
+        meta,
+        createAta,
+        mintTokens,
+        disableMint
+      );
+
+      tx.recentBlockhash = (
+        await provider.connection.getLatestBlockhash()
+      ).blockhash;
+
+      tx.feePayer = wallet.publicKey;
+
+      tx.partialSign(mint);
+
+      const signedTransaction = await wallet.signTransaction(tx);
+
+      const txid = await connection.sendRawTransaction(signedTransaction.serialize(), { skipPreflight: true });
+      await connection.confirmTransaction(txid, "confirmed");
+
+      notify({ type: "success", message: "Transaction confirmed", description: `Transaction ID: ${txid}` });
+
+    } catch (error) {
+      console.log("error while registering PNode", error);
+    }
+
   }
 
   return (
