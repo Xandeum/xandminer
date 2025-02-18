@@ -5,7 +5,9 @@ import React from "react";
 import { useAutoConnect } from '../contexts/AutoConnectProvider';
 import NetworkSwitcher from './NetworkSwitcher';
 import logo from "../assets/XANDEUM_Logo.png"
-import logoText from "../assets/XANDEUM_LOGO_WHITE.png"
+import XANDEUM_LOGO from "../assets/XANDEUM_NEW_LOGO.png"
+
+// import logoText from "../assets/XANDEUM_LOGO_WHITE.png"
 import Image from 'next/image';
 import { UrlUpdateModal } from 'modals/urlUpdateModal';
 import { TextField } from '@mui/material';
@@ -33,34 +35,23 @@ export const AppBar: React.FC = () => {
   return (
     <div>
       {/* NavBar / Header */}
-      <div className="navbar flex h-20 flex-row md:mb-2 shadow-lg bg-black text-neutral-content border-b border-zinc-600 bg-opacity-66">
-        <div className="navbar-start items-center">
-          {/* <div className="hidden md:flex flex-row items-center justify-between  h-22 md:p-2 ml-10"> */}
-          <Link href="https://xandeum.com" target="_blank" rel="noopener noreferrer" passHref className="text-secondary hover:text-white hidden md:flex flex-row items-end md:p-2 ml-10">
-            <Image
-              src={logoText}
-              alt="Xandeum logo"
-              width={240}
-              height={40}
-              priority
-            />
-            {/* <Image
-              src={logo}
-              alt="Xandeum logo"
-              width={60}
-              height={40}
-              priority
-            />
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-[#fff] to-[#fff]">
-              XandMiner
-            </h1> */}
-          </Link>
-          {/* </div> */}
+      <div className="navbar flex py-0 flex-row md:mb-2 shadow-lg bg-black text-neutral-content border-b border-zinc-600 bg-opacity-66">
+        <div className="hidden md:flex md:navbar-start items-center">
+          <div className="hidden md:inline md:p-2 ml-10 md:mt-3">
+            <Link href="https://xandeum.network" target="_blank" rel="noopener noreferrer" passHref className="text-secondary hover:text-white">
+              <Image
+                src={XANDEUM_LOGO}
+                alt="Xandeum logo"
+                width={280}
+                height={60}
+                priority
+              />
+            </Link>
+          </div>
 
         </div>
 
-        <div className="navbar-center items-center flex-col">
-          {/* <div className="hidden md:flex flex-row items-center justify-between  h-22 md:p-2 ml-10"> */}
+        <div className="navbar-start md:navbar-center items-start md:items-center flex-col ml-2 md:ml-0">
           <Link href="/" target="_self" rel="noopener noreferrer" passHref className="text-secondary hover:text-white  flex flex-row items-end md:p-2 ">
             <Image
               src={logo}
@@ -68,34 +59,26 @@ export const AppBar: React.FC = () => {
               width={60}
               height={40}
               priority
+              className='h-30 w-10 md:h-10 md:w-16'
             />
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-[#fff] to-[#fff]">
+            <h1 className="text-2xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-[#fff] to-[#fff]">
               XandMiner
             </h1>
           </Link>
-          {/* <div className="inline-flex md:hidden w-22 h-22 md:p-2 ml-4">
-            <Link href="https://xandeum.com" target="_blank" rel="noopener noreferrer" passHref className="text-secondary hover:text-white">
-              <Image
-                src={logo}
-                alt="Xandeum logo"
-                width={60}
-                height={40}
-                priority
-              />
-            </Link> */}
         </div>
 
         {/* Navbar end */}
 
-        <div className="navbar-end pr-10">
-          <div className="hidden md:inline-flex items-center justify-center gap-6">
+        <div className="navbar-end pr-2 md:pr-10">
+          <div className="inline-flex items-center justify-center gap-6">
             {/* <Link href={"/store"} className='text-white hover:text-[#fda31b]'>Store</Link> */}
 
             <span className='text-[#fda31b] hover:text-white hover:cursor-pointer' onClick={() => { setShowUrlModal(true) }}>
               {storedText}
             </span>
-            {/* <span className='hover:cursor-default'>Devnet Version</span> */}
-            <WalletMultiButtonDynamic className="btn-ghost btn-sm rounded-btn text-lg mr-6 " />
+            <div className='hidden md:flex items-center gap-4'>
+              <WalletMultiButtonDynamic className="btn-ghost btn-sm rounded-btn text-lg mr-6" />
+            </div>
 
           </div>
         </div>
