@@ -5,6 +5,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
 import { getNetworkInfo } from '../../services/getNetworkInfo';
+import { createKeypair } from '../../services/keypairServices'
 import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -24,35 +25,11 @@ import { AddBox, IndeterminateCheckBox, Edit, CheckBox } from '@mui/icons-materi
 import { useUrlConfiguration } from '../../contexts/UrlProvider';
 
 
-
-
-//related to token token burn & nft minting
-import { PublicKey } from "@metaplex-foundation/js";
 import {
-  TOKEN_2022_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-  TokenInstruction,
-  createInitializeInstruction,
-  createInitializeMetadataPointerInstruction,
-  createInitializeMintInstruction,
-  createMint,
-  initializeMetadataPointerData,
-  tokenMetadataInitialize,
-  getMintLen,
-  ExtensionType,
-  mintTo,
-  createAssociatedTokenAccount,
-  getAssociatedTokenAddress,
-  createInitializeNonTransferableMintInstruction,
-  getOrCreateAssociatedTokenAccount,
-  setAuthority,
-  AuthorityType,
-  createSetAuthorityInstruction,
-  createMintToInstruction,
   createAssociatedTokenAccountInstruction,
-  createInitializeGroupMemberPointerInstruction,
-  createInitializeGroupPointerInstruction,
-  createBurnInstruction
+  createTransferInstruction,
+  getAssociatedTokenAddressSync,
+  TOKEN_PROGRAM_ID
 } from "@solana/spl-token";
 import {
   Connection,
@@ -61,11 +38,15 @@ import {
   clusterApiUrl,
   sendAndConfirmTransaction,
   SystemProgram,
+  PublicKey,
+  TransactionInstruction,
 } from "@solana/web3.js";
-import { createPublicKey } from "crypto";
+
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import * as anchor from '@project-serum/anchor';
 import { notify } from 'utils/notifications';
+import { FEE_DEPOSIT_ACC, XANDMint } from 'CONSTS';
+import Loader from 'components/Loader';
 
 
 
@@ -91,9 +72,12 @@ export const HomeView: FC = ({ }) => {
       uploadSpeed: 0,
       latency: 0
     }
-  })
+  });
+
   const [showNetworkSpeedModal, setShowNetworkSpeedModal] = React.useState(false);
   const [showKeypairModal, setShowKeypairModal] = React.useState(false);
+  const [isRegisterProcessing, setIsRegisterProcessing] = React.useState(false);
+  const [isGenerateProcessing, setIsGenerateProcessing] = React.useState(false);
 
   const [isServiceOnline, setIsServiceOnline] = React.useState(true);
 
@@ -200,144 +184,167 @@ export const HomeView: FC = ({ }) => {
     return (amount / 1000000000)?.toFixed(2);
   }
 
+  //generate the keypair
+  const onGenerateKeypair = async () => {
+    setIsGenerateProcessing(true);
+    try {
+      const response = await createKeypair(urlConfiguration);
+
+      if (!response?.ok) {
+        notify({
+          message: "Error",
+          description: "You already have a key-pair",
+          type: "error",
+        });
+        setIsGenerateProcessing(false);
+        return;
+      }
+
+      if (response.ok) {
+        notify({
+          message: "Success",
+          description: "Key-pair generated successfully",
+          type: "success",
+        });
+        setIsGenerateProcessing(false);
+        return;
+      }
+
+    } catch (error) {
+      console.log("error while generating keypair", error);
+      notify({
+        message: "Error",
+        description: "Error while generating keypair",
+        type: "error",
+      });
+      setIsGenerateProcessing(false);
+    }
+  }
+
   //register the PNode
   const onRegisterPNode = async () => {
-
+    setIsRegisterProcessing(true);
 
     try {
 
       if (!wallet.publicKey) {
         notify({
-          message: "Error buying PNode",
+          message: "Error",
           description: "Wallet not connected",
           type: "error",
         });
         return;
       }
 
-      const token = new PublicKey("FvcA3xNQAhULxwhJZbFths87CgBVDW4qPTjVLV9CJEwD");
+      // XAND balance
+      const ataAddress = PublicKey.findProgramAddressSync(
+        [wallet?.publicKey?.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), XANDMint.toBuffer()],
+        new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
+      )[0];
+      const balance = await connection.getTokenAccountBalance(ataAddress);
+
+      if (balance?.value?.uiAmount < 80000) {
+        notify({
+          message: "Error",
+          description: "Insufficient XAND balance",
+          type: "error",
+        });
+        setIsRegisterProcessing(false);
+        return;
+      }
 
 
-      const burnAta = await getAssociatedTokenAddress(token, wallet.publicKey, undefined, TOKEN_2022_PROGRAM_ID)
+      const feeDepositAcc = getAssociatedTokenAddressSync(XANDMint, FEE_DEPOSIT_ACC); // 5000XAND
+      const refundableDepositAcc = getAssociatedTokenAddressSync(XANDMint, FEE_DEPOSIT_ACC); // 75,000XAND
+      const userAcc = getAssociatedTokenAddressSync(XANDMint, wallet?.publicKey);
+      const userAccInfo = await connection.getAccountInfo(userAcc);
 
+      console.log("userAccInfo >>> ", userAccInfo);
 
-      const burnIx = createBurnInstruction(burnAta, token, wallet.publicKey, 1, undefined, TOKEN_2022_PROGRAM_ID);
+      const toAccFee = await connection.getAccountInfo(feeDepositAcc);
+      const toAccRefund = await connection.getAccountInfo(refundableDepositAcc);
 
+      const transaction = new Transaction();
+      let FeeAtaIx: TransactionInstruction = null;
+      if (toAccFee == null || !toAccFee) {
+        FeeAtaIx = createAssociatedTokenAccountInstruction(wallet?.publicKey, feeDepositAcc, wallet?.publicKey, XANDMint, TOKEN_PROGRAM_ID);
+        transaction.add(FeeAtaIx);
+      }
+      let RefundAtaIx: TransactionInstruction = null;
+      if (toAccRefund == null || !toAccRefund) {
+        RefundAtaIx = createAssociatedTokenAccountInstruction(wallet?.publicKey, refundableDepositAcc, wallet?.publicKey, XANDMint, TOKEN_PROGRAM_ID);
+        transaction.add(RefundAtaIx);
+      }
 
-      const mint = Keypair.generate();
+      if (userAccInfo == null || !userAcc) {
+        const userAtaIx = createAssociatedTokenAccountInstruction(wallet?.publicKey, userAcc, wallet?.publicKey, XANDMint, TOKEN_PROGRAM_ID);
+        transaction.add(userAtaIx);
+      }
 
-      const mintLen = getMintLen([
-        ExtensionType.MetadataPointer,
-        ExtensionType.GroupMemberPointer,
-      ]);
+      const feeTransferIx = createTransferInstruction(
+        userAcc,
+        // XANDMint,
+        feeDepositAcc,
+        wallet?.publicKey,
+        5000 * Math.pow(10, 9)
+      );
 
-      const lamports = await connection.getMinimumBalanceForRentExemption(mintLen);
+      const refundTransferIx = createTransferInstruction(
+        userAcc,
+        // XANDMint,
+        refundableDepositAcc,
+        wallet?.publicKey,
+        75000 * Math.pow(10, 9)
+      );
 
-      const createAccountInstruction = SystemProgram.createAccount({
-        fromPubkey: wallet.publicKey,
-        newAccountPubkey: mint.publicKey,
-        space: mintLen,
-        lamports: lamports * 2,
-        programId: TOKEN_2022_PROGRAM_ID,
+      transaction.add(feeTransferIx);
+      transaction.add(refundTransferIx);
+
+      const {
+        context: { slot: minContextSlot },
+        value: { blockhash, lastValidBlockHeight }
+      } = await connection.getLatestBlockhashAndContext('confirmed');
+
+      // transaction.recentBlockhash = blockhash;
+      // transaction.feePayer = wallet.publicKey;
+      // wallet.signTransaction(transaction);
+
+      // const simulate = await connection.simulateTransaction(transaction);
+      // console.log("simulate >>> ", simulate);
+      // return;
+
+      const tx = await wallet.sendTransaction(transaction, connection, {
+        minContextSlot,
+        skipPreflight: true,
+        preflightCommitment: 'processed'
       });
 
-      const nft = createInitializeMintInstruction(
-        mint.publicKey,
-        0,
-        wallet.publicKey,
-        wallet.publicKey,
-        TOKEN_2022_PROGRAM_ID
-      );
+      const confirmTx = await connection?.getSignatureStatuses([tx], { searchTransactionHistory: true });
 
-      const metaPoniter = createInitializeMetadataPointerInstruction(
-        mint.publicKey,
-        wallet.publicKey,
-        mint.publicKey,
-        TOKEN_2022_PROGRAM_ID
-      );
+      // Check if the transaction has a status
+      const status = confirmTx?.value[0];
+      if (!status) {
+        notify({ type: 'error', message: 'Error!', description: 'Transaction status not found!' });
+        setIsRegisterProcessing(false);
+        return;
+      }
 
-      const meta = createInitializeInstruction({
-        programId: TOKEN_2022_PROGRAM_ID,
-        metadata: mint.publicKey,
-        updateAuthority: wallet.publicKey,
-        mint: mint.publicKey,
-        mintAuthority: wallet.publicKey,
-        name: "myToken",
-        symbol: "MTK",
-        uri: "https://okupub.gitlab.io/enometa/ENO.json",
-      });
-
-      // const group = createInitializeGroupPointerInstruction(mint.publicKey,wallet.publicKey,null,TOKEN_2022_PROGRAM_ID)
-
-      const group = createInitializeGroupMemberPointerInstruction(
-        mint.publicKey,
-        wallet.publicKey,
-        new PublicKey("9XXnieS6yaxa3aDsBDc3fYxsR43PJhbkigvBC7sVB4Xz"),
-        TOKEN_2022_PROGRAM_ID
-      );
-
-      const ata = await getAssociatedTokenAddress(
-        mint.publicKey,
-        wallet.publicKey,
-        undefined,
-        TOKEN_2022_PROGRAM_ID
-      );
-
-      const createAta = createAssociatedTokenAccountInstruction(
-        wallet.publicKey,
-        ata,
-        wallet.publicKey,
-        mint.publicKey,
-        TOKEN_2022_PROGRAM_ID
-      );
-
-      const mintTokens = createMintToInstruction(
-        mint.publicKey,
-        ata,
-        wallet.publicKey,
-        1,
-        undefined,
-        TOKEN_2022_PROGRAM_ID
-      );
-
-      const disableMint = createSetAuthorityInstruction(
-        mint.publicKey,
-        wallet.publicKey,
-        AuthorityType.MintTokens,
-        null,
-        undefined,
-        TOKEN_2022_PROGRAM_ID
-      );
-
-      const tx = new Transaction().add(
-        burnIx,
-        createAccountInstruction,
-        metaPoniter,
-        group,
-        nft,
-        meta,
-        createAta,
-        mintTokens,
-        disableMint
-      );
-
-      tx.recentBlockhash = (
-        await provider.connection.getLatestBlockhash()
-      ).blockhash;
-
-      tx.feePayer = wallet.publicKey;
-
-      tx.partialSign(mint);
-
-      const signedTransaction = await wallet.signTransaction(tx);
-
-      const txid = await connection.sendRawTransaction(signedTransaction.serialize(), { skipPreflight: true });
-      await connection.confirmTransaction(txid, "confirmed");
-
-      notify({ type: "success", message: "Transaction confirmed", description: `Transaction ID: ${txid}` });
+      // Check if the transaction failed
+      if (status?.err) {
+        notify({ type: 'error', message: 'Transaction failed!', description: `${confirmTx?.value[0]?.err?.toString()}` });
+        setIsRegisterProcessing(false);
+        return;
+      }
 
     } catch (error) {
       console.log("error while registering PNode", error);
+      notify({
+        message: "Error",
+        description: "Error while registering PNode",
+        type: "error",
+      });
+      setIsRegisterProcessing(false);
+
     }
 
   }
@@ -362,7 +369,7 @@ export const HomeView: FC = ({ }) => {
               :
               <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-4 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5">
                 {
-                  driveInfo?.length > 0 ?
+                  driveInfo?.length > 0 && isServiceOnline ?
                     driveInfo?.map((drive, index) => {
                       return (
                         // <div key={index} className="relative group lg:min-w-[22rem] min-w-full max-w-md">
@@ -655,17 +662,46 @@ export const HomeView: FC = ({ }) => {
             }
           </div>
 
-
           <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>
             {
               isServiceOnline ?
-                <button className='btn bg-[#b7094c] text-white w-full' onClick={() => { setIsServiceOnline(false) }}>Stop the service</button>
+                <button className='btn bg-[#b7094c] text-white w-full normal-case' onClick={() => { setIsServiceOnline(false) }}>Stop the service</button>
                 :
-                <button className='btn bg-[#129f8c] text-white w-full' onClick={() => { setIsServiceOnline(true) }}>Start the service</button>
+                <button className='btn bg-[#129f8c] text-white w-full normal-case' onClick={() => { setIsServiceOnline(true) }}>Start the service</button>
             }
-            <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full mt-5'>Claim Rewards</button>
-            <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full' onClick={onRegisterPNode}>Register PNode</button>
-            <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full' onClick={() => { setShowKeypairModal(true) }}>Generate Identity Key-pair</button>
+            {/* <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full mt-5'>Claim Rewards</button> */}
+            <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+
+              {
+                isRegisterProcessing ?
+                  <Loader />
+                  :
+                  <span className="block group-disabled:hidden" >
+                    Register PNode
+                  </span>
+              }
+
+              <div className="hidden group-disabled:block normal-case">
+                Register PNode
+              </div>
+            </button>
+
+            <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+
+              {
+                isGenerateProcessing ?
+                  <Loader />
+                  :
+                  <span className="block group-disabled:hidden" >
+                    Generate Identity Key-pair
+                  </span>
+              }
+
+              <div className="hidden group-disabled:block normal-case">
+                Generate Identity Key-pair
+              </div>
+            </button>
+
           </div>
         </div>
       </div>
@@ -789,31 +825,12 @@ export const HomeView: FC = ({ }) => {
                 >
                 </CloseIcon>
               </div>
-              {/* {
-                networkStats?.isFetching ?
-                  <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
-                    <CircularProgress />
-                  </div>
-                  :
-                  networkStats?.isError ?
-                    <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
-                      <p className='text-2xl mb-4 '>Something went wrong. Please try again...</p>
-                      <button
-                        className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
-                        onClick={() => { getNetworkStats() }}
-                      >
-                        <span>
-                          Retry
-                        </span>
-                      </button>
-                    </div>
-                    : */}
               <div className='text-left font-normal my-5 mt-10 w-[50ch]'>
                 <p className='text-2xl mb-4 text-center'>Generate Identity Key-Pair</p>
                 <div className='border-b border-[#4a4a4a] my-4 w-full' />
                 <div className='flex flex-col items-center justify-between mb-4'>
 
-                  <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full' onClick={() => { setShowKeypairModal(true) }}>Generate Identity Key-pair</button>
+                  <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full' onClick={() => { onGenerateKeypair() }}>Generate Identity Key-pair</button>
 
                 </div>
               </div>

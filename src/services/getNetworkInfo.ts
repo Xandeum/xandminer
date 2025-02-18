@@ -6,22 +6,11 @@ export const getNetworkInfo = async (API_ENDPOINT) => {
         const headers = {
             'content-type': 'application/json',
         };
-        const requestBody = {
-            query: `query {
-            drives {
-                name
-                capacity
-                used
-                free
-            }
-        }`
-        };
+
         const options = {
             method: 'GET',
-            url: `${API_ENDPOINT}network`,
-            // url: 'http://localhost:4000/drives',
+            url: `${API_ENDPOINT}/network`,
             headers,
-            data: requestBody
         };
         const response = await axios(options);
         return { ok: true, data: response?.data?.data }
