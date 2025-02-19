@@ -1,12 +1,9 @@
 import React from 'react';
-import dynamic from 'next/dynamic';
-const Lottie = dynamic(import("lottie-react"), { ssr: false });
-import animationData from '../assets/LoadingBars.json';
 
 function Loader() {
     return (
-        <div>
-            <Lottie animationData={animationData} className='w-[1.5rem] h-auto' />
+        <div className='flex flex-row items-center justify-center h-fit w-fit'>
+            <span className="loading loading-bars loading-md"></span>
         </div>
     )
 }
