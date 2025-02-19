@@ -336,6 +336,9 @@ export const HomeView: FC = ({ }) => {
         return;
       }
 
+      notify({ type: 'success', message: 'Transaction Success!', description: 'Transfer is completed. Please wait for registration transaction' });
+      setIsRegisterProcessing(false);
+
     } catch (error) {
       console.log("error while registering PNode", error);
       notify({
