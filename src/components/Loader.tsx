@@ -1,9 +1,10 @@
 import React from 'react';
+import CircularProgress from '@mui/material/CircularProgress';
 
 function Loader() {
     return (
         <div className='flex flex-row items-center justify-center h-fit w-fit'>
-            <span className="loading loading-bars loading-md"></span>
+            <CircularProgress size={20} sx={{ color: '#fda31b' }} />
         </div>
     )
 }

@@ -1,18 +1,37 @@
 import axios from "axios"
+import { API_BASE_URL } from "CONSTS";
 
 //  POST request to create keypair
-export const createKeypair = async (API_ENDPOINT) => {
+export const createKeypair = async () => {
     try {
         const headers = {
             'content-type': 'application/json',
         };
         const options = {
             method: 'POST',
-            url: `${API_ENDPOINT}/keypair/generate`,
+            url: `${API_BASE_URL}/keypair/generate`,
             headers,
         };
         const response = await axios(options);
         return { ok: true, data: response?.data?.data?.createKeypair }
+    } catch (error) {
+        return { ok: false, error: error.message }
+    }
+}
+
+// GET request to get keypair status
+export const getKeypair = async () => {
+    try {
+        const headers = {
+            'content-type': 'application/json',
+        };
+        const options = {
+            method: 'GET',
+            url: `${API_BASE_URL}/keypair`,
+            headers,
+        };
+        const response = await axios(options);
+        return { ok: true, data: response?.data?.publicKey }
     } catch (error) {
         return { ok: false, error: error.message }
     }

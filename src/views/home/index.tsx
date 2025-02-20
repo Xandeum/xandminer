@@ -1,11 +1,11 @@
 // Next, React
-import React, { FC } from 'react';
+import React, { FC, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
 import { getNetworkInfo } from '../../services/getNetworkInfo';
-import { createKeypair } from '../../services/keypairServices'
+import { createKeypair, getKeypair } from '../../services/keypairServices'
 import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -22,8 +22,8 @@ import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 import { AddBox, IndeterminateCheckBox, Edit, CheckBox } from '@mui/icons-material';
-import { useUrlConfiguration } from '../../contexts/UrlProvider';
 
+import usePnodeStatsStore from "../../stores/usePnodeStatsStore"
 
 import {
   createAssociatedTokenAccountInstruction,
@@ -31,34 +31,26 @@ import {
   getAssociatedTokenAddressSync,
   TOKEN_PROGRAM_ID
 } from "@solana/spl-token";
+
 import {
   Connection,
-  Keypair,
   Transaction,
-  clusterApiUrl,
-  sendAndConfirmTransaction,
-  SystemProgram,
   PublicKey,
   TransactionInstruction,
 } from "@solana/web3.js";
 
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
-import * as anchor from '@project-serum/anchor';
+
 import { notify } from 'utils/notifications';
 import { DEVNET_PROGRAM, FEE_DEPOSIT_ACC, XANDMint } from 'CONSTS';
 import Loader from 'components/Loader';
-
-
-
-
+import { FeatureInfoModal } from 'modals/featureInfoModal';
 
 export const HomeView: FC = ({ }) => {
 
   const wallet = useWallet();
   const { connection } = useConnection();
-  const provider = new anchor.AnchorProvider(connection, wallet, { commitment: "confirmed" });
-
-  const { urlConfiguration } = useUrlConfiguration();
+  const { setIsConnectionError, isConnectionError } = usePnodeStatsStore();
 
   const [driveInfo, setDriveInfo] = React.useState<Array<any>>([]);
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
@@ -75,31 +67,57 @@ export const HomeView: FC = ({ }) => {
   });
 
   const [showNetworkSpeedModal, setShowNetworkSpeedModal] = React.useState(false);
-  const [showKeypairModal, setShowKeypairModal] = React.useState(false);
   const [isRegisterProcessing, setIsRegisterProcessing] = React.useState(false);
   const [isGenerateProcessing, setIsGenerateProcessing] = React.useState(false);
+  const [showFeatureInfoModal, setShowFeatureInfoModal] = React.useState(false);
 
+  const [isPnodeRegistered, setIsPnodeRegistered] = React.useState(false);
+  const [keypairPubkey, setKeypairPubkey] = React.useState<string>(null);
+  const [isKeypairGenerated, setIsKeypairGenerated] = React.useState(false);
   const [isServiceOnline, setIsServiceOnline] = React.useState(true);
 
   //read the drive info from the server on page load
   React.useEffect(() => {
     setIsFetching(true);
-    getDriveInfo(urlConfiguration).then((response) => {
+    getDriveInfo().then((response) => {
       if (response.ok) {
+        setIsConnectionError(false);
         setDriveInfo(response.data);
         setDedicatedInitialAmnt(response.data)
         setIsFetching(false);
+        return;
       }
+      setIsConnectionError(true);
+      setIsFetching(false);
+
     }).catch((error) => {
       setIsFetching(false);
+      setIsConnectionError(true);
       console.log("error while fetching drive info", error);
     })
-  }, [urlConfiguration]);
+
+    getKeypair().then((response) => {
+      if (response.ok) {
+        setIsKeypairGenerated(true);
+        setKeypairPubkey(response.data);
+      }
+    }
+    ).catch((error) => {
+      console.log("error while fetching keypair", error);
+    }
+    );
+
+  }, []);
+
+  //set Service status also on isConnectionError state
+  useEffect(() => {
+    isConnectionError ? setIsServiceOnline(false) : setIsServiceOnline(true);
+  }, [isConnectionError])
 
   //function to set the initial values for dedicating amnt
   const setDedicatedInitialAmnt = (data: Array<any>) => {
     let drives = [];
-    data.forEach((drive, index) => {
+    data.forEach((_drive, index) => {
       drives.push({ disk: index, amount: 0, type: "GB", isEditing: false });
     });
     setDedicatingAmnt(drives);
@@ -111,7 +129,7 @@ export const HomeView: FC = ({ }) => {
     setShowNetworkSpeedModal(true);
     setNetworkStats({ isFetching: true, isError: false, data: null });
     try {
-      const response = await getNetworkInfo(urlConfiguration);
+      const response = await getNetworkInfo();
       if (response.ok) {
         setNetworkStats({ isFetching: false, isError: false, data: response.data });
         return;
@@ -120,6 +138,17 @@ export const HomeView: FC = ({ }) => {
       setNetworkStats({ isFetching: false, isError: true, data: null });
     }
   }
+
+  //copy to clipboard method 
+  function copyToClipboard() {
+    navigator?.clipboard?.writeText(keypairPubkey).then(() => {
+      notify({ type: 'success', message: 'Public key copied to the clipboard!' });
+
+    }).catch((error) => {
+      notify({ type: 'error', message: `Oops! Error occurred.` });
+
+    });
+  };
 
   // Function to normalise the values (MIN / MAX could be integrated)
   const normalise = (value, MIN, MAX) => ((value - MIN) * 100) / (MAX - MIN);
@@ -188,7 +217,7 @@ export const HomeView: FC = ({ }) => {
   const onGenerateKeypair = async () => {
     setIsGenerateProcessing(true);
     try {
-      const response = await createKeypair(urlConfiguration);
+      const response = await createKeypair();
 
       if (!response?.ok) {
         notify({
@@ -218,6 +247,16 @@ export const HomeView: FC = ({ }) => {
         type: "error",
       });
       setIsGenerateProcessing(false);
+    }
+  }
+
+  //get keypair
+  const onGetKeypair = async () => {
+    try {
+      const reponse = await getKeypair();
+
+    } catch (error) {
+      console.log("error while reading the keypair", error)
     }
   }
 
@@ -259,8 +298,6 @@ export const HomeView: FC = ({ }) => {
       const userAcc = getAssociatedTokenAddressSync(XANDMint, wallet?.publicKey);
       const userAccInfo = await connection.getAccountInfo(userAcc);
 
-      console.log("userAccInfo >>> ", userAccInfo);
-
       const toAccFee = await connection.getAccountInfo(feeDepositAcc);
       const toAccRefund = await connection.getAccountInfo(refundableDepositAcc);
 
@@ -283,7 +320,6 @@ export const HomeView: FC = ({ }) => {
 
       const feeTransferIx = createTransferInstruction(
         userAcc,
-        // XANDMint,
         feeDepositAcc,
         wallet?.publicKey,
         5000 * Math.pow(10, 9)
@@ -291,7 +327,6 @@ export const HomeView: FC = ({ }) => {
 
       const refundTransferIx = createTransferInstruction(
         userAcc,
-        // XANDMint,
         refundableDepositAcc,
         wallet?.publicKey,
         75000 * Math.pow(10, 9)
@@ -440,7 +475,7 @@ export const HomeView: FC = ({ }) => {
       <div className="w-full h-full flex md:flex-row items-start justify-between gap-4 flex-col-reverse">
 
         {/* left side column */}
-        <div className="w-full flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-2">
+        <div className="w-full flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-3">
           <h4 className="md:w-full text-4xl text-left text-slate-300 ">
             <p>Drive Information</p>
           </h4>
@@ -451,9 +486,9 @@ export const HomeView: FC = ({ }) => {
                 <CircularProgress />
               </div>
               :
-              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-4 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5">
+              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-4 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5 px-5">
                 {
-                  driveInfo?.length > 0 && isServiceOnline ?
+                  driveInfo?.length > 0 ?
                     driveInfo?.map((drive, index) => {
                       return (
                         // <div key={index} className="relative group lg:min-w-[22rem] min-w-full max-w-md">
@@ -673,8 +708,8 @@ export const HomeView: FC = ({ }) => {
                                   {
                                     index == 0 ?
                                       <button
-                                        className="w-full btn bg-gradient-to-br from-[#622657] to-[#622657] hover:from-[#742f68] hover:to-[#742f68] text-white hover:text-white mb-4"
-                                        onClick={() => { getNetworkStats() }}
+                                        className="w-full btn bg-[#909090] hover:[#909090] text-white hover:text-white mb-4"
+                                        onClick={() => { setShowFeatureInfoModal(true) }}
                                       >
                                         <span>
                                           Test Network Speed
@@ -684,25 +719,16 @@ export const HomeView: FC = ({ }) => {
                                       null
                                   }
                                   <button
-                                    className="w-full btn bg-gradient-to-br from-[#198476] to-[#198476] hover:from-[#129f8c] hover:to-[#129f8c] text-white hover:text-black mb-4"
-                                    onClick={() => {
-                                      dedicateWholeDrive(index, false);
-                                      // setDedicatingAmnt(prevState => {
-                                      //   const updatedArray = [...prevState];
-                                      //   // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
-                                      //   updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(drive?.available)) ? 0 : parseFloat(drive?.available) * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000)), type: ((prettyBytes((parseFloat(drive?.available) * 1000000000) || 0))?.split(" ")[1]), isEditing: false };
-                                      //   return updatedArray;
-                                      // });
-                                    }
-                                    }
+                                    className="w-full btn bg-[#909090] hover:[#909090] text-white  mb-4"
+                                    onClick={() => { setShowFeatureInfoModal(true) }}
                                   >
                                     <span>
                                       Dedicate whole Drive for Rewards Boost
                                     </span>
                                   </button>
                                   <button
-                                    className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
-                                    onClick={undefined}
+                                    className="w-full btn bg-[#909090] hover:[#909090] text-white "
+                                    onClick={() => { setShowFeatureInfoModal(true) }}
                                   >
                                     <span>
                                       Dedicate and Earn
@@ -718,9 +744,14 @@ export const HomeView: FC = ({ }) => {
                       )
                     })
                     :
-                    <div className="flex flex-col justify-center items-center">
-                      <p className="text-2xl font-bold">No Drives Found</p>
-                    </div>
+                    isConnectionError ?
+                      <div className="flex flex-col justify-center items-center">
+                        <p className="text-2xl font-bold">XandMiner Deamon is offline</p>
+                      </div>
+                      :
+                      <div className="flex flex-col justify-center items-center">
+                        <p className="text-2xl font-bold">No Drives Found</p>
+                      </div>
                 }
               </div>
           }
@@ -729,62 +760,85 @@ export const HomeView: FC = ({ }) => {
 
         {/* right side column */}
 
-        <div className="w-full md:w-[20%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-2">
+        <div className="w-full md:w-[20%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-3">
           <div className='w-full flex flex-row items-center justify-around gap-4 border-b border-[#4a4a4a] pb-2'>
-            {/* <span className="text-4xl  text-slate-300 flex flex-row items-center gap-2">
-              Status :
-            </span> */}
             {
               isServiceOnline ?
-                <div className='flex flex-col items-center gap-2'>
-                  <span className="text-4xl text-slate-300 "><Brightness1RoundedIcon color='success' className='animate-pulse' /> Online</span>
+                <div className='flex flex-row items-center gap-3'>
+                  <Brightness1RoundedIcon color='success' className='animate-pulse' />
+                  <span className="text-3xl text-slate-300 ">
+                    Deamon Online
+                  </span>
                 </div>
                 :
-                <div className='flex flex-row items-center gap-2'>
-                  <span className="text-4xl text-slate-300 "><RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' /> Stopped</span>
+                <div className='flex flex-row items-center gap-3'>
+                  <RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' />
+                  <span className="text-3xl text-slate-300 ">
+                    Deamon Offline
+                  </span>
                 </div>
             }
           </div>
 
           <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>
-            {
+            {/* {
               isServiceOnline ?
                 <button className='btn bg-[#b7094c] text-white w-full normal-case' onClick={() => { setIsServiceOnline(false) }}>Stop the service</button>
                 :
                 <button className='btn bg-[#129f8c] text-white w-full normal-case' onClick={() => { setIsServiceOnline(true) }}>Start the service</button>
-            }
-            {/* <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full mt-5'>Claim Rewards</button> */}
-            <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+            } */}
+            {
+              isKeypairGenerated ?
+                <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing || isConnectionError} className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
 
-              {
-                isRegisterProcessing ?
-                  <Loader />
-                  :
-                  <span className="block group-disabled:hidden" >
+                  {
+                    isRegisterProcessing ?
+                      <span className='flex flex-row items-center gap-3'>
+                        <Loader />
+                        <span className="block group-disabled:hidden" >
+                          Register PNode
+                        </span>
+                      </span>
+                      :
+                      <span className="block group-disabled:hidden" >
+                        Register PNode
+                      </span>
+                  }
+
+                  <div className="hidden group-disabled:block normal-case">
                     Register PNode
-                  </span>
-              }
+                  </div>
+                </button>
+                :
+                null
+            }
 
-              <div className="hidden group-disabled:block normal-case">
-                Register PNode
-              </div>
-            </button>
+            {
+              !isKeypairGenerated ?
+                <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                  {
+                    isGenerateProcessing ?
+                      <span className='flex flex-row items-center gap-3'>
+                        <Loader />
+                        <span className="block group-disabled:hidden" >
+                          Generate Identity Key-pair
+                        </span>
+                      </span>
+                      :
+                      <span className="block group-disabled:hidden" >
+                        Generate Identity Key-pair
+                      </span>
+                  }
 
-            <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
-
-              {
-                isGenerateProcessing ?
-                  <Loader />
-                  :
-                  <span className="block group-disabled:hidden" >
+                  <div className="hidden group-disabled:block normal-case">
                     Generate Identity Key-pair
-                  </span>
-              }
-
-              <div className="hidden group-disabled:block normal-case">
-                Generate Identity Key-pair
-              </div>
-            </button>
+                  </div>
+                </button>
+                :
+                <button onClick={copyToClipboard} disabled={!wallet?.connected || isGenerateProcessing} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full text-white mt-8  normal-case'>
+                  Copy Key-Pair Public Key
+                </button>
+            }
 
           </div>
         </div>
@@ -888,40 +942,10 @@ export const HomeView: FC = ({ }) => {
           null
       }
 
-      {/* network speed check modal */}
+      {/* feature info modal */}
       {
-        showKeypairModal ?
-          <div className="flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 focus:outline-none bg-[#0000009b] opacity-100">
-            <div className="justify-center items-center flex-col overflow-x-hidden overflow-y-auto fixed  z-9999 rounded-lg px-10 py-5 bg-[#08113b]">
-              <div className="absolute top-0 right-0 p-5 ">
-                <CloseIcon sx={[{ color: "#b7094c", transform: "scale(1.5)" },
-                { transition: "transform .1s" },
-                {
-                  '&:hover': {
-                    // color: 'white',
-                    cursor: 'pointer',
-                    transform: "scale(1.7)"
-                  },
-                }]}
-                  onClick={() => {
-                    setShowKeypairModal(false);
-                  }}
-                >
-                </CloseIcon>
-              </div>
-              <div className='text-left font-normal my-5 mt-10 w-[50ch]'>
-                <p className='text-2xl mb-4 text-center'>Generate Identity Key-Pair</p>
-                <div className='border-b border-[#4a4a4a] my-4 w-full' />
-                <div className='flex flex-col items-center justify-between mb-4'>
-
-                  <button className='btn bg-[#FDA31B] hover:bg-[#622657] text-white w-full' onClick={() => { onGenerateKeypair() }}>Generate Identity Key-pair</button>
-
-                </div>
-              </div>
-              {/* } */}
-
-            </div>
-          </div>
+        showFeatureInfoModal ?
+          <FeatureInfoModal closeModal={() => { setShowFeatureInfoModal(!showFeatureInfoModal) }} />
           :
           null
       }

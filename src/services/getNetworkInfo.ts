@@ -1,5 +1,6 @@
 import axios from "axios"
-export const getNetworkInfo = async (API_ENDPOINT) => {
+import { API_BASE_URL } from "CONSTS";
+export const getNetworkInfo = async () => {
     console.log("calling getNetworkInfo")
     try {
 
@@ -9,12 +10,12 @@ export const getNetworkInfo = async (API_ENDPOINT) => {
 
         const options = {
             method: 'GET',
-            url: `${API_ENDPOINT}/network`,
+            url: `${API_BASE_URL}/network`,
             headers,
         };
         const response = await axios(options);
         return { ok: true, data: response?.data?.data }
     } catch (error) {
-        throw new Error(error.message)
+        return { ok: false, error: error.message }
     }
 }
