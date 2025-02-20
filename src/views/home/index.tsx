@@ -45,7 +45,7 @@ import {
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import * as anchor from '@project-serum/anchor';
 import { notify } from 'utils/notifications';
-import { FEE_DEPOSIT_ACC, XANDMint } from 'CONSTS';
+import { DEVNET_PROGRAM, FEE_DEPOSIT_ACC, XANDMint } from 'CONSTS';
 import Loader from 'components/Loader';
 
 
@@ -337,7 +337,8 @@ export const HomeView: FC = ({ }) => {
       }
 
       notify({ type: 'success', message: 'Transaction Success!', description: 'Transfer is completed. Please wait for registration transaction' });
-      setIsRegisterProcessing(false);
+
+      await sendDevnetTx();
 
     } catch (error) {
       console.log("error while registering PNode", error);
@@ -350,6 +351,86 @@ export const HomeView: FC = ({ }) => {
 
     }
 
+  }
+
+  const sendDevnetTx = async () => {
+    try {
+
+      const devnet = new Connection("https://api.devnet.xandeum.com:8899", "confirmed");
+
+      let registry = PublicKey.findProgramAddressSync(
+        [Buffer.from("registry"), wallet?.publicKey?.toBuffer()],
+        DEVNET_PROGRAM
+      )[0];
+
+      const keys = [
+        {
+          pubkey: wallet?.publicKey,
+          isSigner: true,
+          isWritable: true,
+        },
+        {
+          pubkey: registry,
+          isSigner: false,
+          isWritable: true,
+        },
+        {
+          pubkey: new PublicKey("11111111111111111111111111111111"),
+          isSigner: false,
+          isWritable: false,
+        },
+        {
+          pubkey: new PublicKey("SysvarRent111111111111111111111111111111111"),
+          isSigner: false,
+          isWritable: false,
+        },
+      ];
+
+      const data = Buffer.from(Int8Array.from([0]).buffer);
+      const txIx = new TransactionInstruction({
+        keys: keys,
+        programId: DEVNET_PROGRAM,
+        data: data,
+      });
+
+      const transaction = new Transaction().add(txIx)
+
+      const {
+        context: { slot: minContextSlot },
+        value: { blockhash, lastValidBlockHeight }
+      } = await devnet.getLatestBlockhashAndContext('confirmed');
+
+      const tx = await wallet.sendTransaction(transaction, devnet, {
+        minContextSlot,
+        skipPreflight: true,
+        preflightCommitment: 'processed'
+      });
+
+      const confirmTx = await devnet?.getSignatureStatuses([tx], { searchTransactionHistory: true });
+
+      // Check if the transaction has a status
+      const status = confirmTx?.value[0];
+      if (!status) {
+        notify({ type: 'error', message: 'Error!', description: 'Transaction status not found!' });
+        setIsRegisterProcessing(false);
+        return;
+      }
+
+      // Check if the transaction failed
+      if (status?.err) {
+        notify({ type: 'error', message: 'Transaction failed!', description: `${confirmTx?.value[0]?.err?.toString()}` });
+        setIsRegisterProcessing(false);
+        return;
+      }
+      notify({ type: 'success', message: 'Transaction Success!', description: 'Registration has completed!' });
+      setIsRegisterProcessing(false);
+
+    } catch (error) {
+      console.log("error while sending the devnet transaction")
+      setIsRegisterProcessing(false);
+
+      return error;
+    }
   }
 
   return (
