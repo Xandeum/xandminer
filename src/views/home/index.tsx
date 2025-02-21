@@ -767,14 +767,14 @@ export const HomeView: FC = ({ }) => {
                 <div className='flex flex-row items-center gap-3'>
                   <Brightness1RoundedIcon color='success' className='animate-pulse' />
                   <span className="text-3xl text-slate-300 ">
-                    Deamon Online
+                    Daemon Online
                   </span>
                 </div>
                 :
                 <div className='flex flex-row items-center gap-3'>
                   <RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' />
                   <span className="text-3xl text-slate-300 ">
-                    Deamon Offline
+                    Daemon Offline
                   </span>
                 </div>
             }
