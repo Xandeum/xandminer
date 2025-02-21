@@ -1,37 +1,40 @@
-import axios from "axios"
+import axios from "axios";
 import { API_BASE_URL } from "../CONSTS";
 
-//  POST request to create keypair
-export const createKeypair = async () => {
+// POST request to create pnode
+export const createPnode = async () => {
     try {
         const headers = {
             'content-type': 'application/json',
         };
         const options = {
             method: 'POST',
-            url: `${API_BASE_URL}/keypair/generate`,
+            url: `${API_BASE_URL}/pnode`,
             headers,
         };
         const response = await axios(options);
-        return { ok: true, data: response?.data?.data?.createKeypair }
+        if (response?.data?.ok) {
+            return { ok: true, data: response?.data?.tx }
+        }
+        return { ok: false, error: response?.data?.error }
     } catch (error) {
         return { ok: false, error: error.message }
     }
 }
 
-// GET request to get keypair status
-export const getKeypair = async () => {
+// GET request to get pnode status
+export const getPnode = async () => {
     try {
         const headers = {
             'content-type': 'application/json',
         };
         const options = {
             method: 'GET',
-            url: `${API_BASE_URL}/keypair`,
+            url: `${API_BASE_URL}/pnode`,
             headers,
         };
         const response = await axios(options);
-        return { ok: true, data: response?.data?.publicKey }
+        return { ok: true, data: response?.data }
     } catch (error) {
         return { ok: false, error: error.message }
     }

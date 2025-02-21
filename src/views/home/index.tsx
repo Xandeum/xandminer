@@ -17,7 +17,7 @@ import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 import RadioButtonCheckedRoundedIcon from '@mui/icons-material/RadioButtonCheckedRounded';
 import Brightness1RoundedIcon from '@mui/icons-material/Brightness1Rounded';
 
-import { CircularProgress, TextField } from '@mui/material';
+import { CircularProgress, TextField, Tooltip } from '@mui/material';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
@@ -45,12 +45,13 @@ import { notify } from 'utils/notifications';
 import { DEVNET_PROGRAM, FEE_DEPOSIT_ACC, XANDMint } from 'CONSTS';
 import Loader from 'components/Loader';
 import { FeatureInfoModal } from 'modals/featureInfoModal';
+import { createPnode } from 'services/pnodeServices';
 
 export const HomeView: FC = ({ }) => {
 
   const wallet = useWallet();
   const { connection } = useConnection();
-  const { setIsConnectionError, isConnectionError } = usePnodeStatsStore();
+  const { setIsConnectionError, isConnectionError, setIsPnodeRegisterError, isPnodeRegisterError } = usePnodeStatsStore();
 
   const [driveInfo, setDriveInfo] = React.useState<Array<any>>([]);
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
@@ -230,6 +231,11 @@ export const HomeView: FC = ({ }) => {
       }
 
       if (response.ok) {
+        const res = await getKeypair();
+        if (res.ok) {
+          setIsKeypairGenerated(true);
+          setKeypairPubkey(res.data);
+        }
         notify({
           message: "Success",
           description: "Key-pair generated successfully",
@@ -275,6 +281,12 @@ export const HomeView: FC = ({ }) => {
         return;
       }
 
+      // only try to create pnode if there was an error in previous try
+      if (isPnodeRegisterError) {
+        await onCreatePnode();
+        return;
+      }
+
       // XAND balance
       const ataAddress = PublicKey.findProgramAddressSync(
         [wallet?.publicKey?.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), XANDMint.toBuffer()],
@@ -291,7 +303,6 @@ export const HomeView: FC = ({ }) => {
         setIsRegisterProcessing(false);
         return;
       }
-
 
       const feeDepositAcc = getAssociatedTokenAddressSync(XANDMint, FEE_DEPOSIT_ACC); // 5000XAND
       const refundableDepositAcc = getAssociatedTokenAddressSync(XANDMint, FEE_DEPOSIT_ACC); // 75,000XAND
@@ -371,15 +382,15 @@ export const HomeView: FC = ({ }) => {
         return;
       }
 
-      notify({ type: 'success', message: 'Transaction Success!', description: 'Transfer is completed. Please wait for registration transaction' });
+      notify({ type: 'success', message: 'Transaction Success!', description: 'Transfer is completed. Please wait for the PNode registration' });
 
-      await sendDevnetTx();
+      await onCreatePnode();
 
     } catch (error) {
-      console.log("error while registering PNode", error);
+      console.log("error while transefing fees", error);
       notify({
         message: "Error",
-        description: "Error while registering PNode",
+        description: "Error while transefing fees",
         type: "error",
       });
       setIsRegisterProcessing(false);
@@ -388,83 +399,37 @@ export const HomeView: FC = ({ }) => {
 
   }
 
-  const sendDevnetTx = async () => {
+  const onCreatePnode = async () => {
     try {
-
-      const devnet = new Connection("https://api.devnet.xandeum.com:8899", "confirmed");
-
-      let registry = PublicKey.findProgramAddressSync(
-        [Buffer.from("registry"), wallet?.publicKey?.toBuffer()],
-        DEVNET_PROGRAM
-      )[0];
-
-      const keys = [
-        {
-          pubkey: wallet?.publicKey,
-          isSigner: true,
-          isWritable: true,
-        },
-        {
-          pubkey: registry,
-          isSigner: false,
-          isWritable: true,
-        },
-        {
-          pubkey: new PublicKey("11111111111111111111111111111111"),
-          isSigner: false,
-          isWritable: false,
-        },
-        {
-          pubkey: new PublicKey("SysvarRent111111111111111111111111111111111"),
-          isSigner: false,
-          isWritable: false,
-        },
-      ];
-
-      const data = Buffer.from(Int8Array.from([0]).buffer);
-      const txIx = new TransactionInstruction({
-        keys: keys,
-        programId: DEVNET_PROGRAM,
-        data: data,
-      });
-
-      const transaction = new Transaction().add(txIx)
-
-      const {
-        context: { slot: minContextSlot },
-        value: { blockhash, lastValidBlockHeight }
-      } = await devnet.getLatestBlockhashAndContext('confirmed');
-
-      const tx = await wallet.sendTransaction(transaction, devnet, {
-        minContextSlot,
-        skipPreflight: true,
-        preflightCommitment: 'processed'
-      });
-
-      const confirmTx = await devnet?.getSignatureStatuses([tx], { searchTransactionHistory: true });
-
-      // Check if the transaction has a status
-      const status = confirmTx?.value[0];
-      if (!status) {
-        notify({ type: 'error', message: 'Error!', description: 'Transaction status not found!' });
+      const res = await createPnode();
+      console.log("res >>> ", res);
+      if (res.ok) {
+        setIsPnodeRegisterError(false);
+        notify({
+          message: "Success",
+          description: "PNode registered successfully",
+          type: "success",
+        });
         setIsRegisterProcessing(false);
         return;
       }
 
-      // Check if the transaction failed
-      if (status?.err) {
-        notify({ type: 'error', message: 'Transaction failed!', description: `${confirmTx?.value[0]?.err?.toString()}` });
-        setIsRegisterProcessing(false);
-        return;
-      }
-      notify({ type: 'success', message: 'Transaction Success!', description: 'Registration has completed!' });
+      setIsPnodeRegisterError(true);
+      notify({
+        message: "Error",
+        description: "Error while registering PNode",
+        type: "error",
+      });
       setIsRegisterProcessing(false);
 
     } catch (error) {
-      console.log("error while sending the devnet transaction")
+      setIsPnodeRegisterError(true);
+      notify({
+        message: "Error",
+        description: "Error while registering PNode",
+        type: "error",
+      });
       setIsRegisterProcessing(false);
-
-      return error;
     }
   }
 
@@ -787,6 +752,36 @@ export const HomeView: FC = ({ }) => {
                 :
                 <button className='btn bg-[#129f8c] text-white w-full normal-case' onClick={() => { setIsServiceOnline(true) }}>Start the service</button>
             } */}
+
+            {
+              !isKeypairGenerated ?
+                <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                  {
+                    isGenerateProcessing ?
+                      <span className='flex flex-row items-center gap-3'>
+                        <Loader />
+                        <span className="block group-disabled:hidden" >
+                          Generate Identity Key-pair
+                        </span>
+                      </span>
+                      :
+                      <span className="block group-disabled:hidden" >
+                        Generate Identity Key-pair
+                      </span>
+                  }
+
+                  <div className="hidden group-disabled:block normal-case">
+                    Generate Identity Key-pair
+                  </div>
+                </button>
+                :
+                <Tooltip title={`${keypairPubkey}`} placement='top'>
+                  <button onClick={copyToClipboard} disabled={!wallet?.connected || isGenerateProcessing} className='btn bg-transparent hover:bg-[#622657] rounded-lg font-light w-full text-white mt-8  normal-case border-[#4a4a4a]'>
+                    KeyPair Pubkey: {keypairPubkey?.slice(0, 7)}...{keypairPubkey?.slice(keypairPubkey?.length - 7, keypairPubkey?.length)}
+                  </button>
+                </Tooltip>
+            }
+
             {
               isKeypairGenerated ?
                 <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing || isConnectionError} className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
@@ -813,32 +808,7 @@ export const HomeView: FC = ({ }) => {
                 null
             }
 
-            {
-              !isKeypairGenerated ?
-                <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
-                  {
-                    isGenerateProcessing ?
-                      <span className='flex flex-row items-center gap-3'>
-                        <Loader />
-                        <span className="block group-disabled:hidden" >
-                          Generate Identity Key-pair
-                        </span>
-                      </span>
-                      :
-                      <span className="block group-disabled:hidden" >
-                        Generate Identity Key-pair
-                      </span>
-                  }
 
-                  <div className="hidden group-disabled:block normal-case">
-                    Generate Identity Key-pair
-                  </div>
-                </button>
-                :
-                <button onClick={copyToClipboard} disabled={!wallet?.connected || isGenerateProcessing} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full text-white mt-8  normal-case'>
-                  Copy Key-Pair Public Key
-                </button>
-            }
 
           </div>
         </div>
