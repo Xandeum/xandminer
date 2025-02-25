@@ -51,9 +51,18 @@ export const HomeView: FC = ({ }) => {
 
   const wallet = useWallet();
   const { connection } = useConnection();
-  const { setIsConnectionError, isConnectionError, setIsPnodeRegisterError, isPnodeRegisterError } = usePnodeStatsStore();
+  const { setIsConnectionError, isConnectionError } = usePnodeStatsStore();
 
-  const [driveInfo, setDriveInfo] = React.useState<Array<any>>([]);
+  const [driveInfo, setDriveInfo] = React.useState<Array<any>>([
+    {
+      available: 0,
+      capacity: 0,
+      mount: 0,
+      name: "",
+      type: "",
+      used: 0
+    }
+  ]);
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
   const [dedicatingAmnt, setDedicatingAmnt] = React.useState([{ disk: 0, amount: 0, type: "GB", isEditing: false }]);
   const [inputValue, setInputValue] = React.useState([{ index: 0, amount: 0, type: "GB" }]);
@@ -256,155 +265,13 @@ export const HomeView: FC = ({ }) => {
     }
   }
 
-  //get keypair
-  const onGetKeypair = async () => {
-    try {
-      const reponse = await getKeypair();
-
-    } catch (error) {
-      console.log("error while reading the keypair", error)
-    }
-  }
-
   //register the PNode
   const onRegisterPNode = async () => {
     setIsRegisterProcessing(true);
-
-    try {
-
-      if (!wallet.publicKey) {
-        notify({
-          message: "Error",
-          description: "Wallet not connected",
-          type: "error",
-        });
-        return;
-      }
-
-      // only try to create pnode if there was an error in previous try
-      if (isPnodeRegisterError) {
-        await onCreatePnode();
-        return;
-      }
-
-      // XAND balance
-      const ataAddress = PublicKey.findProgramAddressSync(
-        [wallet?.publicKey?.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), XANDMint.toBuffer()],
-        new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL')
-      )[0];
-      const balance = await connection.getTokenAccountBalance(ataAddress);
-
-      if (balance?.value?.uiAmount < 80000) {
-        notify({
-          message: "Error",
-          description: "Insufficient XAND balance",
-          type: "error",
-        });
-        setIsRegisterProcessing(false);
-        return;
-      }
-
-      const feeDepositAcc = getAssociatedTokenAddressSync(XANDMint, FEE_DEPOSIT_ACC); // 5000XAND
-      const refundableDepositAcc = getAssociatedTokenAddressSync(XANDMint, FEE_DEPOSIT_ACC); // 75,000XAND
-      const userAcc = getAssociatedTokenAddressSync(XANDMint, wallet?.publicKey);
-      const userAccInfo = await connection.getAccountInfo(userAcc);
-
-      const toAccFee = await connection.getAccountInfo(feeDepositAcc);
-      const toAccRefund = await connection.getAccountInfo(refundableDepositAcc);
-
-      const transaction = new Transaction();
-      let FeeAtaIx: TransactionInstruction = null;
-      if (toAccFee == null || !toAccFee) {
-        FeeAtaIx = createAssociatedTokenAccountInstruction(wallet?.publicKey, feeDepositAcc, wallet?.publicKey, XANDMint, TOKEN_PROGRAM_ID);
-        transaction.add(FeeAtaIx);
-      }
-      let RefundAtaIx: TransactionInstruction = null;
-      if (toAccRefund == null || !toAccRefund) {
-        RefundAtaIx = createAssociatedTokenAccountInstruction(wallet?.publicKey, refundableDepositAcc, wallet?.publicKey, XANDMint, TOKEN_PROGRAM_ID);
-        transaction.add(RefundAtaIx);
-      }
-
-      if (userAccInfo == null || !userAcc) {
-        const userAtaIx = createAssociatedTokenAccountInstruction(wallet?.publicKey, userAcc, wallet?.publicKey, XANDMint, TOKEN_PROGRAM_ID);
-        transaction.add(userAtaIx);
-      }
-
-      const feeTransferIx = createTransferInstruction(
-        userAcc,
-        feeDepositAcc,
-        wallet?.publicKey,
-        5000 * Math.pow(10, 9)
-      );
-
-      const refundTransferIx = createTransferInstruction(
-        userAcc,
-        refundableDepositAcc,
-        wallet?.publicKey,
-        75000 * Math.pow(10, 9)
-      );
-
-      transaction.add(feeTransferIx);
-      transaction.add(refundTransferIx);
-
-      const {
-        context: { slot: minContextSlot },
-        value: { blockhash, lastValidBlockHeight }
-      } = await connection.getLatestBlockhashAndContext('confirmed');
-
-      // transaction.recentBlockhash = blockhash;
-      // transaction.feePayer = wallet.publicKey;
-      // wallet.signTransaction(transaction);
-
-      // const simulate = await connection.simulateTransaction(transaction);
-      // console.log("simulate >>> ", simulate);
-      // return;
-
-      const tx = await wallet.sendTransaction(transaction, connection, {
-        minContextSlot,
-        skipPreflight: true,
-        preflightCommitment: 'processed'
-      });
-
-      const confirmTx = await connection?.getSignatureStatuses([tx], { searchTransactionHistory: true });
-
-      // Check if the transaction has a status
-      const status = confirmTx?.value[0];
-      if (!status) {
-        notify({ type: 'error', message: 'Error!', description: 'Transaction status not found!' });
-        setIsRegisterProcessing(false);
-        return;
-      }
-
-      // Check if the transaction failed
-      if (status?.err) {
-        notify({ type: 'error', message: 'Transaction failed!', description: `${confirmTx?.value[0]?.err?.toString()}` });
-        setIsRegisterProcessing(false);
-        return;
-      }
-
-      notify({ type: 'success', message: 'Transaction Success!', description: 'Transfer is completed. Please wait for the PNode registration' });
-
-      await onCreatePnode();
-
-    } catch (error) {
-      console.log("error while transefing fees", error);
-      notify({
-        message: "Error",
-        description: "Error while transefing fees",
-        type: "error",
-      });
-      setIsRegisterProcessing(false);
-
-    }
-
-  }
-
-  const onCreatePnode = async () => {
     try {
       const res = await createPnode();
       console.log("res >>> ", res);
       if (res.ok) {
-        setIsPnodeRegisterError(false);
         notify({
           message: "Success",
           description: "PNode registered successfully",
@@ -414,7 +281,6 @@ export const HomeView: FC = ({ }) => {
         return;
       }
 
-      setIsPnodeRegisterError(true);
       notify({
         message: "Error",
         description: "Error while registering PNode",
@@ -423,7 +289,6 @@ export const HomeView: FC = ({ }) => {
       setIsRegisterProcessing(false);
 
     } catch (error) {
-      setIsPnodeRegisterError(true);
       notify({
         message: "Error",
         description: "Error while registering PNode",
@@ -755,7 +620,7 @@ export const HomeView: FC = ({ }) => {
 
             {
               !isKeypairGenerated ?
-                <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError || isFetching} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
                   {
                     isGenerateProcessing ?
                       <span className='flex flex-row items-center gap-3'>
@@ -784,7 +649,7 @@ export const HomeView: FC = ({ }) => {
 
             {
               isKeypairGenerated ?
-                <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing || isConnectionError} className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching} className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
 
                   {
                     isRegisterProcessing ?
