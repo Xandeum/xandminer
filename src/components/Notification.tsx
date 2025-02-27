@@ -9,6 +9,7 @@ import useNotificationStore from '../stores/useNotificationStore'
 import { useConnection } from '@solana/wallet-adapter-react';
 import { getExplorerUrl } from '../utils/explorer'
 import { useNetworkConfiguration } from 'contexts/NetworkConfigurationProvider';
+import { LinearProgress } from '@mui/material';
 
 const NotificationList = () => {
   const { notifications, set: setNotificationStore } = useNotificationStore(
@@ -48,26 +49,51 @@ const NotificationList = () => {
 const Notification = ({ type, message, description, txid, onHide }) => {
   const { connection } = useConnection();
   const { networkConfiguration } = useNetworkConfiguration();
+  const totalTime = 300;
+  const [remainingTime, setRemainingTime] = useState(totalTime);
 
-  // TODO: we dont have access to the network or endpoint here.. 
-  // getExplorerUrl(connection., txid, 'tx')
-  // Either a provider, context, and or wallet adapter related pro/contx need updated
+  // useEffect(() => {
+  //   const id = setTimeout(() => {
+  //     onHide()
+  //   }, 30_000);
 
+  //   return () => {
+  //     clearInterval(id);
+  //   };
+  // }, [onHide]);
 
   useEffect(() => {
-    const id = setTimeout(() => {
-      onHide()
-    }, 8000);
+    const timerId = setInterval(() => {
+      setRemainingTime((prevTime) => {
+        if (prevTime === 0) {
+          clearInterval(timerId);
+          onHide();
+          return 0;
+        }
+        return prevTime - 1;
+      });
+    }, 100);
 
-    return () => {
-      clearInterval(id);
-    };
+    return () => clearInterval(timerId);
   }, [onHide]);
+
+  // Calculate the progress percentage
+  const progress = (remainingTime / totalTime) * 100;
 
   return (
     <div
-      className={`max-w-sm w-full bg-bkg-1 shadow-lg rounded-md mt-2 pointer-events-auto ring-1 ring-black ring-opacity-5 p-2 mx-4 mb-12 overflow-hidden bg-black border-2 border-[#fff]`}
+      className={`max-w-sm w-full bg-bkg-1 shadow-lg rounded-md mt-2 pointer-events-auto ring-1 ring-black ring-opacity-5  mx-4 mb-12 overflow-hidden bg-black border border-[#fff]`}
     >
+      <LinearProgress
+        variant="determinate"
+        sx={{
+          "& .MuiLinearProgress-bar": {
+            backgroundColor: '#198476',
+          },
+        }}
+        value={progress}
+        style={{ height: 5 }}
+      />
       <div className={`p-4`}>
         <div className={`flex items-center`}>
           <div className={`flex-shrink-0`}>
