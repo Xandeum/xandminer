@@ -52,28 +52,20 @@ const Notification = ({ type, message, description, txid, onHide }) => {
   const totalTime = 300;
   const [remainingTime, setRemainingTime] = useState(totalTime);
 
-  // useEffect(() => {
-  //   const id = setTimeout(() => {
-  //     onHide()
-  //   }, 30_000);
-
-  //   return () => {
-  //     clearInterval(id);
-  //   };
-  // }, [onHide]);
-
   useEffect(() => {
     const timerId = setInterval(() => {
       setRemainingTime((prevTime) => {
         if (prevTime === 0) {
           clearInterval(timerId);
-          onHide();
+          // Defer the state update to avoid conflicts
+          setTimeout(() => {
+            onHide();
+          }, 0);
           return 0;
         }
         return prevTime - 1;
       });
     }, 100);
-
     return () => clearInterval(timerId);
   }, [onHide]);
 
