@@ -2,7 +2,7 @@ import axios from "axios";
 import { API_BASE_URL } from "../CONSTS";
 
 // POST request to create pnode
-export const createPnode = async () => {
+export const createPnode = async (pubKey: string) => {
     try {
         const headers = {
             'content-type': 'application/json',
@@ -11,6 +11,7 @@ export const createPnode = async () => {
             method: 'POST',
             url: `${API_BASE_URL}/pnode`,
             headers,
+            body: JSON.stringify({ pubKey }),
         };
         const response = await axios(options);
         if (response?.data?.ok) {

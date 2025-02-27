@@ -269,7 +269,7 @@ export const HomeView: FC = ({ }) => {
   const onRegisterPNode = async () => {
     setIsRegisterProcessing(true);
     try {
-      const res = await createPnode();
+      const res = await createPnode(wallet?.publicKey?.toString());
       console.log("res >>> ", res);
       if (res.ok) {
         notify({
