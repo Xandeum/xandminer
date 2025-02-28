@@ -3,16 +3,20 @@ import { API_BASE_URL } from "../CONSTS";
 
 // POST request to create pnode
 export const createPnode = async (pubKey: string) => {
+
     try {
         const headers = {
             'content-type': 'application/json',
         };
+
         const options = {
             method: 'POST',
             url: `${API_BASE_URL}/pnode`,
             headers,
-            body: JSON.stringify({ pubKey }),
+            // data: { pubKey: "9eVnceJcJFmdPiyNgFx1gQcqkLego5J4Pkmgoog4BDoU" },
+            data: { pubKey },
         };
+
         const response = await axios(options);
         if (response?.data?.ok) {
             return { ok: true, data: response?.data?.tx }

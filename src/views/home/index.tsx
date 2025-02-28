@@ -263,8 +263,12 @@ export const HomeView: FC = ({ }) => {
     setIsRegisterProcessing(true);
     try {
 
+      const connection = new Connection("https://api.devnet.xandeum.com:8899", 'confirmed');
       // check number of pNodes bought and registered
       const pNodeManagerInfo = await getPnodeManagerAccountData(connection, wallet?.publicKey?.toString());
+      // const pNodeManagerInfo = await getPnodeManagerAccountData(connection, "9eVnceJcJFmdPiyNgFx1gQcqkLego5J4Pkmgoog4BDoU");
+
+      console.log("pnodemanager >>> ", pNodeManagerInfo);
 
       if (pNodeManagerInfo == null) {
         notify({
@@ -272,6 +276,7 @@ export const HomeView: FC = ({ }) => {
           description: "You need to purchase pNode(s) first in order to register",
           type: "error",
         });
+        setIsRegisterProcessing(false);
         return;
       }
 
@@ -290,6 +295,7 @@ export const HomeView: FC = ({ }) => {
           description: "You have already reached your maximum registration limit",
           type: "error",
         });
+        setIsRegisterProcessing(false);
         return;
       }
 
@@ -301,6 +307,7 @@ export const HomeView: FC = ({ }) => {
           message: "Success",
           description: "pNode registered successfully",
           type: "success",
+          txid: res?.data
         });
         setIsRegisterProcessing(false);
         return;
@@ -314,6 +321,7 @@ export const HomeView: FC = ({ }) => {
       setIsRegisterProcessing(false);
 
     } catch (error) {
+      console.log("error >>> ", error);
       notify({
         message: "Error",
         description: "Error while registering pNode",

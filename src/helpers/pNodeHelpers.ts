@@ -1,5 +1,5 @@
 import { Connection, PublicKey } from "@solana/web3.js";
-import { PNODE_PROGRAM } from "CONSTS";
+import { DEVNET_PROGRAM } from "CONSTS";
 
 
 class PNodeManager {
@@ -40,7 +40,7 @@ function arrayToNum8(array) {
 export async function getPnodeManagerAccountData(connection: Connection, pubkey: string) {
     let managerPda = PublicKey.findProgramAddressSync(
         [Buffer.from("manager"), new PublicKey(pubkey).toBuffer()],
-        PNODE_PROGRAM
+        DEVNET_PROGRAM
     );
 
     let dat = await connection.getParsedAccountInfo(managerPda[0]);
