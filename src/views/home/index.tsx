@@ -100,6 +100,7 @@ export const HomeView: FC = ({ }) => {
     })
 
     getKeypair().then((response) => {
+      console.log("res >>> ", response?.data)
       if (response.ok) {
         setIsKeypairGenerated(true);
         setKeypairPubkey(response.data);
@@ -165,7 +166,7 @@ export const HomeView: FC = ({ }) => {
 
   //set the dedicating amnt and type on edit
   const setDedicatingAmntOnEdit = (index) => {
-    let amountToDedicate = inputValue[index]?.amount * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10000000000);
+    let amountToDedicate = inputValue[index]?.amount * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10_000_000_000);
 
     //if input value is 0 then ingore it and keep the previous value as it is
     if (inputValue[index]?.amount == 0) {
@@ -177,7 +178,7 @@ export const HomeView: FC = ({ }) => {
       return;
     }
     if (inputValue[index]?.type == "TB") {
-      amountToDedicate = inputValue[index]?.amount * 1000000000000;
+      amountToDedicate = inputValue[index]?.amount * 10_000_000_00000;
     }
 
     //if input value is greater than max value then set max value
@@ -197,7 +198,7 @@ export const HomeView: FC = ({ }) => {
   const dedicateWholeDrive = (index, isMax) => {
     let dedicatingAmnt = (driveInfo[index]?.available - 1000000000);;
     if (dedicatingAmnt[index]?.type == "TB" && !isMax) {
-      dedicatingAmnt = driveInfo[index]?.available - 100000000000;
+      dedicatingAmnt = driveInfo[index]?.available - 10_000_000_0000;
       return;
     }
 
@@ -211,7 +212,7 @@ export const HomeView: FC = ({ }) => {
   //format the amount to GB or TB
   const formatAmount = (index, amount) => {
     if (dedicatingAmnt[index]?.type == "TB") {
-      return (amount / 1000000000000)?.toFixed(2);
+      return (amount / 10_000_000_00000)?.toFixed(2);
     }
     return (amount / 1000000000)?.toFixed(2);
   }
@@ -269,7 +270,7 @@ export const HomeView: FC = ({ }) => {
       if (pNodeManagerInfo == null) {
         notify({
           message: "Error",
-          description: "You need to purchase pnode(s) first in order to register",
+          description: "You need to purchase pNode(s) first in order to register",
           type: "error",
         });
         return;
@@ -383,11 +384,11 @@ export const HomeView: FC = ({ }) => {
                                   <Slider
                                     size="medium"
                                     defaultValue={0}
-                                    min={10000000000}
-                                    max={drive?.available - 10000000000}
+                                    min={10_000_000_000}
+                                    max={drive?.available - 10_000_000_000}
                                     aria-label="Small"
                                     valueLabelDisplay="off"
-                                    value={dedicatingAmnt[index]?.amount}
+                                    value={dedicatingAmnt[index] == undefined ? 0 : dedicatingAmnt[index]?.amount}
                                     onChange={(event, value) => {
                                       setDedicatingAmnt(prevState => {
                                         const updatedArray = [...prevState];
@@ -397,7 +398,7 @@ export const HomeView: FC = ({ }) => {
                                     }}
                                     marks={[
                                       {
-                                        value: 1000000000,
+                                        value: 1_000_000_000,
                                         label: '0',
                                       },
                                       {
@@ -405,8 +406,8 @@ export const HomeView: FC = ({ }) => {
                                         label: prettyBytes(drive?.capacity ?? 0),
                                       },
                                     ]}
-                                    step={5000000000}
-                                    disabled={drive?.capacity - 10000000000 <= 0}
+                                    step={1_000_000_000}
+                                    disabled={drive?.capacity - 10_000_000_000 <= 0}
                                   />
                                 </Box>
                                 {/* <span>{(prettyBytes(dedicatingAmnt[index]?.amount)).split(" ")[1]}</span> */}
@@ -422,14 +423,14 @@ export const HomeView: FC = ({ }) => {
                                 onClick={() => {
                                   setDedicatingAmnt(prevState => {
                                     const updatedArray = [...prevState];
-                                    if (dedicatingAmnt[index]?.amount - 10000000000 > drive?.available + 10000000000) {
+                                    if (dedicatingAmnt[index]?.amount - 10_000_000_000 > drive?.available + 10_000_000_000) {
                                       return;
                                     };
-                                    updatedArray[index] = { disk: index, amount: updatedArray[index].amount - 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount - 10000000000 || 0))?.split(" ")[1]), isEditing: false };
+                                    updatedArray[index] = { disk: index, amount: updatedArray[index].amount - 10_000_000_000, type: ((prettyBytes(dedicatingAmnt[index]?.amount - 10_000_000_000 || 0))?.split(" ")[1]), isEditing: false };
                                     return updatedArray;
                                   });
                                 }}
-                                disabled={dedicatingAmnt[index]?.amount - 10000000000 <= 0}
+                                disabled={dedicatingAmnt[index]?.amount - 10_000_000_000 <= 0}
                               >
                                 <IndeterminateCheckBox />
                               </IconButton>
@@ -438,7 +439,7 @@ export const HomeView: FC = ({ }) => {
                                 <TextField
                                   id="outlined-basic"
                                   variant='outlined'
-                                  // value={(dedicatingAmnt[index]?.amount / (dedicatingAmnt[index]?.type == "TB" ? 1000000000000 : 1000000000)).toFixed(2)}
+                                  // value={(dedicatingAmnt[index]?.amount / (dedicatingAmnt[index]?.type == "TB" ? 10_000_000_00000 : 1000000000)).toFixed(2)}
                                   // value={(inputValue[index]?.amount / 1000000000)}
                                   value={(inputValue[index]?.amount)}
                                   size="small"
@@ -455,7 +456,7 @@ export const HomeView: FC = ({ }) => {
                                       return updatedArray;
                                     });
                                   }}
-                                  onBlur={() => { forceToMax(index, (drive?.available - 10000000000), dedicatingAmnt[index]?.amount) }}
+                                  onBlur={() => { forceToMax(index, (drive?.available - 10_000_000_000), dedicatingAmnt[index]?.amount) }}
                                   InputProps={{
                                     inputProps: { min: 1000000000 },
                                     endAdornment: (
@@ -478,12 +479,17 @@ export const HomeView: FC = ({ }) => {
                                           inputProps={{ 'aria-label': 'Without label' }}
                                         >
                                           <MenuItem value="GB">GB</MenuItem>
-                                          <MenuItem value="TB">TB</MenuItem>
+                                          {
+                                            parseInt(prettyBytes(drive?.capacity)) > 1000 ?
+                                              <MenuItem value="TB">TB</MenuItem>
+                                              :
+                                              null
+                                          }
                                         </Select>
                                         <IconButton
                                           aria-label="delete"
                                           color='info'
-                                          // disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available - 10000000000}
+                                          // disabled={dedicatingAmnt[index]?.amount + 10_000_000_000 > drive?.available - 10_000_000_000}
                                           onClick={() => { setDedicatingAmntOnEdit(index) }}
                                         >
                                           <CheckBox />
@@ -504,7 +510,8 @@ export const HomeView: FC = ({ }) => {
                                       width: '50%',
                                     },
                                   }}
-                                  disabled={drive?.capacity - 10000000000 <= 0}
+                                  // disabled={drive?.capacity - 10_000_000_000 <= 0}
+                                  disabled
                                 />
                                 :
                                 <div className='flex flex-row items-center ml-1 text-white'>
@@ -525,6 +532,7 @@ export const HomeView: FC = ({ }) => {
                                         return updatedArray;
                                       });
                                     }}
+                                    disabled
                                   >
                                     <Edit />
                                   </IconButton>
@@ -535,12 +543,13 @@ export const HomeView: FC = ({ }) => {
                               <IconButton
                                 aria-label="delete"
                                 color='info'
-                                disabled={dedicatingAmnt[index]?.amount + 10000000000 > drive?.available}
+                                disabled={dedicatingAmnt[index]?.amount + 11_000_000_000 > drive?.available}
                                 onClick={() => {
                                   setDedicatingAmnt(prevState => {
                                     const updatedArray = [...prevState];
-                                    if (dedicatingAmnt[index]?.amount + 10000000000 > drive?.capacity - 10000000000) return;
-                                    updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10000000000, type: ((prettyBytes(dedicatingAmnt[index]?.amount + 10000000000 || 0))?.split(" ")[1]), isEditing: false };
+                                    console.log("amnt >>> ", dedicatingAmnt[index]?.amount + 20_000_000_000)
+                                    if (dedicatingAmnt[index]?.amount + 20_000_000_000 > drive?.available) return;
+                                    updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10_000_000_000, type: ((prettyBytes(dedicatingAmnt[index]?.amount + 10_000_000_000 || 0))?.split(" ")[1]), isEditing: false };
                                     return updatedArray;
                                   });
                                 }}
@@ -549,7 +558,7 @@ export const HomeView: FC = ({ }) => {
                               </IconButton>
                             </Box>
                             {
-                              (drive?.capacity - 10000000000 <= 0) ?
+                              (drive?.capacity - 10_000_000_000 <= 0) ?
 
                                 <button
                                   className="w-full btn bg-[#808080] text-slate-600"
@@ -668,7 +677,7 @@ export const HomeView: FC = ({ }) => {
                 :
                 <Tooltip title={`${keypairPubkey}`} placement='top'>
                   <button onClick={copyToClipboard} disabled={!wallet?.connected || isGenerateProcessing} className='btn bg-transparent hover:bg-[#622657] rounded-lg font-light w-full text-white mt-8  normal-case border-[#4a4a4a]'>
-                    KeyPair Pubkey: {keypairPubkey?.slice(0, 7)}...{keypairPubkey?.slice(keypairPubkey?.length - 7, keypairPubkey?.length)}
+                    pNode Identity Pubkey: {keypairPubkey?.slice(0, 7)}...{keypairPubkey?.slice(keypairPubkey?.length - 7, keypairPubkey?.length)}
                   </button>
                 </Tooltip>
             }

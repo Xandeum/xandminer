@@ -30,14 +30,11 @@ export const Footer: FC = () => {
                         <p className="text-white text-base font-light cursor-default ">
                             Powered by
                         </p>
-                        <a
-                            rel="noreferrer"
-                            href="https://xandeum.com/"
-                            target="_blank"
-                            className="text-white text-base font-bold hover:text-primary-dark transition-all duration-200"
+                        <span
+                            className="text-white text-base font-bold"
                         >
                             Xandeum
-                        </a>
+                        </span>
                     </div>
                 </div>
 

@@ -25,7 +25,6 @@ export const AppBar: React.FC = () => {
       <div className="navbar flex py-0 flex-row md:mb-2 shadow-lg bg-black text-neutral-content border-b border-zinc-600 bg-opacity-66">
         <div className="hidden md:flex md:navbar-start items-center">
           <div className="hidden md:inline md:p-2 ml-10 md:mt-3">
-            <Link href="https://xandeum.network" target="_blank" rel="noopener noreferrer" passHref className="text-secondary hover:text-white">
               <Image
                 src={XANDEUM_LOGO}
                 alt="Xandeum logo"
@@ -33,7 +32,6 @@ export const AppBar: React.FC = () => {
                 height={60}
                 priority
               />
-            </Link>
           </div>
 
         </div>
