@@ -46,6 +46,7 @@ import { DEVNET_PROGRAM, FEE_DEPOSIT_ACC, XANDMint } from 'CONSTS';
 import Loader from 'components/Loader';
 import { FeatureInfoModal } from 'modals/featureInfoModal';
 import { createPnode } from 'services/pnodeServices';
+import { getPnodeManagerAccountData, getPnodeOwnerAccountData } from 'helpers/pNodeHelpers';
 
 export const HomeView: FC = ({ }) => {
 
@@ -269,6 +270,39 @@ export const HomeView: FC = ({ }) => {
   const onRegisterPNode = async () => {
     setIsRegisterProcessing(true);
     try {
+
+      // check number of pNodes bought and registered
+      const pNodeManagerInfo = await getPnodeManagerAccountData(connection, wallet?.publicKey?.toString());
+
+      if (pNodeManagerInfo == null) {
+        notify({
+          message: "Error",
+          description: "You need to purchase pnode(s) first in order to register",
+          type: "error",
+        });
+        return;
+      }
+
+      // if (wallet?.publicKey?.toString() !== pNodeManagerInfo?.owner?.toString()) {
+      //   notify({
+      //     message: "Error",
+      //     description: "Please connect the wallet which used to buy pNodes",
+      //     type: "error",
+      //   });
+      //   return;
+      // }
+
+      if (pNodeManagerInfo?.registered_pnodes >= pNodeManagerInfo.purchased_pnodes) {
+        notify({
+          message: "Error",
+          description: "You have already reached your maximum registration limit",
+          type: "error",
+        });
+        return;
+      }
+
+
+
       const res = await createPnode(wallet?.publicKey?.toString());
       console.log("res >>> ", res);
       if (res.ok) {

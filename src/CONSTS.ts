@@ -7,3 +7,4 @@ export const FEE_DEPOSIT_ACC = new PublicKey("82m8SFM5ggHrCQYbD8nC8HxWRx4YHRR7RQ
 export const REFUNDABLE_DEPOSIT_ACC = new PublicKey("FaWhmBgWevoJGcJyrx7CHaf6WNduMjEBb6WQEccSVp6Z");
 
 export const DEVNET_PROGRAM = new PublicKey("2YCmooMUuhAZRcxKVA62zc9A2NiWfqbCnJbm53UT4aic");
+export const PNODE_PROGRAM = new PublicKey("3hMZVwdgRHYSyqkdK3Y8MdZzNwLkjzXod1XrKcniXw56");
