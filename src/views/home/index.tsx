@@ -26,13 +26,6 @@ import { AddBox, IndeterminateCheckBox, Edit, CheckBox } from '@mui/icons-materi
 import usePnodeStatsStore from "../../stores/usePnodeStatsStore"
 
 import {
-  createAssociatedTokenAccountInstruction,
-  createTransferInstruction,
-  getAssociatedTokenAddressSync,
-  TOKEN_PROGRAM_ID
-} from "@solana/spl-token";
-
-import {
   Connection,
   Transaction,
   PublicKey,
@@ -42,11 +35,10 @@ import {
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 
 import { notify } from 'utils/notifications';
-import { DEVNET_PROGRAM, FEE_DEPOSIT_ACC, XANDMint } from 'CONSTS';
 import Loader from 'components/Loader';
 import { FeatureInfoModal } from 'modals/featureInfoModal';
 import { createPnode } from 'services/pnodeServices';
-import { getPnodeManagerAccountData, getPnodeOwnerAccountData } from 'helpers/pNodeHelpers';
+import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
 
 export const HomeView: FC = ({ }) => {
 
