@@ -24,8 +24,6 @@ export const getDriveInfo = async () => {
         };
         const response = await axios(options);
 
-        console.log("response >>> ", response?.data?.data?.drives)
-
         return { ok: true, data: response?.data?.data?.drives }
 
     } catch (error) {
