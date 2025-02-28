@@ -100,7 +100,6 @@ export const HomeView: FC = ({ }) => {
     })
 
     getKeypair().then((response) => {
-      console.log("res >>> ", response?.data)
       if (response.ok) {
         setIsKeypairGenerated(true);
         setKeypairPubkey(response.data);
@@ -259,7 +258,7 @@ export const HomeView: FC = ({ }) => {
     }
   }
 
-  //register the PNode
+  //register the pNode
   const onRegisterPNode = async () => {
     setIsRegisterProcessing(true);
     try {
@@ -294,14 +293,13 @@ export const HomeView: FC = ({ }) => {
         return;
       }
 
-
-
       const res = await createPnode(wallet?.publicKey?.toString());
       console.log("res >>> ", res);
+
       if (res.ok) {
         notify({
           message: "Success",
-          description: "PNode registered successfully",
+          description: "pNode registered successfully",
           type: "success",
         });
         setIsRegisterProcessing(false);
@@ -310,7 +308,7 @@ export const HomeView: FC = ({ }) => {
 
       notify({
         message: "Error",
-        description: "Error while registering PNode",
+        description: "Error while registering pNode",
         type: "error",
       });
       setIsRegisterProcessing(false);
@@ -318,7 +316,7 @@ export const HomeView: FC = ({ }) => {
     } catch (error) {
       notify({
         message: "Error",
-        description: "Error while registering PNode",
+        description: "Error while registering pNode",
         type: "error",
       });
       setIsRegisterProcessing(false);
@@ -547,9 +545,11 @@ export const HomeView: FC = ({ }) => {
                                 onClick={() => {
                                   setDedicatingAmnt(prevState => {
                                     const updatedArray = [...prevState];
-                                    console.log("amnt >>> ", dedicatingAmnt[index]?.amount + 20_000_000_000)
-                                    if (dedicatingAmnt[index]?.amount + 20_000_000_000 > drive?.available) return;
-                                    updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10_000_000_000, type: ((prettyBytes(dedicatingAmnt[index]?.amount + 10_000_000_000 || 0))?.split(" ")[1]), isEditing: false };
+                                    if (dedicatingAmnt[index]?.amount + 20_000_000_000 < drive?.available) {
+                                      updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10_000_000_000, type: ((prettyBytes(dedicatingAmnt[index]?.amount + 10_000_000_000 || 0))?.split(" ")[1]), isEditing: false };
+                                      return updatedArray;
+                                    }
+                                    updatedArray[index] = { disk: index, amount: drive?.available - 10_000_000_000, type: ((prettyBytes(drive?.available - 10_000_000_000 || 0))?.split(" ")[1]), isEditing: false }
                                     return updatedArray;
                                   });
                                 }}
@@ -691,17 +691,17 @@ export const HomeView: FC = ({ }) => {
                       <span className='flex flex-row items-center gap-3'>
                         <Loader />
                         <span className="block group-disabled:hidden" >
-                          Register PNode
+                          Register pNode
                         </span>
                       </span>
                       :
                       <span className="block group-disabled:hidden" >
-                        Register PNode
+                        Register pNode
                       </span>
                   }
 
                   <div className="hidden group-disabled:block normal-case">
-                    Register PNode
+                    Register pNode
                   </div>
                 </button>
                 :
