@@ -33,6 +33,7 @@ export const getKeypair = async () => {
         const response = await axios(options);
         return { ok: true, data: response?.data?.publicKey }
     } catch (error) {
+        console.log("error in reading keypair >>> ", error);
         return { ok: false, error: error.message }
     }
 }

@@ -37,6 +37,27 @@ function arrayToNum8(array) {
     return num.toString();
 }
 
+function arrayToNumNew(array, startIndex = 0, byteLength = 8, littleEndian = true) {
+    const arr = new Uint8Array(array);
+    if (startIndex + byteLength > arr.length) {
+        throw new Error("Not enough bytes in array");
+    }
+
+    const slicedArr = arr.slice(startIndex, startIndex + byteLength);
+    const view = new DataView(slicedArr.buffer);
+
+    let num;
+    switch (byteLength) {
+        case 1: num = view.getUint8(0); break;
+        case 2: num = view.getUint16(0, littleEndian); break;
+        case 4: num = view.getUint32(0, littleEndian); break;
+        case 8: num = view.getBigUint64(0, littleEndian); break;
+        default: throw new Error("Unsupported byte length");
+    }
+
+    return typeof num === "bigint" ? num.toString() : num;
+}
+
 export async function getPnodeManagerAccountData(connection: Connection, pubkey: string) {
     let managerPda = PublicKey.findProgramAddressSync(
         [Buffer.from("manager"), new PublicKey(pubkey).toBuffer()],
@@ -49,12 +70,13 @@ export async function getPnodeManagerAccountData(connection: Connection, pubkey:
         return null;
     }
 
-    let data: any = dat.value.data;
+    console.log("dataa >>> ", dat);
 
-    let odata = new PNodeManager(
-        new PublicKey(data.slice(0, 32)),
-        arrayToNum32(data.slice(32, 36)),
-        arrayToNum32(data.slice(36, 40)),
+    let data = new PNodeManager(
+        new PublicKey(dat?.value?.data.slice(0, 32)),
+        arrayToNumNew(dat?.value?.data, 32, 1, true),
+        arrayToNumNew(dat?.value?.data, 33, 1, true),
     );
-    return odata;
+    return data;
 }
+

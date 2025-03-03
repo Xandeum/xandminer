@@ -21,9 +21,11 @@ export const createPnode = async (pubKey: string) => {
         if (response?.data?.ok) {
             return { ok: true, data: response?.data?.tx }
         }
+        console.log("error >>> ", response?.data)
         return { ok: false, error: response?.data?.error }
     } catch (error) {
-        return { ok: false, error: error.message }
+        console.log("errorrr >>> ", error?.response?.data)
+        return { ok: false, error: error?.response?.data }
     }
 }
 

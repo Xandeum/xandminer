@@ -37,7 +37,7 @@ import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { notify } from 'utils/notifications';
 import Loader from 'components/Loader';
 import { FeatureInfoModal } from 'modals/featureInfoModal';
-import { createPnode } from 'services/pnodeServices';
+import { createPnode, getPnode } from 'services/pnodeServices';
 import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
 
 export const HomeView: FC = ({ }) => {
@@ -102,8 +102,24 @@ export const HomeView: FC = ({ }) => {
     getKeypair().then((response) => {
       if (response.ok) {
         setIsKeypairGenerated(true);
+
+        getPnode().then((data) => {
+          if (data?.ok) {
+            setIsPnodeRegistered(true);
+            console.log("pnode info >>> ", data);
+            return;
+          }
+          setIsPnodeRegistered(false);
+
+        }).catch((error) => {
+          setIsPnodeRegistered(false);
+          console.log("erroe while reading pnode registry", error);
+        });
+
         setKeypairPubkey(response.data);
+        return;
       }
+      setIsKeypairGenerated(false);
     }
     ).catch((error) => {
       console.log("error while fetching keypair", error);
@@ -264,11 +280,11 @@ export const HomeView: FC = ({ }) => {
     try {
 
       const connection = new Connection("https://api.devnet.xandeum.com:8899", 'confirmed');
+
       // check number of pNodes bought and registered
       const pNodeManagerInfo = await getPnodeManagerAccountData(connection, wallet?.publicKey?.toString());
       // const pNodeManagerInfo = await getPnodeManagerAccountData(connection, "9eVnceJcJFmdPiyNgFx1gQcqkLego5J4Pkmgoog4BDoU");
-
-      console.log("pnodemanager >>> ", pNodeManagerInfo);
+      // const pNodeManagerInfo = await getPnodeManagerAccountData(connection, "7dnikxxkGHcUPPCpnaZrvoCSD8RoHFhFse4dzmo6sVam");
 
       if (pNodeManagerInfo == null) {
         notify({
@@ -315,7 +331,7 @@ export const HomeView: FC = ({ }) => {
 
       notify({
         message: "Error",
-        description: "Error while registering pNode",
+        description: res?.error?.message,
         type: "error",
       });
       setIsRegisterProcessing(false);
@@ -324,7 +340,7 @@ export const HomeView: FC = ({ }) => {
       console.log("error >>> ", error);
       notify({
         message: "Error",
-        description: "Error while registering pNode",
+        description: error,
         type: "error",
       });
       setIsRegisterProcessing(false);
@@ -691,7 +707,16 @@ export const HomeView: FC = ({ }) => {
             }
 
             {
-              isKeypairGenerated ?
+              isPnodeRegistered ?
+                <button onClick={() => { }} disabled className='btn bg-[#129f8c] hover:bg-[#198476] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#198476] disabled:text-white mt-8  normal-case'>
+                  pNode has registered.
+                </button>
+                :
+                null
+            }
+
+            {
+              isKeypairGenerated && !isPnodeRegistered ?
                 <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching} className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
 
                   {
