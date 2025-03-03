@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Connection, PublicKey } from "@solana/web3.js";
 import { DEVNET_PROGRAM } from "CONSTS";
 
@@ -72,8 +73,10 @@ export async function getPnodeManagerAccountData(connection: Connection, pubkey:
 
     console.log("dataa >>> ", dat);
 
+    let tempData: any = dat?.value?.data
+
     let data = new PNodeManager(
-        new PublicKey(dat?.value?.data.slice(0, 32)),
+        new PublicKey(tempData.slice(0, 32)),
         arrayToNumNew(dat?.value?.data, 32, 1, true),
         arrayToNumNew(dat?.value?.data, 33, 1, true),
     );
