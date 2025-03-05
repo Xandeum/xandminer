@@ -39,6 +39,7 @@ import Loader from 'components/Loader';
 import { FeatureInfoModal } from 'modals/featureInfoModal';
 import { createPnode, getPnode } from 'services/pnodeServices';
 import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
+import { dedicateSpace } from 'services/driveServices';
 
 export const HomeView: FC = ({ }) => {
 
@@ -78,6 +79,7 @@ export const HomeView: FC = ({ }) => {
   const [keypairPubkey, setKeypairPubkey] = React.useState<string>(null);
   const [isKeypairGenerated, setIsKeypairGenerated] = React.useState(false);
   const [isServiceOnline, setIsServiceOnline] = React.useState(true);
+  const [isDedicateProcessing, setIsDedicateProcessing] = React.useState(false);
 
   //read the drive info from the server on page load
   React.useEffect(() => {
@@ -106,7 +108,6 @@ export const HomeView: FC = ({ }) => {
         getPnode().then((data) => {
           if (data?.ok) {
             setIsPnodeRegistered(true);
-            console.log("pnode info >>> ", data);
             return;
           }
           setIsPnodeRegistered(false);
@@ -230,6 +231,76 @@ export const HomeView: FC = ({ }) => {
       return (amount / 10_000_000_00000)?.toFixed(2);
     }
     return (amount / 1000000000)?.toFixed(2);
+  }
+
+  const onDedicateSpace = async (mount: string) => {
+    try {
+      setIsDedicateProcessing(true);
+      let space = 0;
+      const size = prettyBytes(dedicatingAmnt[0].amount);
+      const splitSize = size?.split(" ", size?.length - 1);
+
+      if (splitSize[0] == '0') {
+        notify({
+          message: "Error",
+          description: "Dedicating space cannot be 0",
+          type: "error",
+        });
+        setIsDedicateProcessing(false);
+        return;
+      }
+
+      if (splitSize[1] == 'GB') {
+        space = parseInt(splitSize[0]);
+      } else if (splitSize[1] == 'TB') {
+        space = parseInt(splitSize[0]) * 10;
+      }
+
+      const res = await dedicateSpace(space, mount);
+
+      if (res?.ok) {
+        notify({
+          message: "Success",
+          description: `Created the file in ${res?.path}`,
+          type: "success",
+        });
+        setIsDedicateProcessing(false);
+        setIsFetching(true);
+        getDriveInfo().then((response) => {
+          if (response.ok) {
+            setIsConnectionError(false);
+            setDriveInfo(response.data);
+            setDedicatedInitialAmnt(response.data)
+            setIsFetching(false);
+            return;
+          }
+          setIsConnectionError(true);
+          setIsFetching(false);
+
+        }).catch((error) => {
+          setIsFetching(false);
+          setIsConnectionError(true);
+          console.log("error while fetching drive info", error);
+        })
+
+        return;
+      }
+      notify({
+        message: "Failed to dedicate the space.",
+        description: "Please try again",
+        type: "error",
+      });
+      setIsDedicateProcessing(false);
+
+    } catch (error) {
+      console.log("error while dedicating the space >>> ", error)
+      notify({
+        message: "Failed to dedicate the space.",
+        description: error,
+        type: "error",
+      });
+      setIsDedicateProcessing(false);
+    }
   }
 
   //generate the keypair
@@ -386,14 +457,10 @@ export const HomeView: FC = ({ }) => {
                             </Box>
                             {/* <p>Total Space: {prettyBytes(drive?.capacity)}</p> */}
                             <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                              <Box sx={{ width: '100%' }}>
-                                {/* <span>{drive.used}GB</span> */}
-                              </Box>
                               <Box sx={{ width: '100%', mr: 1 }}>
                                 <LinearProgress variant="determinate" value={normalise((drive?.capacity - drive?.available), 0, drive?.capacity)} />
                               </Box>
                               <Box sx={{ width: '100%' }}>
-                                {/* <span>{drive.used}GB</span> */}
                                 <span>{prettyBytes(drive?.available ?? 0)} available of {prettyBytes(drive?.capacity || drive?.capacity)} </span>
                               </Box>
                             </Box>
@@ -616,12 +683,20 @@ export const HomeView: FC = ({ }) => {
                                     </span>
                                   </button>
                                   <button
-                                    className="w-full btn bg-[#909090] hover:[#909090] text-white "
-                                    onClick={() => { setShowFeatureInfoModal(true) }}
+                                    className="w-full btn bg-[#198476] hover:bg-[#1a665c] text-white "
+                                    onClick={() => { onDedicateSpace(drive?.mount) }}
+                                    disabled={isDedicateProcessing}
                                   >
-                                    <span>
-                                      Dedicate and Earn
-                                    </span>
+                                    {isDedicateProcessing
+                                      ?
+                                      <Loader />
+                                      :
+                                      <span>
+                                        Dedicate and Earn
+                                      </span>
+                                    }
+
+
                                   </button>
                                 </div>
 
