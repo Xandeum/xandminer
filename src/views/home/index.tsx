@@ -80,6 +80,7 @@ export const HomeView: FC = ({ }) => {
   const [isKeypairGenerated, setIsKeypairGenerated] = React.useState(false);
   const [isServiceOnline, setIsServiceOnline] = React.useState(true);
   const [isDedicateProcessing, setIsDedicateProcessing] = React.useState(false);
+  const [isDedicateWholeProcessing, setIsDedicateWholeProcessing] = React.useState(false);
 
   //read the drive info from the server on page load
   React.useEffect(() => {
@@ -180,6 +181,17 @@ export const HomeView: FC = ({ }) => {
     }
   }
 
+  // check space to dedicate
+  const isEnoughSpace = (amount: number) => {
+    const size = prettyBytes(amount);
+    const splitSize = size?.split(" ", size?.length - 1);
+
+    if (parseInt(splitSize[0]) > 10 && splitSize[1].toLowerCase().includes("g")) {
+      return true;
+    }
+    return false;
+  }
+
   //set the dedicating amnt and type on edit
   const setDedicatingAmntOnEdit = (index) => {
     let amountToDedicate = inputValue[index]?.amount * (dedicatingAmnt[index]?.type == "GB" ? 1000000000 : 10_000_000_000);
@@ -233,11 +245,83 @@ export const HomeView: FC = ({ }) => {
     return (amount / 1000000000)?.toFixed(2);
   }
 
-  const onDedicateSpace = async (mount: string) => {
+  // format to dedicate whole drive
+  const onDedicateWholeDrive = async (amount: number, mount: string) => {
+
+    try {
+      setIsDedicateWholeProcessing(true);
+      let space = 0;
+      const size = prettyBytes(amount);
+      const splitSize = size?.split(" ", size?.length - 1);
+
+      if (splitSize[0] == '0') {
+        notify({
+          message: "Error",
+          description: "Dedicating space cannot be 0",
+          type: "error",
+        });
+        setIsDedicateWholeProcessing(false);
+        return;
+      }
+
+      if (splitSize[1] == 'GB') {
+        space = parseInt(splitSize[0]) - 10;
+      } else if (splitSize[1] == 'TB') {
+        space = parseInt(splitSize[0]) * 10;
+      }
+
+      const res = await dedicateSpace(space, mount);
+
+      if (res?.ok) {
+        notify({
+          message: "Success",
+          description: "Successfully dedicated the entire drive",
+          type: "success",
+        });
+        setIsDedicateWholeProcessing(false);
+        setIsFetching(true);
+        getDriveInfo().then((response) => {
+          if (response.ok) {
+            setIsConnectionError(false);
+            setDriveInfo(response.data);
+            setDedicatedInitialAmnt(response.data)
+            setIsFetching(false);
+            return;
+          }
+          setIsConnectionError(true);
+          setIsFetching(false);
+
+        }).catch((error) => {
+          setIsFetching(false);
+          setIsConnectionError(true);
+          console.log("error while fetching drive info", error);
+        })
+
+        return;
+      }
+      notify({
+        message: "Failed to dedicate the whole drive.",
+        description: "Please try again",
+        type: "error",
+      });
+      setIsDedicateWholeProcessing(false);
+
+    } catch (error) {
+      console.log("error while dedicating the space >>> ", error)
+      notify({
+        message: "Failed to dedicate the whole drive.",
+        description: error,
+        type: "error",
+      });
+      setIsDedicateWholeProcessing(false);
+    }
+  }
+
+  const onDedicateSpace = async (index: number, mount: string) => {
     try {
       setIsDedicateProcessing(true);
       let space = 0;
-      const size = prettyBytes(dedicatingAmnt[0].amount);
+      const size = prettyBytes(dedicatingAmnt[index].amount);
       const splitSize = size?.split(" ", size?.length - 1);
 
       if (splitSize[0] == '0') {
@@ -286,8 +370,8 @@ export const HomeView: FC = ({ }) => {
         return;
       }
       notify({
-        message: "Failed to dedicate the space.",
-        description: "Please try again",
+        message: "Please try again",
+        description: "Failed to dedicate the space.",
         type: "error",
       });
       setIsDedicateProcessing(false);
@@ -496,7 +580,7 @@ export const HomeView: FC = ({ }) => {
                                       },
                                     ]}
                                     step={1_000_000_000}
-                                    disabled={drive?.capacity - 10_000_000_000 <= 0}
+                                    disabled={drive?.capacity - 10_000_000_000 <= 0 || drive?.available == 0}
                                   />
                                 </Box>
                                 {/* <span>{(prettyBytes(dedicatingAmnt[index]?.amount)).split(" ")[1]}</span> */}
@@ -512,8 +596,9 @@ export const HomeView: FC = ({ }) => {
                                 onClick={() => {
                                   setDedicatingAmnt(prevState => {
                                     const updatedArray = [...prevState];
-                                    if (dedicatingAmnt[index]?.amount - 10_000_000_000 > drive?.available + 10_000_000_000) {
-                                      return;
+                                    if (dedicatingAmnt[index]?.amount - 20_000_000_000 < 10_000_000_000) {
+                                      updatedArray[index] = { disk: index, amount: 10_000_000_000, type: ((prettyBytes(10_000_000_000))?.split(" ")[1]), isEditing: false };
+                                      return updatedArray;
                                     };
                                     updatedArray[index] = { disk: index, amount: updatedArray[index].amount - 10_000_000_000, type: ((prettyBytes(dedicatingAmnt[index]?.amount - 10_000_000_000 || 0))?.split(" ")[1]), isEditing: false };
                                     return updatedArray;
@@ -649,14 +734,14 @@ export const HomeView: FC = ({ }) => {
                               </IconButton>
                             </Box>
                             {
-                              (drive?.capacity - 10_000_000_000 <= 0) ?
+                              (drive?.available == 0) ?
 
                                 <button
-                                  className="w-full btn bg-[#808080] text-slate-600"
-                                  onClick={undefined}
+                                  className="w-full btn bg-[#909090] disabled:bg-[#909090] text-white disabled:text-black normal-case"
+                                  disabled
                                 >
                                   <span>
-                                    Unavailable
+                                    Not Enough Space
                                   </span>
                                 </button>
                                 :
@@ -664,7 +749,7 @@ export const HomeView: FC = ({ }) => {
                                   {
                                     index == 0 ?
                                       <button
-                                        className="w-full btn bg-[#909090] hover:[#909090] text-white hover:text-white mb-4"
+                                        className="w-full btn bg-[#909090] hover:bg-[#909090] disabled:text-black text-white hover:text-white mb-4"
                                         onClick={() => { setShowFeatureInfoModal(true) }}
                                       >
                                         <span>
@@ -675,17 +760,23 @@ export const HomeView: FC = ({ }) => {
                                       null
                                   }
                                   <button
-                                    className="w-full btn bg-[#909090] hover:[#909090] text-white  mb-4"
-                                    onClick={() => { setShowFeatureInfoModal(true) }}
+                                    className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4"
+                                    onClick={() => { onDedicateWholeDrive(drive?.available, drive?.mount?.toString()) }}
+                                    disabled={isDedicateWholeProcessing || !isEnoughSpace(drive?.available)}
                                   >
-                                    <span>
-                                      Dedicate whole Drive for Rewards Boost
-                                    </span>
+                                    {isDedicateWholeProcessing
+                                      ?
+                                      <Loader />
+                                      :
+                                      <span>
+                                        Dedicate whole Drive for Rewards Boost
+                                      </span>
+                                    }
                                   </button>
                                   <button
-                                    className="w-full btn bg-[#198476] hover:bg-[#1a665c] text-white "
-                                    onClick={() => { onDedicateSpace(drive?.mount) }}
-                                    disabled={isDedicateProcessing}
+                                    className="w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white "
+                                    onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
+                                    disabled={isDedicateProcessing || !isEnoughSpace(drive?.available)}
                                   >
                                     {isDedicateProcessing
                                       ?
