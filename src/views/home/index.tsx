@@ -289,7 +289,7 @@ export const HomeView: FC = ({ }) => {
       if (pNodeManagerInfo == null) {
         notify({
           message: "Error",
-          description: "You need to purchase pNode(s) first in order to register",
+          description: "You need to purchase pNode(s) first. If you already did, please allow about one hour to propagate.",
           type: "error",
         });
         setIsRegisterProcessing(false);
