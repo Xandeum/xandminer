@@ -327,6 +327,7 @@ export const HomeView: FC = ({ }) => {
         });
         setIsRegisterProcessing(false);
         return;
+        window.location.reload()
       }
 
       notify({
@@ -335,6 +336,7 @@ export const HomeView: FC = ({ }) => {
         type: "error",
       });
       setIsRegisterProcessing(false);
+      window.location.reload()
 
     } catch (error) {
       console.log("error >>> ", error);
@@ -344,6 +346,7 @@ export const HomeView: FC = ({ }) => {
         type: "error",
       });
       setIsRegisterProcessing(false);
+      window.location.reload()
     }
   }
 
