@@ -74,6 +74,7 @@ export const HomeView: FC = ({ }) => {
   const [isGenerateProcessing, setIsGenerateProcessing] = React.useState(false);
   const [showFeatureInfoModal, setShowFeatureInfoModal] = React.useState(false);
 
+  const [isPnodeCheck, setIsPnodeCheck] = React.useState(false);
   const [isPnodeRegistered, setIsPnodeRegistered] = React.useState(false);
   const [keypairPubkey, setKeypairPubkey] = React.useState<string>(null);
   const [isKeypairGenerated, setIsKeypairGenerated] = React.useState(false);
@@ -102,17 +103,18 @@ export const HomeView: FC = ({ }) => {
     getKeypair().then((response) => {
       if (response.ok) {
         setIsKeypairGenerated(true);
-
+        setIsPnodeCheck(true);
         getPnode().then((data) => {
           if (data?.ok) {
             setIsPnodeRegistered(true);
-            console.log("pnode info >>> ", data);
+            setIsPnodeCheck(false);
             return;
           }
           setIsPnodeRegistered(false);
-
+          setIsPnodeCheck(false);
         }).catch((error) => {
           setIsPnodeRegistered(false);
+          setIsPnodeCheck(false);
           console.log("erroe while reading pnode registry", error);
         });
 
@@ -120,9 +122,12 @@ export const HomeView: FC = ({ }) => {
         return;
       }
       setIsKeypairGenerated(false);
+      setIsPnodeCheck(false);
     }
     ).catch((error) => {
       console.log("error while fetching keypair", error);
+      setIsKeypairGenerated(false);
+      setIsPnodeCheck(false);
     }
     );
 
@@ -283,8 +288,6 @@ export const HomeView: FC = ({ }) => {
 
       // check number of pNodes bought and registered
       const pNodeManagerInfo = await getPnodeManagerAccountData(connection, wallet?.publicKey?.toString());
-      // const pNodeManagerInfo = await getPnodeManagerAccountData(connection, "9eVnceJcJFmdPiyNgFx1gQcqkLego5J4Pkmgoog4BDoU");
-      // const pNodeManagerInfo = await getPnodeManagerAccountData(connection, "7dnikxxkGHcUPPCpnaZrvoCSD8RoHFhFse4dzmo6sVam");
 
       if (pNodeManagerInfo == null) {
         notify({
@@ -326,8 +329,8 @@ export const HomeView: FC = ({ }) => {
           txid: res?.data
         });
         setIsRegisterProcessing(false);
-        return;
         window.location.reload()
+        return;
       }
 
       notify({
@@ -339,7 +342,6 @@ export const HomeView: FC = ({ }) => {
       window.location.reload()
 
     } catch (error) {
-      console.log("error >>> ", error);
       notify({
         message: "Error",
         description: error,
@@ -720,7 +722,7 @@ export const HomeView: FC = ({ }) => {
 
             {
               isKeypairGenerated && !isPnodeRegistered ?
-                <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching} className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching || isPnodeCheck} className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
 
                   {
                     isRegisterProcessing ?
