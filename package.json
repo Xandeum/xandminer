@@ -5,9 +5,9 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --hostname 127.0.0.1",
     "build": "next build",
-    "start": "next start -p 3000",
+    "start": "next start -p 3000 --hostname 127.0.0.1",
     "lint": "next lint"
   },
   "dependencies": {
