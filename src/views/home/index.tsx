@@ -5,7 +5,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
 import { getNetworkInfo } from '../../services/getNetworkInfo';
-import { createKeypair, getKeypair } from '../../services/keypairServices'
+import { createKeypair, getKeypair, getServerIP } from '../../services/keypairServices'
 import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -79,10 +79,12 @@ export const HomeView: FC = ({ }) => {
   const [keypairPubkey, setKeypairPubkey] = React.useState<string>(null);
   const [isKeypairGenerated, setIsKeypairGenerated] = React.useState(false);
   const [isServiceOnline, setIsServiceOnline] = React.useState(true);
+  const [serverIP, setServerIP] = React.useState("127.0.0.1")
 
   //read the drive info from the server on page load
   React.useEffect(() => {
     setIsFetching(true);
+
     getDriveInfo().then((response) => {
       if (response.ok) {
         setIsConnectionError(false);
@@ -98,6 +100,15 @@ export const HomeView: FC = ({ }) => {
       setIsFetching(false);
       setIsConnectionError(true);
       console.log("error while fetching drive info", error);
+    })
+
+    getServerIP().then((response) => {
+      if (response.ok) {
+        setServerIP(response.ip);
+        return;
+      }
+    }).catch((error) => {
+      console.log("error while fetching server IP", error);
     })
 
     getKeypair().then((response) => {
@@ -672,6 +683,10 @@ export const HomeView: FC = ({ }) => {
                   </span>
                 </div>
             }
+          </div>
+
+          <div className='text-xl'>
+            IP address: {serverIP}
           </div>
 
           <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>

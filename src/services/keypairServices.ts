@@ -37,3 +37,22 @@ export const getKeypair = async () => {
         return { ok: false, error: error.message }
     }
 }
+
+// read server IP
+export const getServerIP = async () => {
+    try {
+        const headers = {
+            'content-type': 'application/json',
+        };
+        const options = {
+            method: 'GET',
+            url: `${API_BASE_URL}/server-ip`,
+            headers,
+        };
+        const response = await axios(options);
+        return { ok: true, ip: response?.data?.ip }
+    } catch (error) {
+        console.log("error in reading server ip >>> ", error);
+        return { ok: false, error: error.message }
+    }
+}
