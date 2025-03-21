@@ -50,7 +50,7 @@ export const getServerIP = async () => {
             headers,
         };
         const response = await axios(options);
-        return { ok: true, ip: response?.data?.ip }
+        return { ok: true, ip: response?.data?.data?.ip, hostname: response?.data?.data?.hostname }
     } catch (error) {
         console.log("error in reading server ip >>> ", error);
         return { ok: false, error: error.message }

@@ -79,7 +79,9 @@ export const HomeView: FC = ({ }) => {
   const [keypairPubkey, setKeypairPubkey] = React.useState<string>(null);
   const [isKeypairGenerated, setIsKeypairGenerated] = React.useState(false);
   const [isServiceOnline, setIsServiceOnline] = React.useState(true);
-  const [serverIP, setServerIP] = React.useState("127.0.0.1")
+  const [serverIP, setServerIP] = React.useState("");
+  const [serverHostname, setServerHostname] = React.useState("");
+  const [isServerInfoLoading, setIsServerInfoLoading] = React.useState(true);
 
   //read the drive info from the server on page load
   React.useEffect(() => {
@@ -103,11 +105,14 @@ export const HomeView: FC = ({ }) => {
     })
 
     getServerIP().then((response) => {
-      if (response.ok) {
-        setServerIP(response.ip);
+      if (response?.ok) {
+        setServerIP(response?.ip);
+        setServerHostname(response?.hostname);
+        setIsServerInfoLoading(false);
         return;
       }
     }).catch((error) => {
+      setIsServerInfoLoading(false);
       console.log("error while fetching server IP", error);
     })
 
@@ -685,9 +690,23 @@ export const HomeView: FC = ({ }) => {
             }
           </div>
 
-          <div className='text-xl'>
-            IP address: {serverIP}
-          </div>
+          {
+            isServerInfoLoading ?
+              <div className='text-xl flex flex-col w-full px-3 pt-2'>
+                <div className='text-xl flex flex-row items-baseline gap-2'>
+                  IP address: <CircularProgress size={12} />
+                </div>
+                <div className='text-xl flex flex-row items-baseline gap-2'>
+                  hostname: <CircularProgress size={12} />
+                </div>
+              </div>
+              :
+              <div className='text-xl flex flex-col w-full px-3 pt-2'>
+                IP address: {serverIP}
+                <br />
+                hostname: {serverHostname}
+              </div>
+          }
 
           <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>
             {/* {
