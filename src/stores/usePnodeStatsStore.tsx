@@ -6,7 +6,7 @@ interface PnodeStatsStore extends State {
 }
 
 const usePnodeStatsStore = create<PnodeStatsStore>((set, _get) => ({
-    isConnectionError: false,
+    isConnectionError: true,
     setIsConnectionError: (isConnectionError) => {
         set({ isConnectionError });
     },

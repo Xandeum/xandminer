@@ -78,7 +78,7 @@ export const HomeView: FC = ({ }) => {
   const [isPnodeRegistered, setIsPnodeRegistered] = React.useState(false);
   const [keypairPubkey, setKeypairPubkey] = React.useState<string>(null);
   const [isKeypairGenerated, setIsKeypairGenerated] = React.useState(false);
-  const [isServiceOnline, setIsServiceOnline] = React.useState(true);
+  const [isServiceOnline, setIsServiceOnline] = React.useState(false);
   const [serverIP, setServerIP] = React.useState("");
   const [serverHostname, setServerHostname] = React.useState("");
   const [isServerInfoLoading, setIsServerInfoLoading] = React.useState(true);
@@ -90,17 +90,20 @@ export const HomeView: FC = ({ }) => {
     getDriveInfo().then((response) => {
       if (response.ok) {
         setIsConnectionError(false);
+        setIsServiceOnline(true);
         setDriveInfo(response.data);
         setDedicatedInitialAmnt(response.data)
         setIsFetching(false);
         return;
       }
       setIsConnectionError(true);
+      setIsServiceOnline(false);
       setIsFetching(false);
 
     }).catch((error) => {
       setIsFetching(false);
       setIsConnectionError(true);
+      setIsServiceOnline(false);
       console.log("error while fetching drive info", error);
     })
 
@@ -314,6 +317,8 @@ export const HomeView: FC = ({ }) => {
         setIsRegisterProcessing(false);
         return;
       }
+
+      return;
 
       // if (wallet?.publicKey?.toString() !== pNodeManagerInfo?.owner?.toString()) {
       //   notify({
@@ -756,7 +761,9 @@ export const HomeView: FC = ({ }) => {
 
             {
               isKeypairGenerated && !isPnodeRegistered ?
-                <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching || isPnodeCheck} className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                <button onClick={onRegisterPNode} 
+                // disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching || isPnodeCheck} 
+                className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
 
                   {
                     isRegisterProcessing ?

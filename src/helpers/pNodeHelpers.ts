@@ -71,8 +71,6 @@ export async function getPnodeManagerAccountData(connection: Connection, pubkey:
         return null;
     }
 
-    console.log("dataa >>> ", dat);
-
     let tempData: any = dat?.value?.data
 
     let data = new PNodeManager(
