@@ -27,12 +27,9 @@ import usePnodeStatsStore from "../../stores/usePnodeStatsStore"
 
 import {
   Connection,
-  Transaction,
-  PublicKey,
-  TransactionInstruction,
 } from "@solana/web3.js";
 
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 import { notify } from 'utils/notifications';
 import Loader from 'components/Loader';
@@ -43,7 +40,6 @@ import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
 export const HomeView: FC = ({ }) => {
 
   const wallet = useWallet();
-  const { connection } = useConnection();
   const { setIsConnectionError, isConnectionError } = usePnodeStatsStore();
 
   const [driveInfo, setDriveInfo] = React.useState<Array<any>>([
@@ -338,7 +334,6 @@ export const HomeView: FC = ({ }) => {
       }
 
       const res = await createPnode(wallet?.publicKey?.toString());
-      console.log("res >>> ", res);
 
       if (res.ok) {
         notify({
