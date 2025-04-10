@@ -759,9 +759,9 @@ export const HomeView: FC = ({ }) => {
 
             {
               isKeypairGenerated && !isPnodeRegistered ?
-                <button onClick={onRegisterPNode} 
-                // disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching || isPnodeCheck} 
-                className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                <button onClick={onRegisterPNode}
+                  disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching || isPnodeCheck}
+                  className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
 
                   {
                     isRegisterProcessing ?
