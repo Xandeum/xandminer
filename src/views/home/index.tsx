@@ -318,8 +318,6 @@ export const HomeView: FC = ({ }) => {
         return;
       }
 
-      return;
-
       // if (wallet?.publicKey?.toString() !== pNodeManagerInfo?.owner?.toString()) {
       //   notify({
       //     message: "Error",
