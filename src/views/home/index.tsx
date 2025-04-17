@@ -5,7 +5,7 @@ import LinearProgress from '@mui/material/LinearProgress';
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
 import { getNetworkInfo } from '../../services/getNetworkInfo';
-import { createKeypair, getKeypair } from '../../services/keypairServices'
+import { createKeypair, getKeypair, getServerIP } from '../../services/keypairServices'
 import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -27,12 +27,9 @@ import usePnodeStatsStore from "../../stores/usePnodeStatsStore"
 
 import {
   Connection,
-  Transaction,
-  PublicKey,
-  TransactionInstruction,
 } from "@solana/web3.js";
 
-import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 import { notify } from 'utils/notifications';
 import Loader from 'components/Loader';
@@ -44,7 +41,6 @@ import { dedicateSpace } from 'services/driveServices';
 export const HomeView: FC = ({ }) => {
 
   const wallet = useWallet();
-  const { connection } = useConnection();
   const { setIsConnectionError, isConnectionError } = usePnodeStatsStore();
 
   const [driveInfo, setDriveInfo] = React.useState<Array<any>>([
@@ -75,46 +71,68 @@ export const HomeView: FC = ({ }) => {
   const [isGenerateProcessing, setIsGenerateProcessing] = React.useState(false);
   const [showFeatureInfoModal, setShowFeatureInfoModal] = React.useState(false);
 
+  const [isPnodeCheck, setIsPnodeCheck] = React.useState(false);
   const [isPnodeRegistered, setIsPnodeRegistered] = React.useState(false);
   const [keypairPubkey, setKeypairPubkey] = React.useState<string>(null);
   const [isKeypairGenerated, setIsKeypairGenerated] = React.useState(false);
   const [isServiceOnline, setIsServiceOnline] = React.useState(true);
   const [isDedicateProcessing, setIsDedicateProcessing] = React.useState(false);
   const [isDedicateWholeProcessing, setIsDedicateWholeProcessing] = React.useState(false);
+  const [serverIP, setServerIP] = React.useState("");
+  const [serverHostname, setServerHostname] = React.useState("");
+  const [isServerInfoLoading, setIsServerInfoLoading] = React.useState(true);
 
   //read the drive info from the server on page load
   React.useEffect(() => {
     setIsFetching(true);
+
     getDriveInfo().then((response) => {
       if (response.ok) {
         setIsConnectionError(false);
+        setIsServiceOnline(true);
         setDriveInfo(response.data);
         setDedicatedInitialAmnt(response.data)
         setIsFetching(false);
         return;
       }
       setIsConnectionError(true);
+      setIsServiceOnline(false);
       setIsFetching(false);
 
     }).catch((error) => {
       setIsFetching(false);
       setIsConnectionError(true);
+      setIsServiceOnline(false);
       console.log("error while fetching drive info", error);
+    })
+
+    getServerIP().then((response) => {
+      if (response?.ok) {
+        setServerIP(response?.ip);
+        setServerHostname(response?.hostname);
+        setIsServerInfoLoading(false);
+        return;
+      }
+    }).catch((error) => {
+      setIsServerInfoLoading(false);
+      console.log("error while fetching server IP", error);
     })
 
     getKeypair().then((response) => {
       if (response.ok) {
         setIsKeypairGenerated(true);
-
+        setIsPnodeCheck(true);
         getPnode().then((data) => {
           if (data?.ok) {
             setIsPnodeRegistered(true);
+            setIsPnodeCheck(false);
             return;
           }
           setIsPnodeRegistered(false);
-
+          setIsPnodeCheck(false);
         }).catch((error) => {
           setIsPnodeRegistered(false);
+          setIsPnodeCheck(false);
           console.log("erroe while reading pnode registry", error);
         });
 
@@ -122,9 +140,12 @@ export const HomeView: FC = ({ }) => {
         return;
       }
       setIsKeypairGenerated(false);
+      setIsPnodeCheck(false);
     }
     ).catch((error) => {
       console.log("error while fetching keypair", error);
+      setIsKeypairGenerated(false);
+      setIsPnodeCheck(false);
     }
     );
 
@@ -438,8 +459,6 @@ export const HomeView: FC = ({ }) => {
 
       // check number of pNodes bought and registered
       const pNodeManagerInfo = await getPnodeManagerAccountData(connection, wallet?.publicKey?.toString());
-      // const pNodeManagerInfo = await getPnodeManagerAccountData(connection, "9eVnceJcJFmdPiyNgFx1gQcqkLego5J4Pkmgoog4BDoU");
-      // const pNodeManagerInfo = await getPnodeManagerAccountData(connection, "7dnikxxkGHcUPPCpnaZrvoCSD8RoHFhFse4dzmo6sVam");
 
       if (pNodeManagerInfo == null) {
         notify({
@@ -471,7 +490,6 @@ export const HomeView: FC = ({ }) => {
       }
 
       const res = await createPnode(wallet?.publicKey?.toString());
-      console.log("res >>> ", res);
 
       if (res.ok) {
         notify({
@@ -481,6 +499,7 @@ export const HomeView: FC = ({ }) => {
           txid: res?.data
         });
         setIsRegisterProcessing(false);
+        window.location.reload()
         return;
       }
 
@@ -490,15 +509,16 @@ export const HomeView: FC = ({ }) => {
         type: "error",
       });
       setIsRegisterProcessing(false);
+      window.location.reload()
 
     } catch (error) {
-      console.log("error >>> ", error);
       notify({
         message: "Error",
         description: error,
         type: "error",
       });
       setIsRegisterProcessing(false);
+      window.location.reload()
     }
   }
 
@@ -835,6 +855,24 @@ export const HomeView: FC = ({ }) => {
             }
           </div>
 
+          {
+            isServerInfoLoading ?
+              <div className='text-xl flex flex-col w-full px-3 pt-2'>
+                <div className='text-xl flex flex-row items-baseline gap-2'>
+                  IP address: <CircularProgress size={12} />
+                </div>
+                <div className='text-xl flex flex-row items-baseline gap-2'>
+                  hostname: <CircularProgress size={12} />
+                </div>
+              </div>
+              :
+              <div className='text-xl flex flex-col w-full px-3 pt-2'>
+                IP address: {serverIP}
+                <br />
+                hostname: {serverHostname}
+              </div>
+          }
+
           <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>
             {/* {
               isServiceOnline ?
@@ -883,7 +921,9 @@ export const HomeView: FC = ({ }) => {
 
             {
               isKeypairGenerated && !isPnodeRegistered ?
-                <button onClick={onRegisterPNode} disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching} className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                <button onClick={onRegisterPNode}
+                  disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching || isPnodeCheck}
+                  className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
 
                   {
                     isRegisterProcessing ?
