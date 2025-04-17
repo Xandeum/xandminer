@@ -18,8 +18,6 @@ import RadioButtonCheckedRoundedIcon from '@mui/icons-material/RadioButtonChecke
 import Brightness1RoundedIcon from '@mui/icons-material/Brightness1Rounded';
 
 import { CircularProgress, TextField, Tooltip } from '@mui/material';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 import { AddBox, IndeterminateCheckBox, Edit, CheckBox } from '@mui/icons-material';
 
@@ -50,7 +48,8 @@ export const HomeView: FC = ({ }) => {
       mount: 0,
       name: "",
       type: "",
-      used: 0
+      used: 0,
+      dedicated: 0
     }
   ]);
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
@@ -559,7 +558,9 @@ export const HomeView: FC = ({ }) => {
                               <SpeedIcon color='primary' fontSize='medium' />
                               <h2 className="text-xl font-bold ">{drive?.type}</h2>
                             </Box>
-                            {/* <p>Total Space: {prettyBytes(drive?.capacity)}</p> */}
+
+                            <p className='mb-2'>Dedicated: {prettyBytes(drive?.dedicated)}</p>
+
                             <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                               <Box sx={{ width: '100%', mr: 1 }}>
                                 <LinearProgress variant="determinate" value={normalise((drive?.capacity - drive?.available), 0, drive?.capacity)} />
@@ -569,6 +570,7 @@ export const HomeView: FC = ({ }) => {
                               </Box>
                             </Box>
                             <div className='border-b border-[#4a4a4a] my-8 w-full' />
+
                             <p>Dedicate space</p>
 
                             <Box sx={{ width: '100%' }}>
@@ -603,9 +605,6 @@ export const HomeView: FC = ({ }) => {
                                     disabled={drive?.capacity - 10_000_000_000 <= 0 || drive?.available == 0}
                                   />
                                 </Box>
-                                {/* <span>{(prettyBytes(dedicatingAmnt[index]?.amount)).split(" ")[1]}</span> */}
-
-
                               </Box>
                             </Box>
 
@@ -633,8 +632,6 @@ export const HomeView: FC = ({ }) => {
                                 <TextField
                                   id="outlined-basic"
                                   variant='outlined'
-                                  // value={(dedicatingAmnt[index]?.amount / (dedicatingAmnt[index]?.type == "TB" ? 10_000_000_00000 : 1000000000)).toFixed(2)}
-                                  // value={(inputValue[index]?.amount / 1000000000)}
                                   value={(inputValue[index]?.amount)}
                                   size="small"
                                   inputMode='decimal'
@@ -645,7 +642,6 @@ export const HomeView: FC = ({ }) => {
                                         return updatedArray;
 
                                       }
-                                      // updatedArray[index] = { disk: index, amount: Math.abs(isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value) * 1000000000), type: ((prettyBytes((parseFloat(e.target.value) * 1000000000) || 0))?.split(" ")[1]) };
                                       updatedArray[index] = { index: index, amount: Math.abs(parseFloat(e.target.value)), type: dedicatingAmnt[index]?.type };
                                       return updatedArray;
                                     });
@@ -653,43 +649,6 @@ export const HomeView: FC = ({ }) => {
                                   onBlur={() => { forceToMax(index, (drive?.available - 10_000_000_000), dedicatingAmnt[index]?.amount) }}
                                   InputProps={{
                                     inputProps: { min: 1000000000 },
-                                    endAdornment: (
-                                      // <div className='flex flex-row items-center ml-1 text-white'>
-                                      //   <span className='pb-1'>{(prettyBytes(dedicatingAmnt[index]?.amount || 0))?.split(" ")[1] || null}</span>
-                                      // </div>
-
-                                      <div className='flex flex-row items-center ml-1 text-white'>
-                                        <Select
-                                          sx={{ color: 'white', minWidth: '4.35rem' }}
-                                          value={inputValue[index]?.type}
-                                          onChange={(event: SelectChangeEvent) => {
-                                            setInputValue(prevState => {
-                                              const updatedArray = [...prevState];
-                                              updatedArray[index] = { type: event.target.value, index: index, amount: updatedArray[index].amount };
-                                              return updatedArray;
-                                            });
-                                          }}
-                                          displayEmpty
-                                          inputProps={{ 'aria-label': 'Without label' }}
-                                        >
-                                          <MenuItem value="GB">GB</MenuItem>
-                                          {
-                                            parseInt(prettyBytes(drive?.capacity)) > 1000 ?
-                                              <MenuItem value="TB">TB</MenuItem>
-                                              :
-                                              null
-                                          }
-                                        </Select>
-                                        <IconButton
-                                          aria-label="delete"
-                                          color='info'
-                                          // disabled={dedicatingAmnt[index]?.amount + 10_000_000_000 > drive?.available - 10_000_000_000}
-                                          onClick={() => { setDedicatingAmntOnEdit(index) }}
-                                        >
-                                          <CheckBox />
-                                        </IconButton>
-                                      </div>
-                                    ),
                                   }}
                                   className='text-white bg-black w-1/2'
                                   sx={{
@@ -704,7 +663,6 @@ export const HomeView: FC = ({ }) => {
                                       width: '50%',
                                     },
                                   }}
-                                  // disabled={drive?.capacity - 10_000_000_000 <= 0}
                                   disabled
                                 />
                                 :
