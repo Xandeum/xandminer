@@ -907,7 +907,18 @@ export const HomeView: FC = ({ }) => {
                 null
             }
 
-            <button className='btn bg-[#fda31b] text-white w-full normal-case' onClick={() => { setIsShowInstallModal(true) }}>Install Pod</button>
+            <button
+              className='btn bg-[#fda31b] rounded-lg font-light text-white w-full normal-case disabled:hover:bg-none disabled:bg-[#909090] hover:bg-[#622657]'
+              onClick={() => { setIsShowInstallModal(true) }}
+              disabled={!wallet?.connected}
+            >
+              <div className="hidden group-disabled:block normal-case">
+                Install Pod
+              </div>
+              <span className="block group-disabled:hidden" >
+                Install Pod
+              </span>
+            </button>
 
           </div>
         </div>

@@ -11,7 +11,7 @@ export default function InstallPod() {
     const [isComplete, setIsComplete] = useState(false);
     const [status, setStatus] = useState(null);
     const [socket, setSocket] = useState(null);
-    const [sessionId, setSessionId] = useState(null); // Store sessionId
+    const [sessionId, setSessionId] = useState(null);
     const outputRef = useRef(null);
 
     useEffect(() => {
@@ -42,7 +42,7 @@ export default function InstallPod() {
         try {
             const response = await axios.post(`${API_BASE_URL}/pods/install`);
             const { sessionId } = response.data;
-            setSessionId(sessionId); // Store sessionId
+            setSessionId(sessionId);
 
             if (socket) {
                 socket.emit('start-command', { sessionId });
@@ -50,13 +50,13 @@ export default function InstallPod() {
                 socket.on('command-output', ({ sessionId: receivedSessionId, type, data, status: commandStatus }) => {
                     const timestamp = new Date().toLocaleTimeString();
                     if (receivedSessionId === sessionId) {
-                        if (type === 'stdout' || type === 'stderr' || type === 'error' || type === 'connected') {
+                        if (type === 'stdout' || type === 'stderr' || type === 'connected') {
                             setOutput((prev) => [...prev, { type, data, timestamp }]);
-                        } else if (type === 'complete') {
+                        } else if (type === 'complete' || type === 'error') { // Handle error as terminal state
                             setOutput((prev) => [...prev, { type, data, timestamp }]);
                             setIsRunning(false);
                             setIsComplete(true);
-                            setStatus(commandStatus || 'success');
+                            setStatus(commandStatus || (type === 'error' ? 'error' : 'success'));
                             setSessionId(null);
                             socket.disconnect();
                         }
@@ -91,12 +91,14 @@ export default function InstallPod() {
     };
 
     const terminateInstallation = () => {
-        if (socket && sessionId) {
-            socket.emit('cancel-command', { sessionId });
-            setIsRunning(false);
-            setIsComplete(true);
-            setStatus('cancelled');
-            setSessionId(null);
+        if (window.confirm('Are you sure you want to terminate the installation?')) {
+            if (socket && sessionId) {
+                socket.emit('cancel-command', { sessionId });
+                setIsRunning(false);
+                setIsComplete(true);
+                setStatus('cancelled');
+                setSessionId(null);
+            }
         }
     };
 
@@ -110,14 +112,14 @@ export default function InstallPod() {
     return (
         <div className="flex flex-col items-center justify-center w-full h-full max-w-4xl min-w-[56rem] min-h-56 mx-auto p-4">
             <div className="p-6 mt-10 w-full flex flex-col items-center justify-center">
-                <div className="flex space-x-4">
+                <div className="flex space-x-4 mb-8">
                     <button
                         onClick={startInstallation}
                         disabled={isRunning}
                         className={`px-4 py-2 rounded font-medium ${isRunning ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#129f8c] hover:bg-[#198476] text-white '
                             }`}
                     >
-                        {isRunning ? 'Installing...' : 'Install/Update Pod'}
+                        {isRunning ? 'Installing...' : 'Install Pod'}
                     </button>
                     {isRunning && (
                         <button
@@ -131,7 +133,7 @@ export default function InstallPod() {
                 {output.length > 0 && (
                     <pre
                         ref={outputRef}
-                        className="bg-gray-900 text-gray-200 p-4 mt-4 rounded-lg w-full max-h-96 overflow-x-auto font-mono text-sm shadow-inner whitespace-pre"
+                        className="bg-gray-900 text-gray-200 p-16 mt-4 w-full max-h-96 overflow-x-auto font-mono text-sm rounded-lg shadow-inner whitespace-pre"
                     >
                         {output.map((line, index) => (
                             <span
@@ -169,7 +171,7 @@ export default function InstallPod() {
                         </p>
                         <button
                             onClick={handleOk}
-                            className="px-4 py-2 bg-[#129f8c] hover:bg-[#198476] text-white rounded mt-2"
+                            className="px-4 py-2 bg-[#129f8c] hover:bg-[#198476] text-white rounded mt-2 "
                         >
                             OK
                         </button>
