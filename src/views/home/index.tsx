@@ -35,6 +35,7 @@ import { FeatureInfoModal } from 'modals/featureInfoModal';
 import { createPnode, getPnode } from 'services/pnodeServices';
 import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
 import { dedicateSpace } from 'services/driveServices';
+import InstallPod from 'views/install-pod';
 
 export const HomeView: FC = ({ }) => {
 
@@ -80,6 +81,7 @@ export const HomeView: FC = ({ }) => {
   const [serverIP, setServerIP] = React.useState("");
   const [serverHostname, setServerHostname] = React.useState("");
   const [isServerInfoLoading, setIsServerInfoLoading] = React.useState(true);
+  const [isShowInstallModal, setIsShowInstallModal] = React.useState(false);
 
   //read the drive info from the server on page load
   React.useEffect(() => {
@@ -905,7 +907,7 @@ export const HomeView: FC = ({ }) => {
                 null
             }
 
-
+            <button className='btn bg-[#fda31b] text-white w-full normal-case' onClick={() => { setIsShowInstallModal(true) }}>Install Pod</button>
 
           </div>
         </div>
@@ -1017,6 +1019,35 @@ export const HomeView: FC = ({ }) => {
           null
       }
 
+      {/* pod install output modal */}
+      {
+        isShowInstallModal
+          ?
+          <div className="flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 focus:outline-none bg-[#0000009b] opacity-100">
+            <div className="justify-center items-center flex-col overflow-x-hidden overflow-y-auto fixed z-9999 rounded-lg px-10 py-5 bg-[#08113b]">
+              <div className="absolute top-0 right-0 p-5 ">
+                <CloseIcon sx={[{ color: "#b7094c", transform: "scale(1.3)" },
+                { transition: "transform .1s" },
+                {
+                  '&:hover': {
+                    // color: 'white',
+                    cursor: 'pointer',
+                    transform: "scale(1.5)"
+                  },
+                }]}
+                  onClick={() => {
+                    setIsShowInstallModal(false);
+                  }}
+                >
+                </CloseIcon>
+              </div>
+              <h2 className="absolute top-0 left-0 p-5 text-xl">Pod Installation</h2>
+              <InstallPod />
+            </div>
+          </div>
+          :
+          null
+      }
     </div>
   );
 };

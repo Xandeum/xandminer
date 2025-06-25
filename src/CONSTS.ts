@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 
-export const API_BASE_URL = "http://localhost:4000";
+// export const API_BASE_URL = "http://localhost:5000";
+export const API_BASE_URL = "http://127.0.0.1:5000";
 
 export const XANDMint = new PublicKey("XANDuUoVoUqniKkpcKhrxmvYJybpJvUxJLr21Gaj3Hx");
 export const FEE_DEPOSIT_ACC = new PublicKey("82m8SFM5ggHrCQYbD8nC8HxWRx4YHRR7RQAdeC8RNtyX");
