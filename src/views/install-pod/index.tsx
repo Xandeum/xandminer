@@ -119,7 +119,7 @@ export default function InstallPod() {
                         className={`px-4 py-2 rounded font-medium ${isRunning ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#129f8c] hover:bg-[#198476] text-white '
                             }`}
                     >
-                        {isRunning ? 'Installing...' : 'Install Pod'}
+                        {isRunning ? 'Installing...' : 'Install / Update Pod'}
                     </button>
                     {isRunning && (
                         <button

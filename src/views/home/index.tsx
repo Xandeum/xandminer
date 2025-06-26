@@ -88,6 +88,7 @@ export const HomeView: FC = ({ }) => {
     setIsFetching(true);
 
     getDriveInfo().then((response) => {
+      console.log("response from drive info", response);
       if (response.ok) {
         setIsConnectionError(false);
         setIsServiceOnline(true);
@@ -541,7 +542,7 @@ export const HomeView: FC = ({ }) => {
                 <CircularProgress />
               </div>
               :
-              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-4 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5 px-5">
+              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5 px-5">
                 {
                   driveInfo?.length > 0 ?
                     driveInfo?.map((drive, index) => {
@@ -561,7 +562,7 @@ export const HomeView: FC = ({ }) => {
                               <h2 className="text-xl font-bold ">{drive?.type}</h2>
                             </Box>
 
-                            <p className='mb-2'>Dedicated: {prettyBytes(drive?.dedicated)}</p>
+                            <p className='mb-2'>Dedicated: {prettyBytes(drive?.dedicated ?? 0)}</p>
 
                             <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                               <Box sx={{ width: '100%', mr: 1 }}>
@@ -729,7 +730,7 @@ export const HomeView: FC = ({ }) => {
                                   {
                                     index == 0 ?
                                       <button
-                                        className="w-full btn bg-[#909090] hover:bg-[#909090] disabled:text-black text-white hover:text-white mb-4"
+                                        className="w-full btn bg-[#909090] hover:bg-[#909090] disabled:text-black text-white hover:text-white mb-4 normal-case"
                                         onClick={() => { setShowFeatureInfoModal(true) }}
                                       >
                                         <span>
@@ -740,7 +741,7 @@ export const HomeView: FC = ({ }) => {
                                       null
                                   }
                                   <button
-                                    className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4"
+                                    className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4 md:text-[10px] lg:text-sm normal-case "
                                     onClick={() => { onDedicateWholeDrive(drive?.available, drive?.mount?.toString()) }}
                                     disabled={isDedicateWholeProcessing || !isEnoughSpace(drive?.available)}
                                   >
@@ -749,12 +750,12 @@ export const HomeView: FC = ({ }) => {
                                       <Loader />
                                       :
                                       <span>
-                                        Dedicate whole Drive for Rewards Boost
+                                        Dedicate Whole Drive for Rewards Boost
                                       </span>
                                     }
                                   </button>
                                   <button
-                                    className="w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white "
+                                    className="w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case"
                                     onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
                                     disabled={isDedicateProcessing || !isEnoughSpace(drive?.available)}
                                   >
