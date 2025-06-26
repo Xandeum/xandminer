@@ -910,7 +910,7 @@ export const HomeView: FC = ({ }) => {
             <button
               className='btn bg-[#fda31b] rounded-lg font-light text-white w-full normal-case disabled:hover:bg-none disabled:bg-[#909090] hover:bg-[#622657]'
               onClick={() => { setIsShowInstallModal(true) }}
-              disabled={!wallet?.connected}
+              disabled={!wallet?.connected || isConnectionError}
             >
               <div className="hidden group-disabled:block normal-case">
                 Install / Update Pod
