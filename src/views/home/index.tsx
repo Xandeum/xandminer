@@ -88,7 +88,6 @@ export const HomeView: FC = ({ }) => {
     setIsFetching(true);
 
     getDriveInfo().then((response) => {
-      console.log("response from drive info", response);
       if (response.ok) {
         setIsConnectionError(false);
         setIsServiceOnline(true);
