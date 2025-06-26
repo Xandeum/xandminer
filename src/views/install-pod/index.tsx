@@ -5,7 +5,7 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import { API_BASE_URL } from '../../CONSTS';
 
-export default function InstallPod() {
+export default function InstallPod({ onClose }) {
     const [output, setOutput] = useState([]);
     const [isRunning, setIsRunning] = useState(false);
     const [isComplete, setIsComplete] = useState(false);
@@ -107,6 +107,7 @@ export default function InstallPod() {
         setIsComplete(false);
         setStatus(null);
         setSessionId(null);
+        onClose();
     };
 
     return (

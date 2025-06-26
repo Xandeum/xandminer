@@ -523,6 +523,20 @@ export const HomeView: FC = ({ }) => {
     }
   }
 
+  const onShowInstallModal = () => {
+    // check if user has dedicated space
+    const hasDedicatedSpace = driveInfo?.some(drive => drive?.dedicated > 0);
+    if (!hasDedicatedSpace) {
+      notify({
+        message: "Error",
+        description: "You need to dedicate space first to install the pod.",
+        type: "error",
+      });
+      return;
+    }
+    setIsShowInstallModal(true);
+  }
+
   return (
     <div className="flex mx-auto flex-col items-center md:items-start w-full p-4 ">
 
@@ -909,7 +923,7 @@ export const HomeView: FC = ({ }) => {
 
             <button
               className='btn bg-[#fda31b] rounded-lg font-light text-white w-full normal-case disabled:hover:bg-none disabled:bg-[#909090] hover:bg-[#622657]'
-              onClick={() => { setIsShowInstallModal(true) }}
+              onClick={() => { onShowInstallModal() }}
               disabled={!wallet?.connected || isConnectionError}
             >
               <div className="hidden group-disabled:block normal-case">
@@ -1053,7 +1067,7 @@ export const HomeView: FC = ({ }) => {
                 </CloseIcon>
               </div>
               <h2 className="absolute top-0 left-0 p-5 text-xl">Pod Installation</h2>
-              <InstallPod />
+              <InstallPod onClose={() => { setIsShowInstallModal(!isShowInstallModal) }} />
             </div>
           </div>
           :
