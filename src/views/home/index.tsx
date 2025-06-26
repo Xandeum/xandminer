@@ -822,14 +822,14 @@ export const HomeView: FC = ({ }) => {
                   IP address: <CircularProgress size={12} />
                 </div>
                 <div className='text-xl flex flex-row items-baseline gap-2'>
-                  hostname: <CircularProgress size={12} />
+                  Hostname: <CircularProgress size={12} />
                 </div>
               </div>
               :
               <div className='text-xl flex flex-col w-full px-3 pt-2'>
                 IP address: {serverIP}
                 <br />
-                hostname: {serverHostname}
+                Hostname: {serverHostname}
               </div>
           }
 
@@ -913,10 +913,10 @@ export const HomeView: FC = ({ }) => {
               disabled={!wallet?.connected}
             >
               <div className="hidden group-disabled:block normal-case">
-                Install Pod
+                Install / Update Pod
               </div>
               <span className="block group-disabled:hidden" >
-                Install Pod
+                Install / Update Pod
               </span>
             </button>
 
