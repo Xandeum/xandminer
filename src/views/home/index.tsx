@@ -60,9 +60,8 @@ export const HomeView: FC = ({ }) => {
     isFetching: false,
     isError: false,
     data: {
-      downloadSpeed: 0,
-      uploadSpeed: 0,
-      latency: 0
+      download: "0Mbps",
+      upload: "0Mbps",
     }
   });
 
@@ -169,16 +168,17 @@ export const HomeView: FC = ({ }) => {
 
   //function related to read the network stats
   const getNetworkStats = async () => {
+    setNetworkStats({ ...networkStats, isFetching: true, isError: false, data: null });
     setShowNetworkSpeedModal(true);
-    setNetworkStats({ isFetching: true, isError: false, data: null });
     try {
       const response = await getNetworkInfo();
       if (response.ok) {
-        setNetworkStats({ isFetching: false, isError: false, data: response.data });
+        setNetworkStats({ ...networkStats, isFetching: false, isError: false, data: response.data });
         return;
       }
+      setNetworkStats({ ...networkStats, isFetching: false, isError: true, data: null });
     } catch (error) {
-      setNetworkStats({ isFetching: false, isError: true, data: null });
+      setNetworkStats({ ...networkStats, isFetching: false, isError: true, data: null });
     }
   }
 
@@ -587,7 +587,7 @@ export const HomeView: FC = ({ }) => {
                             </Box>
                             <div className='border-b border-[#4a4a4a] my-8 w-full' />
 
-                            <p>Dedicate space</p>
+                            <p>Dedicate {drive?.dedicated ? "additional" : null} space</p>
 
                             <Box sx={{ width: '100%' }}>
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -743,8 +743,8 @@ export const HomeView: FC = ({ }) => {
                                   {
                                     index == 0 ?
                                       <button
-                                        className="w-full btn bg-[#909090] hover:bg-[#909090] disabled:text-black text-white hover:text-white mb-4 normal-case"
-                                        onClick={() => { setShowFeatureInfoModal(true) }}
+                                        className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4 md:text-[10px] lg:text-sm normal-case"
+                                        onClick={() => { setShowNetworkSpeedModal(true); getNetworkStats() }}
                                       >
                                         <span>
                                           Test Network Speed
@@ -753,6 +753,7 @@ export const HomeView: FC = ({ }) => {
                                       :
                                       null
                                   }
+                                  {/* 
                                   <button
                                     className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4 md:text-[10px] lg:text-sm normal-case "
                                     onClick={() => { onDedicateWholeDrive(drive?.available, drive?.mount?.toString()) }}
@@ -766,7 +767,7 @@ export const HomeView: FC = ({ }) => {
                                         Dedicate Whole Drive for Rewards Boost
                                       </span>
                                     }
-                                  </button>
+                                  </button> */}
                                   <button
                                     className="w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case"
                                     onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
@@ -831,7 +832,7 @@ export const HomeView: FC = ({ }) => {
 
           {
             isServerInfoLoading ?
-              <div className='text-xl flex flex-col w-full px-3 pt-2'>
+              <div className='text-xl flex flex-col w-full px-3 pt-2 gap-2'>
                 <div className='text-xl flex flex-row items-baseline gap-2'>
                   IP address: <CircularProgress size={12} />
                 </div>
@@ -840,10 +841,13 @@ export const HomeView: FC = ({ }) => {
                 </div>
               </div>
               :
-              <div className='text-xl flex flex-col w-full px-3 pt-2'>
-                IP address: {serverIP}
-                <br />
-                Hostname: {serverHostname}
+              <div className='text-xl flex flex-col w-full px-3 pt-2 gap-2'>
+                <div className='text-xl flex flex-row items-baseline gap-2'>
+                  IP address: {serverIP}
+                </div>
+                <div className='text-xl flex flex-row items-baseline gap-2'>
+                  Hostname: {serverHostname}
+                </div>
               </div>
           }
 
@@ -957,7 +961,7 @@ export const HomeView: FC = ({ }) => {
                 }]}
                   onClick={() => {
                     setShowNetworkSpeedModal(false);
-                    networkStats?.data?.downloadSpeed == 0 ?
+                    networkStats?.data?.download == "0Mbps" ?
                       setNetworkStats({
                         isFetching: false, isError: false, data: null
                       })
@@ -977,12 +981,10 @@ export const HomeView: FC = ({ }) => {
                     <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
                       <p className='text-2xl mb-4 '>Something went wrong. Please try again...</p>
                       <button
-                        className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
-                        onClick={() => { getNetworkStats() }}
+                        className="px-5 py-2 btn btn-sm bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
+                        onClick={async () => { await getNetworkStats() }}
                       >
-                        <span>
-                          Retry
-                        </span>
+                        Retry
                       </button>
                     </div>
                     :
@@ -999,15 +1001,8 @@ export const HomeView: FC = ({ }) => {
                             <span className='mr-2'><PublishOutlinedIcon /></span>
                             Upload Speed
                           </p>
-                          <p className='text-xl'>
-                            <span className='mr-2'><TimerOutlinedIcon /></span>
-                            Latency
-                          </p>
                         </div>
                         <div className="flex flex-col  gap-4">
-                          <p className='text-xl'>
-                            :
-                          </p>
                           <p className='text-xl'>
                             :
                           </p>
@@ -1017,13 +1012,10 @@ export const HomeView: FC = ({ }) => {
                         </div>
                         <div className="flex flex-col  gap-4">
                           <p className='text-xl'>
-                            {networkStats?.data?.downloadSpeed?.toFixed(2)} Mbps
+                            {networkStats?.data?.download}
                           </p>
                           <p className='text-xl'>
-                            {networkStats?.data?.uploadSpeed?.toFixed(2)} Mbps
-                          </p>
-                          <p className='text-xl'>
-                            {networkStats?.data?.latency} ms
+                            {networkStats?.data?.upload}
                           </p>
                         </div>
                       </div>
