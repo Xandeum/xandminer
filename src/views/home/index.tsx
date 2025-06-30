@@ -10,7 +10,8 @@ import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CloseIcon from '@mui/icons-material/Close';
-import TimerOutlinedIcon from '@mui/icons-material/TimerOutlined';
+import BlockIcon from '@mui/icons-material/Block';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
@@ -36,6 +37,7 @@ import { createPnode, getPnode } from 'services/pnodeServices';
 import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
 import { dedicateSpace } from 'services/driveServices';
 import InstallPod from 'views/install-pod';
+import { VERSION_NO } from 'CONSTS';
 
 export const HomeView: FC = ({ }) => {
 
@@ -814,38 +816,56 @@ export const HomeView: FC = ({ }) => {
           <div className='w-full flex flex-row items-center justify-around gap-4 border-b border-[#4a4a4a] pb-2'>
             {
               isServiceOnline ?
-                <div className='flex flex-row items-center gap-3'>
+                <div className='flex flex-row items-center gap-2'>
                   <Brightness1RoundedIcon color='success' className='animate-pulse' />
-                  <span className="text-3xl text-slate-300 ">
-                    Daemon Online
+                  <span className="text-2xl text-slate-300 ">
+                    XandMinerD Online
                   </span>
+                  <button className='bg-[#b42f2f] p-1 rounded-lg hover:bg-[#c23232]'>
+                    <BlockIcon className='text-white ' />
+                  </button>
                 </div>
                 :
-                <div className='flex flex-row items-center gap-3'>
+                <div className='flex flex-row items-center gap-2'>
                   <RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' />
-                  <span className="text-3xl text-slate-300 ">
-                    Daemon Offline
+                  <span className="text-2xl text-slate-300 ">
+                    XandMinerD Offline
                   </span>
+                  <button className='p-1 bg-[#198476] hover:bg-[#279d8d] rounded-lg'>
+                    <PlayArrowIcon className='text-white' />
+                  </button>
                 </div>
             }
           </div>
 
           {
             isServerInfoLoading ?
-              <div className='text-xl flex flex-col w-full px-3 pt-2 gap-2'>
-                <div className='text-xl flex flex-row items-baseline gap-2'>
+              <div className='text-lg flex flex-col w-full px-3 pt-2 gap-2'>
+                <div className='text-lg flex flex-row items-baseline gap-2'>
+                  XandMiner: {VERSION_NO}
+                </div>
+                <div className='text-lg flex flex-row items-baseline gap-2'>
                   IP address: <CircularProgress size={12} />
                 </div>
-                <div className='text-xl flex flex-row items-baseline gap-2'>
+                <div className='text-lg flex flex-row items-baseline gap-2'>
                   Hostname: <CircularProgress size={12} />
                 </div>
               </div>
               :
-              <div className='text-xl flex flex-col w-full px-3 pt-2 gap-2'>
-                <div className='text-xl flex flex-row items-baseline gap-2'>
+              <div className='text-lg flex flex-col w-full px-3 pt-2 gap-2'>
+                <div className='text-lg flex flex-row items-baseline gap-2'>
+                  XandMiner: {VERSION_NO}
+                </div>
+                <div className='text-lg flex flex-row items-baseline gap-2'>
+                  XandMinerD: {VERSION_NO}
+                </div>
+                <div className='text-lg flex flex-row items-baseline gap-2'>
+                  pod: {VERSION_NO}
+                </div>
+                <div className='text-lg flex flex-row items-baseline gap-2'>
                   IP address: {serverIP}
                 </div>
-                <div className='text-xl flex flex-row items-baseline gap-2'>
+                <div className='text-lg flex flex-row items-baseline gap-2'>
                   Hostname: {serverHostname}
                 </div>
               </div>
@@ -973,7 +993,9 @@ export const HomeView: FC = ({ }) => {
               </div>
               {
                 networkStats?.isFetching ?
-                  <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
+                  <div className='text-center font-normal my-5 w-[50ch]'>
+                    <p className='text-2xl mb-7 text-center'>Network Speed Status</p>
+
                     <CircularProgress />
                   </div>
                   :
@@ -988,7 +1010,7 @@ export const HomeView: FC = ({ }) => {
                       </button>
                     </div>
                     :
-                    <div className='text-left font-normal my-5 mt-10 w-[50ch]'>
+                    <div className='text-left font-normal my-5 w-[50ch]'>
                       <p className='text-2xl mb-4 text-center'>Network Speed Status</p>
                       <div className='border-b border-[#4a4a4a] my-4 w-full' />
                       <div className='flex flex-row items-center justify-between mb-4'>
