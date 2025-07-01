@@ -10,7 +10,8 @@ import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CloseIcon from '@mui/icons-material/Close';
-import TimerOutlinedIcon from '@mui/icons-material/TimerOutlined';
+import BlockIcon from '@mui/icons-material/Block';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
@@ -36,6 +37,7 @@ import { createPnode, getPnode } from 'services/pnodeServices';
 import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
 import { dedicateSpace } from 'services/driveServices';
 import InstallPod from 'views/install-pod';
+import { VERSION_NO } from 'CONSTS';
 
 export const HomeView: FC = ({ }) => {
 
@@ -60,9 +62,8 @@ export const HomeView: FC = ({ }) => {
     isFetching: false,
     isError: false,
     data: {
-      downloadSpeed: 0,
-      uploadSpeed: 0,
-      latency: 0
+      download: "0Mbps",
+      upload: "0Mbps",
     }
   });
 
@@ -169,16 +170,17 @@ export const HomeView: FC = ({ }) => {
 
   //function related to read the network stats
   const getNetworkStats = async () => {
+    setNetworkStats({ ...networkStats, isFetching: true, isError: false, data: null });
     setShowNetworkSpeedModal(true);
-    setNetworkStats({ isFetching: true, isError: false, data: null });
     try {
       const response = await getNetworkInfo();
       if (response.ok) {
-        setNetworkStats({ isFetching: false, isError: false, data: response.data });
+        setNetworkStats({ ...networkStats, isFetching: false, isError: false, data: response.data });
         return;
       }
+      setNetworkStats({ ...networkStats, isFetching: false, isError: true, data: null });
     } catch (error) {
-      setNetworkStats({ isFetching: false, isError: true, data: null });
+      setNetworkStats({ ...networkStats, isFetching: false, isError: true, data: null });
     }
   }
 
@@ -523,6 +525,20 @@ export const HomeView: FC = ({ }) => {
     }
   }
 
+  const onShowInstallModal = () => {
+    // check if user has dedicated space
+    const hasDedicatedSpace = driveInfo?.some(drive => drive?.dedicated > 0);
+    if (!hasDedicatedSpace) {
+      notify({
+        message: "Error",
+        description: "You need to dedicate space first to install the pod.",
+        type: "error",
+      });
+      return;
+    }
+    setIsShowInstallModal(true);
+  }
+
   return (
     <div className="flex mx-auto flex-col items-center md:items-start w-full p-4 ">
 
@@ -531,7 +547,7 @@ export const HomeView: FC = ({ }) => {
 
         {/* left side column */}
         <div className="w-full flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-3">
-          <h4 className="md:w-full text-4xl text-left text-slate-300 ">
+          <h4 className="md:w-full text-3xl text-left text-slate-300 ">
             <p>Drive Information</p>
           </h4>
           <div className='border-b border-[#4a4a4a] mb-4 mt-2 w-full' />
@@ -541,7 +557,7 @@ export const HomeView: FC = ({ }) => {
                 <CircularProgress />
               </div>
               :
-              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-4 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5 px-5">
+              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5 px-5">
                 {
                   driveInfo?.length > 0 ?
                     driveInfo?.map((drive, index) => {
@@ -561,7 +577,7 @@ export const HomeView: FC = ({ }) => {
                               <h2 className="text-xl font-bold ">{drive?.type}</h2>
                             </Box>
 
-                            <p className='mb-2'>Dedicated: {prettyBytes(drive?.dedicated)}</p>
+                            <p className='mb-2'>Dedicated: {prettyBytes(drive?.dedicated ?? 0)}</p>
 
                             <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
                               <Box sx={{ width: '100%', mr: 1 }}>
@@ -573,7 +589,7 @@ export const HomeView: FC = ({ }) => {
                             </Box>
                             <div className='border-b border-[#4a4a4a] my-8 w-full' />
 
-                            <p>Dedicate space</p>
+                            <p>Dedicate {drive?.dedicated ? "additional" : null} space</p>
 
                             <Box sx={{ width: '100%' }}>
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -729,8 +745,8 @@ export const HomeView: FC = ({ }) => {
                                   {
                                     index == 0 ?
                                       <button
-                                        className="w-full btn bg-[#909090] hover:bg-[#909090] disabled:text-black text-white hover:text-white mb-4"
-                                        onClick={() => { setShowFeatureInfoModal(true) }}
+                                        className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4 md:text-[10px] lg:text-sm normal-case"
+                                        onClick={() => { setShowNetworkSpeedModal(true); getNetworkStats() }}
                                       >
                                         <span>
                                           Test Network Speed
@@ -739,8 +755,9 @@ export const HomeView: FC = ({ }) => {
                                       :
                                       null
                                   }
+                                  {/* 
                                   <button
-                                    className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4"
+                                    className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4 md:text-[10px] lg:text-sm normal-case "
                                     onClick={() => { onDedicateWholeDrive(drive?.available, drive?.mount?.toString()) }}
                                     disabled={isDedicateWholeProcessing || !isEnoughSpace(drive?.available)}
                                   >
@@ -749,12 +766,12 @@ export const HomeView: FC = ({ }) => {
                                       <Loader />
                                       :
                                       <span>
-                                        Dedicate whole Drive for Rewards Boost
+                                        Dedicate Whole Drive for Rewards Boost
                                       </span>
                                     }
-                                  </button>
+                                  </button> */}
                                   <button
-                                    className="w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white "
+                                    className="w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case"
                                     onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
                                     disabled={isDedicateProcessing || !isEnoughSpace(drive?.available)}
                                   >
@@ -796,51 +813,82 @@ export const HomeView: FC = ({ }) => {
         {/* right side column */}
 
         <div className="w-full md:w-[20%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-3">
-          <div className='w-full flex flex-row items-center justify-around gap-4 border-b border-[#4a4a4a] pb-2'>
-            {
-              isServiceOnline ?
-                <div className='flex flex-row items-center gap-3'>
-                  <Brightness1RoundedIcon color='success' className='animate-pulse' />
-                  <span className="text-3xl text-slate-300 ">
-                    Daemon Online
-                  </span>
-                </div>
-                :
-                <div className='flex flex-row items-center gap-3'>
-                  <RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' />
-                  <span className="text-3xl text-slate-300 ">
-                    Daemon Offline
-                  </span>
-                </div>
-            }
+          <div className='w-full flex flex-row items-start justify-start gap-4 border-b border-[#4a4a4a] pb-2'>
+            <span className="text-3xl text-slate-300 ">
+              pNode Software
+            </span>
           </div>
 
           {
             isServerInfoLoading ?
-              <div className='text-xl flex flex-col w-full px-3 pt-2'>
-                <div className='text-xl flex flex-row items-baseline gap-2'>
-                  IP address: <CircularProgress size={12} />
-                </div>
-                <div className='text-xl flex flex-row items-baseline gap-2'>
-                  hostname: <CircularProgress size={12} />
-                </div>
+              <div className='text-base flex flex-col w-full px-3 pt-2 '>
+                <table className='w-full mt-4'>
+                  <tbody>
+                    <tr className='border-none'>
+                      <td className='p-1'>xandminer</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{VERSION_NO}</td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>xandminerd</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'><CircularProgress size={12} /></td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>pod</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'><CircularProgress size={12} /></td>
+                    </tr>
+                    <br />
+                    <tr className='border-none'>
+                      <td className='p-1'>IP address</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'><CircularProgress size={12} /></td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>Hostname</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'><CircularProgress size={12} /></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
               :
-              <div className='text-xl flex flex-col w-full px-3 pt-2'>
-                IP address: {serverIP}
-                <br />
-                hostname: {serverHostname}
+              <div className='text-base flex flex-col w-full px-3 pt-2'>
+                <table className='w-full mt-4'>
+                  <tbody>
+                    <tr className='border-none'>
+                      <td className='p-1'>xandminer</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{VERSION_NO}</td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>xandminerd</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{VERSION_NO}</td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>pod</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{VERSION_NO}</td>
+                    </tr>
+                    <br />
+                    <tr className='border-none'>
+                      <td className='p-1'>IP address</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{serverIP}</td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>Hostname</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{serverHostname}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
           }
 
           <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>
-            {/* {
-              isServiceOnline ?
-                <button className='btn bg-[#b7094c] text-white w-full normal-case' onClick={() => { setIsServiceOnline(false) }}>Stop the service</button>
-                :
-                <button className='btn bg-[#129f8c] text-white w-full normal-case' onClick={() => { setIsServiceOnline(true) }}>Start the service</button>
-            } */}
-
             {
               !isKeypairGenerated ?
                 <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError || isFetching} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
@@ -909,14 +957,14 @@ export const HomeView: FC = ({ }) => {
 
             <button
               className='btn bg-[#fda31b] rounded-lg font-light text-white w-full normal-case disabled:hover:bg-none disabled:bg-[#909090] hover:bg-[#622657]'
-              onClick={() => { setIsShowInstallModal(true) }}
-              disabled={!wallet?.connected}
+              onClick={() => { onShowInstallModal() }}
+              disabled={!wallet?.connected || isConnectionError}
             >
               <div className="hidden group-disabled:block normal-case">
-                Install Pod
+                Update pNode Software
               </div>
               <span className="block group-disabled:hidden" >
-                Install Pod
+                Update pNode Software
               </span>
             </button>
 
@@ -943,7 +991,7 @@ export const HomeView: FC = ({ }) => {
                 }]}
                   onClick={() => {
                     setShowNetworkSpeedModal(false);
-                    networkStats?.data?.downloadSpeed == 0 ?
+                    networkStats?.data?.download == "0Mbps" ?
                       setNetworkStats({
                         isFetching: false, isError: false, data: null
                       })
@@ -955,7 +1003,9 @@ export const HomeView: FC = ({ }) => {
               </div>
               {
                 networkStats?.isFetching ?
-                  <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
+                  <div className='text-center font-normal my-5 w-[50ch]'>
+                    <p className='text-2xl mb-7 text-center'>Network Speed Status</p>
+
                     <CircularProgress />
                   </div>
                   :
@@ -963,16 +1013,14 @@ export const HomeView: FC = ({ }) => {
                     <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
                       <p className='text-2xl mb-4 '>Something went wrong. Please try again...</p>
                       <button
-                        className="w-full btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
-                        onClick={() => { getNetworkStats() }}
+                        className="px-5 py-2 btn btn-sm bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
+                        onClick={async () => { await getNetworkStats() }}
                       >
-                        <span>
-                          Retry
-                        </span>
+                        Retry
                       </button>
                     </div>
                     :
-                    <div className='text-left font-normal my-5 mt-10 w-[50ch]'>
+                    <div className='text-left font-normal my-5 w-[50ch]'>
                       <p className='text-2xl mb-4 text-center'>Network Speed Status</p>
                       <div className='border-b border-[#4a4a4a] my-4 w-full' />
                       <div className='flex flex-row items-center justify-between mb-4'>
@@ -985,15 +1033,8 @@ export const HomeView: FC = ({ }) => {
                             <span className='mr-2'><PublishOutlinedIcon /></span>
                             Upload Speed
                           </p>
-                          <p className='text-xl'>
-                            <span className='mr-2'><TimerOutlinedIcon /></span>
-                            Latency
-                          </p>
                         </div>
                         <div className="flex flex-col  gap-4">
-                          <p className='text-xl'>
-                            :
-                          </p>
                           <p className='text-xl'>
                             :
                           </p>
@@ -1003,13 +1044,10 @@ export const HomeView: FC = ({ }) => {
                         </div>
                         <div className="flex flex-col  gap-4">
                           <p className='text-xl'>
-                            {networkStats?.data?.downloadSpeed?.toFixed(2)} Mbps
+                            {networkStats?.data?.download}
                           </p>
                           <p className='text-xl'>
-                            {networkStats?.data?.uploadSpeed?.toFixed(2)} Mbps
-                          </p>
-                          <p className='text-xl'>
-                            {networkStats?.data?.latency} ms
+                            {networkStats?.data?.upload}
                           </p>
                         </div>
                       </div>
@@ -1036,24 +1074,8 @@ export const HomeView: FC = ({ }) => {
           ?
           <div className="flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 focus:outline-none bg-[#0000009b] opacity-100">
             <div className="justify-center items-center flex-col overflow-x-hidden overflow-y-auto fixed z-9999 rounded-lg px-10 py-5 bg-[#08113b]">
-              <div className="absolute top-0 right-0 p-5 ">
-                <CloseIcon sx={[{ color: "#b7094c", transform: "scale(1.3)" },
-                { transition: "transform .1s" },
-                {
-                  '&:hover': {
-                    // color: 'white',
-                    cursor: 'pointer',
-                    transform: "scale(1.5)"
-                  },
-                }]}
-                  onClick={() => {
-                    setIsShowInstallModal(false);
-                  }}
-                >
-                </CloseIcon>
-              </div>
-              <h2 className="absolute top-0 left-0 p-5 text-xl">Pod Installation</h2>
-              <InstallPod />
+              <h2 className="absolute top-0 left-0 p-5 text-xl">Update pNode Software</h2>
+              <InstallPod onClose={() => { setIsShowInstallModal(!isShowInstallModal) }} />
             </div>
           </div>
           :
