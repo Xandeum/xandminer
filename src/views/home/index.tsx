@@ -547,7 +547,7 @@ export const HomeView: FC = ({ }) => {
 
         {/* left side column */}
         <div className="w-full flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-3">
-          <h4 className="md:w-full text-4xl text-left text-slate-300 ">
+          <h4 className="md:w-full text-3xl text-left text-slate-300 ">
             <p>Drive Information</p>
           </h4>
           <div className='border-b border-[#4a4a4a] mb-4 mt-2 w-full' />
@@ -813,72 +813,82 @@ export const HomeView: FC = ({ }) => {
         {/* right side column */}
 
         <div className="w-full md:w-[20%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-3">
-          <div className='w-full flex flex-row items-center justify-around gap-4 border-b border-[#4a4a4a] pb-2'>
-            {
-              isServiceOnline ?
-                <div className='flex flex-row items-center gap-2'>
-                  <Brightness1RoundedIcon color='success' className='animate-pulse' />
-                  <span className="text-2xl text-slate-300 ">
-                    XandMinerD Online
-                  </span>
-                  <button className='bg-[#b42f2f] p-1 rounded-lg hover:bg-[#c23232]'>
-                    <BlockIcon className='text-white ' />
-                  </button>
-                </div>
-                :
-                <div className='flex flex-row items-center gap-2'>
-                  <RadioButtonCheckedRoundedIcon color='error' className='animate-pulse' />
-                  <span className="text-2xl text-slate-300 ">
-                    XandMinerD Offline
-                  </span>
-                  <button className='p-1 bg-[#198476] hover:bg-[#279d8d] rounded-lg'>
-                    <PlayArrowIcon className='text-white' />
-                  </button>
-                </div>
-            }
+          <div className='w-full flex flex-row items-start justify-start gap-4 border-b border-[#4a4a4a] pb-2'>
+            <span className="text-3xl text-slate-300 ">
+              pNode Software
+            </span>
           </div>
 
           {
             isServerInfoLoading ?
-              <div className='text-lg flex flex-col w-full px-3 pt-2 gap-2'>
-                <div className='text-lg flex flex-row items-baseline gap-2'>
-                  XandMiner: {VERSION_NO}
-                </div>
-                <div className='text-lg flex flex-row items-baseline gap-2'>
-                  IP address: <CircularProgress size={12} />
-                </div>
-                <div className='text-lg flex flex-row items-baseline gap-2'>
-                  Hostname: <CircularProgress size={12} />
-                </div>
+              <div className='text-base flex flex-col w-full px-3 pt-2 '>
+                <table className='w-full mt-4'>
+                  <tbody>
+                    <tr className='border-none'>
+                      <td className='p-1'>xandminer</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{VERSION_NO}</td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>xandminerd</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'><CircularProgress size={12} /></td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>pod</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'><CircularProgress size={12} /></td>
+                    </tr>
+                    <br />
+                    <tr className='border-none'>
+                      <td className='p-1'>IP address</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'><CircularProgress size={12} /></td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>Hostname</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'><CircularProgress size={12} /></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
               :
-              <div className='text-lg flex flex-col w-full px-3 pt-2 gap-2'>
-                <div className='text-lg flex flex-row items-baseline gap-2'>
-                  XandMiner: {VERSION_NO}
-                </div>
-                <div className='text-lg flex flex-row items-baseline gap-2'>
-                  XandMinerD: {VERSION_NO}
-                </div>
-                <div className='text-lg flex flex-row items-baseline gap-2'>
-                  pod: {VERSION_NO}
-                </div>
-                <div className='text-lg flex flex-row items-baseline gap-2'>
-                  IP address: {serverIP}
-                </div>
-                <div className='text-lg flex flex-row items-baseline gap-2'>
-                  Hostname: {serverHostname}
-                </div>
+              <div className='text-base flex flex-col w-full px-3 pt-2'>
+                <table className='w-full mt-4'>
+                  <tbody>
+                    <tr className='border-none'>
+                      <td className='p-1'>xandminer</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{VERSION_NO}</td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>xandminerd</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{VERSION_NO}</td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>pod</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{VERSION_NO}</td>
+                    </tr>
+                    <br />
+                    <tr className='border-none'>
+                      <td className='p-1'>IP address</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{serverIP}</td>
+                    </tr>
+                    <tr className='border-none'>
+                      <td className='p-1'>Hostname</td>
+                      <td className='p-1'>:</td>
+                      <td className='p-1'>{serverHostname}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
           }
 
           <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>
-            {/* {
-              isServiceOnline ?
-                <button className='btn bg-[#b7094c] text-white w-full normal-case' onClick={() => { setIsServiceOnline(false) }}>Stop the service</button>
-                :
-                <button className='btn bg-[#129f8c] text-white w-full normal-case' onClick={() => { setIsServiceOnline(true) }}>Start the service</button>
-            } */}
-
             {
               !isKeypairGenerated ?
                 <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError || isFetching} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
@@ -951,10 +961,10 @@ export const HomeView: FC = ({ }) => {
               disabled={!wallet?.connected || isConnectionError}
             >
               <div className="hidden group-disabled:block normal-case">
-                Install / Update Pod
+                Update pNode Software
               </div>
               <span className="block group-disabled:hidden" >
-                Install / Update Pod
+                Update pNode Software
               </span>
             </button>
 
@@ -1064,23 +1074,7 @@ export const HomeView: FC = ({ }) => {
           ?
           <div className="flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 focus:outline-none bg-[#0000009b] opacity-100">
             <div className="justify-center items-center flex-col overflow-x-hidden overflow-y-auto fixed z-9999 rounded-lg px-10 py-5 bg-[#08113b]">
-              <div className="absolute top-0 right-0 p-5 ">
-                <CloseIcon sx={[{ color: "#b7094c", transform: "scale(1.3)" },
-                { transition: "transform .1s" },
-                {
-                  '&:hover': {
-                    // color: 'white',
-                    cursor: 'pointer',
-                    transform: "scale(1.5)"
-                  },
-                }]}
-                  onClick={() => {
-                    setIsShowInstallModal(false);
-                  }}
-                >
-                </CloseIcon>
-              </div>
-              <h2 className="absolute top-0 left-0 p-5 text-xl">Pod Installation</h2>
+              <h2 className="absolute top-0 left-0 p-5 text-xl">Update pNode Software</h2>
               <InstallPod onClose={() => { setIsShowInstallModal(!isShowInstallModal) }} />
             </div>
           </div>
