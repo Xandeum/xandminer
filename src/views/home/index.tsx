@@ -597,7 +597,7 @@ export const HomeView: FC = ({ }) => {
                             </Box>
 
                             <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1, marginBottom: 2 }}>
-                              <h2 className="text-lg font-bold text-[#2196f3]">Drive Type</h2>
+                              <h2 className="text-lg font-bold text-[#2196f3]">Drive Type: </h2>
                               <h2 className="text-lg font-bold ">{drive?.type == 'part' ? 'Partition' : drive?.type}</h2>
                             </Box>
 
