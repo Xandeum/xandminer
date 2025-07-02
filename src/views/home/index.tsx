@@ -5,13 +5,12 @@ import LinearProgress from '@mui/material/LinearProgress';
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
 import { getNetworkInfo } from '../../services/getNetworkInfo';
-import { createKeypair, getKeypair, getServerIP } from '../../services/keypairServices'
+import { createKeypair, getKeypair } from '../../services/keypairServices'
+import { getServerIP, getVersions } from '../../services/getServerInfo';
 import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CloseIcon from '@mui/icons-material/Close';
-import BlockIcon from '@mui/icons-material/Block';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
@@ -83,6 +82,8 @@ export const HomeView: FC = ({ }) => {
   const [serverHostname, setServerHostname] = React.useState("");
   const [isServerInfoLoading, setIsServerInfoLoading] = React.useState(true);
   const [isShowInstallModal, setIsShowInstallModal] = React.useState(false);
+  const [xandminderdVersion, setXandminderdVersion] = React.useState<string>("");
+  const [podVersion, setPodVersion] = React.useState<string>("");
 
   //read the drive info from the server on page load
   React.useEffect(() => {
@@ -119,6 +120,20 @@ export const HomeView: FC = ({ }) => {
       setIsServerInfoLoading(false);
       console.log("error while fetching server IP", error);
     })
+
+    //get the server versions
+    getVersions().then((response) => {
+
+      if (response?.ok) {
+        setXandminderdVersion(response?.data?.xandminderd ?? '-');
+        setPodVersion(response?.data?.pod ?? '-');
+        setIsServerInfoLoading(false);
+        return;
+      }
+    }).catch((error) => {
+      setIsServerInfoLoading(false);
+      console.log("error while fetching server versions", error);
+    });
 
     getKeypair().then((response) => {
       if (response.ok) {
@@ -865,12 +880,12 @@ export const HomeView: FC = ({ }) => {
                     <tr className='border-none'>
                       <td className='p-1'>xandminerd</td>
                       <td className='p-1'>:</td>
-                      <td className='p-1'>{VERSION_NO}</td>
+                      <td className='p-1'>{xandminderdVersion}</td>
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1'>pod</td>
                       <td className='p-1'>:</td>
-                      <td className='p-1'>{VERSION_NO}</td>
+                      <td className='p-1'>{podVersion}</td>
                     </tr>
                     <br />
                     <tr className='border-none'>
