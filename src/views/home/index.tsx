@@ -61,8 +61,10 @@ export const HomeView: FC = ({ }) => {
     isFetching: false,
     isError: false,
     data: {
-      download: "0Mbps",
-      upload: "0Mbps",
+      download: "0 Mbps",
+      upload: "0 Mbps",
+      ping: "0 ms",
+      latency: "0 ms",
     }
   });
 
@@ -549,15 +551,21 @@ export const HomeView: FC = ({ }) => {
 
       {
         isServerInfoLoading ?
-          <div className='flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-5'>
-            <span className="flex flex-row items-center">IP address : <CircularProgress size={12} /></span>
-            <span className="flex flex-row items-center">Hostname : <CircularProgress size={12} /></span>
+          <div className='flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-3 md:gap-10'>
+            <div className='flex flex-row items-center gap-2'>
+              <span>IP address : </span>
+              <CircularProgress size={12} className='mt-1' />
+            </div>
+            <div className='flex flex-row items-center gap-2'>
+              <span>Hostname : </span>
+              <CircularProgress size={12} className='mt-1' />
+            </div>
           </div>
           :
-          <div className='flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-4'>
-            <span>IP address : {serverIP}</span>
-            <span>Hostname : {serverHostname}</span>
-            <span className="underline cursor-pointer" onClick={async () => { await getNetworkStats(); setShowNetworkSpeedModal(true) }}>Test Network Speed</span>
+          <div className='flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-3 md:gap-10'>
+            <span>IP address : <span className='text-[#fda31b]'>{serverIP}</span></span>
+            <span>Hostname : <span className='text-[#fda31b]'>{serverHostname}</span></span>
+            <span className="underline cursor-pointer text-white hover:text-[#fda31b]" onClick={async () => { await getNetworkStats(); setShowNetworkSpeedModal(true) }}>Test Network Speed</span>
           </div>
       }
       {/* div with one side is 1/3 of the full screen with and rest with another div */}
@@ -566,7 +574,7 @@ export const HomeView: FC = ({ }) => {
         {/* left side column */}
         <div className="w-full flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-3">
           <h4 className="md:w-full text-2xl text-left text-slate-300 ">
-            <p>Manage Drive</p>
+            <p>Manage Drives</p>
           </h4>
           <div className='border-b border-[#4a4a4a] mb-4 mt-2 w-full' />
           {
@@ -813,12 +821,12 @@ export const HomeView: FC = ({ }) => {
                     <tr className='border-none'>
                       <td className='p-1'>xandminerd</td>
                       <td className='p-1'>:</td>
-                      <td className='p-1'><CircularProgress size={12} /></td>
+                      <td className='p-1 pt-2'><CircularProgress size={12} /></td>
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1'>pod</td>
                       <td className='p-1'>:</td>
-                      <td className='p-1'><CircularProgress size={12} /></td>
+                      <td className='p-1 pt-2'><CircularProgress size={12} /></td>
                     </tr>
                   </tbody>
                 </table>
@@ -883,7 +891,7 @@ export const HomeView: FC = ({ }) => {
                   </div>
                 </button>
                 :
-                <Tooltip title={`${keypairPubkey}`} placement='top'>
+                <Tooltip title={`Click to copy ${keypairPubkey}`} placement='top'>
                   <button onClick={copyToClipboard} disabled={!wallet?.connected || isGenerateProcessing} className='btn bg-transparent hover:bg-[#622657] rounded-lg font-light w-full text-white mt-8  normal-case border-[#4a4a4a]'>
                     pNode Identity Pubkey: {keypairPubkey?.slice(0, 7)}...{keypairPubkey?.slice(keypairPubkey?.length - 7, keypairPubkey?.length)}
                   </button>
