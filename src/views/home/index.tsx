@@ -184,6 +184,20 @@ export const HomeView: FC = ({ }) => {
     return;
   }
 
+  const scrollToDedicateBtn = () => {
+    const element = document.getElementById('dedicateBtn');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  useEffect(() => {
+    // scroll to dedicate button when dedicating amnt is greater than 10
+    if (dedicatingAmnt?.some((drive) => drive?.amount > 10)) {
+      scrollToDedicateBtn();
+    }
+  }, [dedicatingAmnt]);
+
   //function related to read the network stats
   const getNetworkStats = async () => {
     setNetworkStats({ ...networkStats, isFetching: true, isError: false, data: null });
@@ -767,6 +781,7 @@ export const HomeView: FC = ({ }) => {
                                 :
                                 <div className='w-full'>
                                   <button
+                                    id='dedicateBtn'
                                     className={`w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case ${dedicatingAmnt[index]?.amount > 10 ? 'animate-pulse' : ''}`}
                                     onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
                                     disabled={isDedicateProcessing || !isEnoughSpace(drive?.available)}
