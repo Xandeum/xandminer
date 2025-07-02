@@ -487,15 +487,6 @@ export const HomeView: FC = ({ }) => {
         return;
       }
 
-      // if (wallet?.publicKey?.toString() !== pNodeManagerInfo?.owner?.toString()) {
-      //   notify({
-      //     message: "Error",
-      //     description: "Please connect the wallet which used to buy pNodes",
-      //     type: "error",
-      //   });
-      //   return;
-      // }
-
       if (pNodeManagerInfo?.registered_pnodes >= pNodeManagerInfo.purchased_pnodes) {
         notify({
           message: "Error",
@@ -554,15 +545,28 @@ export const HomeView: FC = ({ }) => {
   }
 
   return (
-    <div className="flex mx-auto flex-col items-center md:items-start w-full p-4 ">
+    <div className="flex mx-auto flex-col items-center md:items-start w-full">
 
+      {
+        isServerInfoLoading ?
+          <div className='flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-5'>
+            <span className="flex flex-row items-center">IP address : <CircularProgress size={12} /></span>
+            <span className="flex flex-row items-center">Hostname : <CircularProgress size={12} /></span>
+          </div>
+          :
+          <div className='flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-4'>
+            <span>IP address : {serverIP}</span>
+            <span>Hostname : {serverHostname}</span>
+            <span className="underline cursor-pointer" onClick={async () => { await getNetworkStats(); setShowNetworkSpeedModal(true) }}>Test Network Speed</span>
+          </div>
+      }
       {/* div with one side is 1/3 of the full screen with and rest with another div */}
       <div className="w-full h-full flex md:flex-row items-start justify-between gap-4 flex-col-reverse">
 
         {/* left side column */}
         <div className="w-full flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-3">
-          <h4 className="md:w-full text-3xl text-left text-slate-300 ">
-            <p>Drive Information</p>
+          <h4 className="md:w-full text-2xl text-left text-slate-300 ">
+            <p>Manage Drive</p>
           </h4>
           <div className='border-b border-[#4a4a4a] mb-4 mt-2 w-full' />
           {
@@ -571,22 +575,19 @@ export const HomeView: FC = ({ }) => {
                 <CircularProgress />
               </div>
               :
-              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5 px-5">
+              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-3 justify-items-center justify-center gap-y-16 gap-x-10 mt-5 mb-5 px-5">
                 {
                   driveInfo?.length > 0 ?
                     driveInfo?.map((drive, index) => {
                       return (
-                        // <div key={index} className="relative group lg:min-w-[22rem] min-w-full max-w-md">
                         <div key={index} className="card relative flex gap-3 w-full project-card min-w-full min-h-[7rem] rounded-xl overflow-hidden items-center justify-between">
 
                           <div className="card-body w-full">
-                            {/* <div className="bg-black p-4 rounded-lg shadow-md min-w-[20rem] border-white border"> */}
-                            {/* <h2 className="text-2xl font-bold mb-4">Drive {index + 1}</h2> */}
-                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
+                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 2 }}>
                               <StorageIcon color='primary' fontSize='large' />
                               <h2 className="text-2xl font-bold ">{drive?.name || "Drive " + (index + 1)}</h2>
                             </Box>
-                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
+                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 2 }}>
                               <SpeedIcon color='primary' fontSize='medium' />
                               <h2 className="text-xl font-bold ">{drive?.type}</h2>
                             </Box>
@@ -601,46 +602,11 @@ export const HomeView: FC = ({ }) => {
                                 <span>{prettyBytes(drive?.available ?? 0)} available of {prettyBytes(drive?.capacity || drive?.capacity)} </span>
                               </Box>
                             </Box>
-                            <div className='border-b border-[#4a4a4a] my-8 w-full' />
+                            <div className='border-b border-[#4a4a4a] my-4 w-full' />
 
                             <p>Dedicate {drive?.dedicated ? "additional" : null} space</p>
 
-                            <Box sx={{ width: '100%' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Box sx={{ width: '100%', mx: '0.35rem' }}>
-                                  <Slider
-                                    size="medium"
-                                    defaultValue={0}
-                                    min={10_000_000_000}
-                                    max={drive?.available - 10_000_000_000}
-                                    aria-label="Small"
-                                    valueLabelDisplay="off"
-                                    value={dedicatingAmnt[index] == undefined ? 0 : dedicatingAmnt[index]?.amount}
-                                    onChange={(event, value) => {
-                                      setDedicatingAmnt(prevState => {
-                                        const updatedArray = [...prevState];
-                                        updatedArray[index] = { disk: index, amount: value as number, type: ((prettyBytes(value as number || 0))?.split(" ")[1]), isEditing: false };
-                                        return updatedArray;
-                                      });
-                                    }}
-                                    marks={[
-                                      {
-                                        value: 1_000_000_000,
-                                        label: '0',
-                                      },
-                                      {
-                                        value: drive?.capacity,
-                                        label: prettyBytes(drive?.capacity ?? 0),
-                                      },
-                                    ]}
-                                    step={1_000_000_000}
-                                    disabled={drive?.capacity - 10_000_000_000 <= 0 || drive?.available == 0}
-                                  />
-                                </Box>
-                              </Box>
-                            </Box>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%', marginBottom: 5 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%' }}>
                               <IconButton
                                 aria-label="delete"
                                 color='info'
@@ -743,6 +709,41 @@ export const HomeView: FC = ({ }) => {
                                 <AddBox />
                               </IconButton>
                             </Box>
+
+                            <Box sx={{ width: '100%' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Box sx={{ width: '100%', mx: '0.35rem' }}>
+                                  <Slider
+                                    size="medium"
+                                    defaultValue={0}
+                                    min={10_000_000_000}
+                                    max={drive?.available - 10_000_000_000}
+                                    aria-label="Small"
+                                    valueLabelDisplay="off"
+                                    value={dedicatingAmnt[index] == undefined ? 0 : dedicatingAmnt[index]?.amount}
+                                    onChange={(event, value) => {
+                                      setDedicatingAmnt(prevState => {
+                                        const updatedArray = [...prevState];
+                                        updatedArray[index] = { disk: index, amount: value as number, type: ((prettyBytes(value as number || 0))?.split(" ")[1]), isEditing: false };
+                                        return updatedArray;
+                                      });
+                                    }}
+                                    marks={[
+                                      {
+                                        value: 1_000_000_000,
+                                        label: '0',
+                                      },
+                                      {
+                                        value: drive?.capacity,
+                                        label: prettyBytes(drive?.capacity ?? 0),
+                                      },
+                                    ]}
+                                    step={1_000_000_000}
+                                    disabled={drive?.capacity - 10_000_000_000 <= 0 || drive?.available == 0}
+                                  />
+                                </Box>
+                              </Box>
+                            </Box>
                             {
                               (drive?.available == 0) ?
 
@@ -756,34 +757,6 @@ export const HomeView: FC = ({ }) => {
                                 </button>
                                 :
                                 <div className='w-full'>
-                                  {
-                                    index == 0 ?
-                                      <button
-                                        className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4 md:text-[10px] lg:text-sm normal-case"
-                                        onClick={() => { setShowNetworkSpeedModal(true); getNetworkStats() }}
-                                      >
-                                        <span>
-                                          Test Network Speed
-                                        </span>
-                                      </button>
-                                      :
-                                      null
-                                  }
-                                  {/* 
-                                  <button
-                                    className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4 md:text-[10px] lg:text-sm normal-case "
-                                    onClick={() => { onDedicateWholeDrive(drive?.available, drive?.mount?.toString()) }}
-                                    disabled={isDedicateWholeProcessing || !isEnoughSpace(drive?.available)}
-                                  >
-                                    {isDedicateWholeProcessing
-                                      ?
-                                      <Loader />
-                                      :
-                                      <span>
-                                        Dedicate Whole Drive for Rewards Boost
-                                      </span>
-                                    }
-                                  </button> */}
                                   <button
                                     className="w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case"
                                     onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
@@ -797,15 +770,10 @@ export const HomeView: FC = ({ }) => {
                                         Dedicate and Earn
                                       </span>
                                     }
-
-
                                   </button>
                                 </div>
-
                             }
                           </div>
-
-
                         </div>
                       )
                     })
@@ -823,13 +791,12 @@ export const HomeView: FC = ({ }) => {
           }
         </div>
 
-
         {/* right side column */}
 
         <div className="w-full md:w-[20%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-3">
           <div className='w-full flex flex-row items-start justify-start gap-4 border-b border-[#4a4a4a] pb-2'>
-            <span className="text-3xl text-slate-300 ">
-              pNode Software
+            <span className="text-2xl text-slate-300 ">
+              Manage pNode
             </span>
           </div>
 
@@ -850,17 +817,6 @@ export const HomeView: FC = ({ }) => {
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1'>pod</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'><CircularProgress size={12} /></td>
-                    </tr>
-                    <br />
-                    <tr className='border-none'>
-                      <td className='p-1'>IP address</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'><CircularProgress size={12} /></td>
-                    </tr>
-                    <tr className='border-none'>
-                      <td className='p-1'>Hostname</td>
                       <td className='p-1'>:</td>
                       <td className='p-1'><CircularProgress size={12} /></td>
                     </tr>
@@ -886,26 +842,28 @@ export const HomeView: FC = ({ }) => {
                       <td className='p-1'>:</td>
                       <td className='p-1'>{podVersion}</td>
                     </tr>
-                    <br />
-                    <tr className='border-none'>
-                      <td className='p-1'>IP address</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'>{serverIP}</td>
-                    </tr>
-                    <tr className='border-none'>
-                      <td className='p-1'>Hostname</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'>{serverHostname}</td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
           }
 
-          <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>
+          <div className='w-full flex flex-col items-center justify-between mt-8 gap-2'>
+            <button
+              className='btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] rounded-lg font-light text-white w-full normal-case disabled:hover:bg-none'
+              onClick={() => { onShowInstallModal() }}
+              disabled={!wallet?.connected || isConnectionError}
+            >
+              <div className="hidden group-disabled:block normal-case">
+                Update pNode Software
+              </div>
+              <span className="block group-disabled:hidden" >
+                Update pNode Software
+              </span>
+            </button>
+
             {
               !isKeypairGenerated ?
-                <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError || isFetching} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError || isFetching} className='btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] rounded-lg font-light w-full disabled:hover:bg-none  text-white mt-8  normal-case'>
                   {
                     isGenerateProcessing ?
                       <span className='flex flex-row items-center gap-3'>
@@ -933,19 +891,10 @@ export const HomeView: FC = ({ }) => {
             }
 
             {
-              isPnodeRegistered ?
-                <button onClick={() => { }} disabled className='btn bg-[#129f8c] hover:bg-[#198476] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#198476] disabled:text-white mt-8  normal-case'>
-                  pNode has registered.
-                </button>
-                :
-                null
-            }
-
-            {
               isKeypairGenerated && !isPnodeRegistered ?
                 <button onClick={onRegisterPNode}
                   disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching || isPnodeCheck}
-                  className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                  className='btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] rounded-lg font-light w-full disabled:hover:bg-none text-white normal-case'>
 
                   {
                     isRegisterProcessing ?
@@ -968,20 +917,6 @@ export const HomeView: FC = ({ }) => {
                 :
                 null
             }
-
-            <button
-              className='btn bg-[#fda31b] rounded-lg font-light text-white w-full normal-case disabled:hover:bg-none disabled:bg-[#909090] hover:bg-[#622657]'
-              onClick={() => { onShowInstallModal() }}
-              disabled={!wallet?.connected || isConnectionError}
-            >
-              <div className="hidden group-disabled:block normal-case">
-                Update pNode Software
-              </div>
-              <span className="block group-disabled:hidden" >
-                Update pNode Software
-              </span>
-            </button>
-
           </div>
         </div>
       </div>
