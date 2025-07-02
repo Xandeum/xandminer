@@ -591,13 +591,14 @@ export const HomeView: FC = ({ }) => {
                         <div key={index} className="card relative flex gap-3 w-full project-card min-w-full min-h-[7rem] rounded-xl overflow-hidden items-center justify-between">
 
                           <div className="card-body w-full">
-                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 2 }}>
+                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1, marginBottom: 2 }}>
                               <StorageIcon color='primary' fontSize='large' />
                               <h2 className="text-2xl font-bold ">{drive?.name || "Drive " + (index + 1)}</h2>
                             </Box>
-                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 2 }}>
-                              <SpeedIcon color='primary' fontSize='medium' />
-                              <h2 className="text-xl font-bold ">{drive?.type}</h2>
+
+                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1, marginBottom: 2 }}>
+                              <h2 className="text-lg font-bold text-[#2196f3]">Drive Type</h2>
+                              <h2 className="text-lg font-bold ">{drive?.type == 'part' ? 'Partition' : drive?.type}</h2>
                             </Box>
 
                             <p className='mb-2'>Dedicated: {prettyBytes(drive?.dedicated ?? 0)}</p>
@@ -766,7 +767,7 @@ export const HomeView: FC = ({ }) => {
                                 :
                                 <div className='w-full'>
                                   <button
-                                    className="w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case"
+                                    className={`w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case ${dedicatingAmnt[index]?.amount > 10 ? 'animate-pulse' : ''}`}
                                     onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
                                     disabled={isDedicateProcessing || !isEnoughSpace(drive?.available)}
                                   >
@@ -815,17 +816,14 @@ export const HomeView: FC = ({ }) => {
                   <tbody>
                     <tr className='border-none'>
                       <td className='p-1'>xandminer</td>
-                      <td className='p-1'>:</td>
                       <td className='p-1'>{VERSION_NO}</td>
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1'>xandminerd</td>
-                      <td className='p-1'>:</td>
                       <td className='p-1 pt-2'><CircularProgress size={12} /></td>
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1'>pod</td>
-                      <td className='p-1'>:</td>
                       <td className='p-1 pt-2'><CircularProgress size={12} /></td>
                     </tr>
                   </tbody>
@@ -836,26 +834,23 @@ export const HomeView: FC = ({ }) => {
                 <table className='w-full mt-4'>
                   <tbody>
                     <tr className='border-none'>
-                      <td className='p-1'>xandminer</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'>{VERSION_NO}</td>
+                      <td className='p-1 text-left'>xandminer</td>
+                      <td className='p-1 text-right'>{VERSION_NO}</td>
                     </tr>
                     <tr className='border-none'>
-                      <td className='p-1'>xandminerd</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'>{xandminderdVersion}</td>
+                      <td className='p-1 text-left'>xandminerd</td>
+                      <td className='p-1 text-right'>{xandminderdVersion}</td>
                     </tr>
                     <tr className='border-none'>
-                      <td className='p-1'>pod</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'>{podVersion}</td>
+                      <td className='p-1 text-left'>pod</td>
+                      <td className='p-1 text-right'>{podVersion}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
           }
 
-          <div className='w-full flex flex-col items-center justify-between mt-8 gap-2'>
+          <div className='w-full flex flex-col items-center justify-between mt-2 gap-2'>
             <button
               className='btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] rounded-lg font-light text-white w-full normal-case disabled:hover:bg-none'
               onClick={() => { onShowInstallModal() }}
