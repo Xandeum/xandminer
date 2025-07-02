@@ -123,9 +123,8 @@ export const HomeView: FC = ({ }) => {
 
     //get the server versions
     getVersions().then((response) => {
-
       if (response?.ok) {
-        setXandminderdVersion(response?.data?.xandminderd ?? '-');
+        setXandminderdVersion(response?.data?.xandminerd ?? '-');
         setPodVersion(response?.data?.pod ?? '-');
         setIsServerInfoLoading(false);
         return;
