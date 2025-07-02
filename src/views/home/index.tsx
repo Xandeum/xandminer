@@ -801,7 +801,7 @@ export const HomeView: FC = ({ }) => {
 
         {/* right side column */}
 
-        <div className="w-full md:w-[20%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-3">
+        <div className="w-full md:w-[25%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-3">
           <div className='w-full flex flex-row items-start justify-start gap-4 border-b border-[#4a4a4a] pb-2'>
             <span className="text-2xl text-slate-300 ">
               Manage pNode
