@@ -5,13 +5,12 @@ import LinearProgress from '@mui/material/LinearProgress';
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
 import { getNetworkInfo } from '../../services/getNetworkInfo';
-import { createKeypair, getKeypair, getServerIP } from '../../services/keypairServices'
+import { createKeypair, getKeypair } from '../../services/keypairServices'
+import { getServerIP, getVersions } from '../../services/getServerInfo';
 import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CloseIcon from '@mui/icons-material/Close';
-import BlockIcon from '@mui/icons-material/Block';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
@@ -62,8 +61,10 @@ export const HomeView: FC = ({ }) => {
     isFetching: false,
     isError: false,
     data: {
-      download: "0Mbps",
-      upload: "0Mbps",
+      download: "0 Mbps",
+      upload: "0 Mbps",
+      ping: "0 ms",
+      latency: "0 ms",
     }
   });
 
@@ -83,6 +84,8 @@ export const HomeView: FC = ({ }) => {
   const [serverHostname, setServerHostname] = React.useState("");
   const [isServerInfoLoading, setIsServerInfoLoading] = React.useState(true);
   const [isShowInstallModal, setIsShowInstallModal] = React.useState(false);
+  const [xandminderdVersion, setXandminderdVersion] = React.useState<string>("");
+  const [podVersion, setPodVersion] = React.useState<string>("");
 
   //read the drive info from the server on page load
   React.useEffect(() => {
@@ -119,6 +122,19 @@ export const HomeView: FC = ({ }) => {
       setIsServerInfoLoading(false);
       console.log("error while fetching server IP", error);
     })
+
+    //get the server versions
+    getVersions().then((response) => {
+      if (response?.ok) {
+        setXandminderdVersion(response?.data?.xandminerd ?? '-');
+        setPodVersion(response?.data?.pod ?? '-');
+        setIsServerInfoLoading(false);
+        return;
+      }
+    }).catch((error) => {
+      setIsServerInfoLoading(false);
+      console.log("error while fetching server versions", error);
+    });
 
     getKeypair().then((response) => {
       if (response.ok) {
@@ -167,6 +183,20 @@ export const HomeView: FC = ({ }) => {
     setDedicatingAmnt(drives);
     return;
   }
+
+  const scrollToDedicateBtn = () => {
+    const element = document.getElementById('dedicateBtn');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  useEffect(() => {
+    // scroll to dedicate button when dedicating amnt is greater than 10
+    if (dedicatingAmnt?.some((drive) => drive?.amount > 0)) {
+      scrollToDedicateBtn();
+    }
+  }, [dedicatingAmnt]);
 
   //function related to read the network stats
   const getNetworkStats = async () => {
@@ -473,15 +503,6 @@ export const HomeView: FC = ({ }) => {
         return;
       }
 
-      // if (wallet?.publicKey?.toString() !== pNodeManagerInfo?.owner?.toString()) {
-      //   notify({
-      //     message: "Error",
-      //     description: "Please connect the wallet which used to buy pNodes",
-      //     type: "error",
-      //   });
-      //   return;
-      // }
-
       if (pNodeManagerInfo?.registered_pnodes >= pNodeManagerInfo.purchased_pnodes) {
         notify({
           message: "Error",
@@ -540,15 +561,34 @@ export const HomeView: FC = ({ }) => {
   }
 
   return (
-    <div className="flex mx-auto flex-col items-center md:items-start w-full p-4 ">
+    <div className="flex mx-auto flex-col items-center md:items-start w-full">
 
+      {
+        isServerInfoLoading ?
+          <div className='flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-3 md:gap-10'>
+            <div className='flex flex-row items-center gap-2'>
+              <span>IP address : </span>
+              <CircularProgress size={12} className='mt-1' />
+            </div>
+            <div className='flex flex-row items-center gap-2'>
+              <span>Hostname : </span>
+              <CircularProgress size={12} className='mt-1' />
+            </div>
+          </div>
+          :
+          <div className='flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-3 md:gap-10'>
+            <span>IP address : <span className='text-[#fda31b]'>{serverIP}</span></span>
+            <span>Hostname : <span className='text-[#fda31b]'>{serverHostname}</span></span>
+            <span className="underline cursor-pointer text-white hover:text-[#fda31b]" onClick={async () => { await getNetworkStats(); setShowNetworkSpeedModal(true) }}>Test Network Speed</span>
+          </div>
+      }
       {/* div with one side is 1/3 of the full screen with and rest with another div */}
       <div className="w-full h-full flex md:flex-row items-start justify-between gap-4 flex-col-reverse">
 
         {/* left side column */}
         <div className="w-full flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg p-3">
-          <h4 className="md:w-full text-3xl text-left text-slate-300 ">
-            <p>Drive Information</p>
+          <h4 className="md:w-full text-2xl text-left text-slate-300 ">
+            <p>Manage Drives</p>
           </h4>
           <div className='border-b border-[#4a4a4a] mb-4 mt-2 w-full' />
           {
@@ -557,24 +597,22 @@ export const HomeView: FC = ({ }) => {
                 <CircularProgress />
               </div>
               :
-              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 justify-items-center justify-center gap-y-16 gap-x-10 mt-14 mb-5 px-5">
+              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-3 justify-items-center justify-center gap-y-16 gap-x-10 mt-5 mb-5 px-5">
                 {
                   driveInfo?.length > 0 ?
                     driveInfo?.map((drive, index) => {
                       return (
-                        // <div key={index} className="relative group lg:min-w-[22rem] min-w-full max-w-md">
                         <div key={index} className="card relative flex gap-3 w-full project-card min-w-full min-h-[7rem] rounded-xl overflow-hidden items-center justify-between">
 
                           <div className="card-body w-full">
-                            {/* <div className="bg-black p-4 rounded-lg shadow-md min-w-[20rem] border-white border"> */}
-                            {/* <h2 className="text-2xl font-bold mb-4">Drive {index + 1}</h2> */}
-                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
+                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1, marginBottom: 2 }}>
                               <StorageIcon color='primary' fontSize='large' />
                               <h2 className="text-2xl font-bold ">{drive?.name || "Drive " + (index + 1)}</h2>
                             </Box>
-                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, marginBottom: 4 }}>
-                              <SpeedIcon color='primary' fontSize='medium' />
-                              <h2 className="text-xl font-bold ">{drive?.type}</h2>
+
+                            <Box sx={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1, marginBottom: 2 }}>
+                              <h2 className="text-lg font-bold text-[#2196f3]">Drive Type: </h2>
+                              <h2 className="text-lg font-bold ">{drive?.type == 'part' ? 'Partition' : drive?.type}</h2>
                             </Box>
 
                             <p className='mb-2'>Dedicated: {prettyBytes(drive?.dedicated ?? 0)}</p>
@@ -587,46 +625,11 @@ export const HomeView: FC = ({ }) => {
                                 <span>{prettyBytes(drive?.available ?? 0)} available of {prettyBytes(drive?.capacity || drive?.capacity)} </span>
                               </Box>
                             </Box>
-                            <div className='border-b border-[#4a4a4a] my-8 w-full' />
+                            <div className='border-b border-[#4a4a4a] my-4 w-full' />
 
                             <p>Dedicate {drive?.dedicated ? "additional" : null} space</p>
 
-                            <Box sx={{ width: '100%' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Box sx={{ width: '100%', mx: '0.35rem' }}>
-                                  <Slider
-                                    size="medium"
-                                    defaultValue={0}
-                                    min={10_000_000_000}
-                                    max={drive?.available - 10_000_000_000}
-                                    aria-label="Small"
-                                    valueLabelDisplay="off"
-                                    value={dedicatingAmnt[index] == undefined ? 0 : dedicatingAmnt[index]?.amount}
-                                    onChange={(event, value) => {
-                                      setDedicatingAmnt(prevState => {
-                                        const updatedArray = [...prevState];
-                                        updatedArray[index] = { disk: index, amount: value as number, type: ((prettyBytes(value as number || 0))?.split(" ")[1]), isEditing: false };
-                                        return updatedArray;
-                                      });
-                                    }}
-                                    marks={[
-                                      {
-                                        value: 1_000_000_000,
-                                        label: '0',
-                                      },
-                                      {
-                                        value: drive?.capacity,
-                                        label: prettyBytes(drive?.capacity ?? 0),
-                                      },
-                                    ]}
-                                    step={1_000_000_000}
-                                    disabled={drive?.capacity - 10_000_000_000 <= 0 || drive?.available == 0}
-                                  />
-                                </Box>
-                              </Box>
-                            </Box>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%', marginBottom: 5 }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%' }}>
                               <IconButton
                                 aria-label="delete"
                                 color='info'
@@ -729,6 +732,41 @@ export const HomeView: FC = ({ }) => {
                                 <AddBox />
                               </IconButton>
                             </Box>
+
+                            <Box sx={{ width: '100%' }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Box sx={{ width: '100%', mx: '0.35rem' }}>
+                                  <Slider
+                                    size="medium"
+                                    defaultValue={0}
+                                    min={10_000_000_000}
+                                    max={drive?.available - 10_000_000_000}
+                                    aria-label="Small"
+                                    valueLabelDisplay="off"
+                                    value={dedicatingAmnt[index] == undefined ? 0 : dedicatingAmnt[index]?.amount}
+                                    onChange={(event, value) => {
+                                      setDedicatingAmnt(prevState => {
+                                        const updatedArray = [...prevState];
+                                        updatedArray[index] = { disk: index, amount: value as number, type: ((prettyBytes(value as number || 0))?.split(" ")[1]), isEditing: false };
+                                        return updatedArray;
+                                      });
+                                    }}
+                                    marks={[
+                                      {
+                                        value: 1_000_000_000,
+                                        label: '0',
+                                      },
+                                      {
+                                        value: drive?.capacity,
+                                        label: prettyBytes(drive?.capacity ?? 0),
+                                      },
+                                    ]}
+                                    step={1_000_000_000}
+                                    disabled={drive?.capacity - 10_000_000_000 <= 0 || drive?.available == 0}
+                                  />
+                                </Box>
+                              </Box>
+                            </Box>
                             {
                               (drive?.available == 0) ?
 
@@ -742,36 +780,9 @@ export const HomeView: FC = ({ }) => {
                                 </button>
                                 :
                                 <div className='w-full'>
-                                  {
-                                    index == 0 ?
-                                      <button
-                                        className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4 md:text-[10px] lg:text-sm normal-case"
-                                        onClick={() => { setShowNetworkSpeedModal(true); getNetworkStats() }}
-                                      >
-                                        <span>
-                                          Test Network Speed
-                                        </span>
-                                      </button>
-                                      :
-                                      null
-                                  }
-                                  {/* 
                                   <button
-                                    className="w-full btn bg-[#622657] hover:bg-[#6e2b62] disabled:bg-[#909090] disabled:text-black text-white  mb-4 md:text-[10px] lg:text-sm normal-case "
-                                    onClick={() => { onDedicateWholeDrive(drive?.available, drive?.mount?.toString()) }}
-                                    disabled={isDedicateWholeProcessing || !isEnoughSpace(drive?.available)}
-                                  >
-                                    {isDedicateWholeProcessing
-                                      ?
-                                      <Loader />
-                                      :
-                                      <span>
-                                        Dedicate Whole Drive for Rewards Boost
-                                      </span>
-                                    }
-                                  </button> */}
-                                  <button
-                                    className="w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case"
+                                    id='dedicateBtn'
+                                    className={`w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case ${dedicatingAmnt[index]?.amount > 0 ? 'animate-pulse' : ''}`}
                                     onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
                                     disabled={isDedicateProcessing || !isEnoughSpace(drive?.available)}
                                   >
@@ -783,15 +794,10 @@ export const HomeView: FC = ({ }) => {
                                         Dedicate and Earn
                                       </span>
                                     }
-
-
                                   </button>
                                 </div>
-
                             }
                           </div>
-
-
                         </div>
                       )
                     })
@@ -809,13 +815,12 @@ export const HomeView: FC = ({ }) => {
           }
         </div>
 
-
         {/* right side column */}
 
-        <div className="w-full md:w-[20%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-3">
+        <div className="w-full md:w-[25%] flex flex-col items-center justify-around border border-[#4a4a4a] rounded-lg h-full p-3">
           <div className='w-full flex flex-row items-start justify-start gap-4 border-b border-[#4a4a4a] pb-2'>
-            <span className="text-3xl text-slate-300 ">
-              pNode Software
+            <span className="text-2xl text-slate-300 ">
+              Manage pNode
             </span>
           </div>
 
@@ -826,29 +831,15 @@ export const HomeView: FC = ({ }) => {
                   <tbody>
                     <tr className='border-none'>
                       <td className='p-1'>xandminer</td>
-                      <td className='p-1'>:</td>
                       <td className='p-1'>{VERSION_NO}</td>
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1'>xandminerd</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'><CircularProgress size={12} /></td>
+                      <td className='p-1 pt-2'><CircularProgress size={12} /></td>
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1'>pod</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'><CircularProgress size={12} /></td>
-                    </tr>
-                    <br />
-                    <tr className='border-none'>
-                      <td className='p-1'>IP address</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'><CircularProgress size={12} /></td>
-                    </tr>
-                    <tr className='border-none'>
-                      <td className='p-1'>Hostname</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'><CircularProgress size={12} /></td>
+                      <td className='p-1 pt-2'><CircularProgress size={12} /></td>
                     </tr>
                   </tbody>
                 </table>
@@ -858,40 +849,39 @@ export const HomeView: FC = ({ }) => {
                 <table className='w-full mt-4'>
                   <tbody>
                     <tr className='border-none'>
-                      <td className='p-1'>xandminer</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'>{VERSION_NO}</td>
+                      <td className='p-1 text-left'>xandminer</td>
+                      <td className='p-1 text-right'>{VERSION_NO}</td>
                     </tr>
                     <tr className='border-none'>
-                      <td className='p-1'>xandminerd</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'>{VERSION_NO}</td>
+                      <td className='p-1 text-left'>xandminerd</td>
+                      <td className='p-1 text-right'>{xandminderdVersion}</td>
                     </tr>
                     <tr className='border-none'>
-                      <td className='p-1'>pod</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'>{VERSION_NO}</td>
-                    </tr>
-                    <br />
-                    <tr className='border-none'>
-                      <td className='p-1'>IP address</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'>{serverIP}</td>
-                    </tr>
-                    <tr className='border-none'>
-                      <td className='p-1'>Hostname</td>
-                      <td className='p-1'>:</td>
-                      <td className='p-1'>{serverHostname}</td>
+                      <td className='p-1 text-left'>pod</td>
+                      <td className='p-1 text-right'>{podVersion}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
           }
 
-          <div className='w-full flex flex-col items-center justify-between mt-8 gap-8 pt-5'>
+          <div className='w-full flex flex-col items-center justify-between mt-2 gap-2'>
+            <button
+              className='btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] rounded-lg font-light text-white w-full normal-case disabled:hover:bg-none'
+              onClick={() => { onShowInstallModal() }}
+              disabled={!wallet?.connected || isConnectionError}
+            >
+              <div className="hidden group-disabled:block normal-case">
+                Update pNode Software
+              </div>
+              <span className="block group-disabled:hidden" >
+                Update pNode Software
+              </span>
+            </button>
+
             {
               !isKeypairGenerated ?
-                <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError || isFetching} className='btn bg-[#FDA31B] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                <button onClick={onGenerateKeypair} disabled={!wallet?.connected || isGenerateProcessing || isConnectionError || isFetching} className='btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] rounded-lg font-light w-full disabled:hover:bg-none  text-white mt-8  normal-case'>
                   {
                     isGenerateProcessing ?
                       <span className='flex flex-row items-center gap-3'>
@@ -911,7 +901,7 @@ export const HomeView: FC = ({ }) => {
                   </div>
                 </button>
                 :
-                <Tooltip title={`${keypairPubkey}`} placement='top'>
+                <Tooltip title={`Click to copy ${keypairPubkey}`} placement='top'>
                   <button onClick={copyToClipboard} disabled={!wallet?.connected || isGenerateProcessing} className='btn bg-transparent hover:bg-[#622657] rounded-lg font-light w-full text-white mt-8  normal-case border-[#4a4a4a]'>
                     pNode Identity Pubkey: {keypairPubkey?.slice(0, 7)}...{keypairPubkey?.slice(keypairPubkey?.length - 7, keypairPubkey?.length)}
                   </button>
@@ -919,19 +909,10 @@ export const HomeView: FC = ({ }) => {
             }
 
             {
-              isPnodeRegistered ?
-                <button onClick={() => { }} disabled className='btn bg-[#129f8c] hover:bg-[#198476] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#198476] disabled:text-white mt-8  normal-case'>
-                  pNode has registered.
-                </button>
-                :
-                null
-            }
-
-            {
               isKeypairGenerated && !isPnodeRegistered ?
                 <button onClick={onRegisterPNode}
                   disabled={!wallet?.connected || isRegisterProcessing || isConnectionError || isFetching || isPnodeCheck}
-                  className='btn bg-[#129f8c] hover:bg-[#622657] rounded-lg font-light w-full disabled:hover:bg-none disabled:bg-[#909090] text-white mt-8  normal-case'>
+                  className='btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] rounded-lg font-light w-full disabled:hover:bg-none text-white normal-case'>
 
                   {
                     isRegisterProcessing ?
@@ -954,20 +935,6 @@ export const HomeView: FC = ({ }) => {
                 :
                 null
             }
-
-            <button
-              className='btn bg-[#fda31b] rounded-lg font-light text-white w-full normal-case disabled:hover:bg-none disabled:bg-[#909090] hover:bg-[#622657]'
-              onClick={() => { onShowInstallModal() }}
-              disabled={!wallet?.connected || isConnectionError}
-            >
-              <div className="hidden group-disabled:block normal-case">
-                Update pNode Software
-              </div>
-              <span className="block group-disabled:hidden" >
-                Update pNode Software
-              </span>
-            </button>
-
           </div>
         </div>
       </div>
