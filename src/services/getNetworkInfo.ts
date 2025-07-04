@@ -1,7 +1,6 @@
 import axios from "axios"
 import { API_BASE_URL } from "CONSTS";
 export const getNetworkInfo = async () => {
-    console.log("calling getNetworkInfo")
     try {
 
         const headers = {
@@ -14,7 +13,12 @@ export const getNetworkInfo = async () => {
             headers,
         };
         const response = await axios(options);
-        return { ok: true, data: response?.data?.data }
+
+        if (response?.data?.error) {
+            return { ok: false, error: response.data.error };
+        }
+        return { data: response.data, ok: true, };
+
     } catch (error) {
         return { ok: false, error: error.message }
     }

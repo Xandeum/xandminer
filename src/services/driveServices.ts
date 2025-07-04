@@ -21,10 +21,8 @@ export const dedicateSpace = async (space, path) => {
         if (response?.data?.data?.ok) {
             return { ok: true, path: response?.data?.data?.path }
         }
-        console.log("error >>> ", response?.data)
         return { ok: false, error: response?.data?.error }
     } catch (error) {
-        console.log("errorrr >>> ", error?.response?.data)
         return { ok: false, error: error?.response?.data }
     }
 }

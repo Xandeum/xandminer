@@ -24,7 +24,7 @@ export const FeatureInfoModal: FC<IProps> = ({ closeModal }) => {
                     </CloseIcon>
                 </div>
                 <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
-                    <h3 className='text-2xl font-bold text-white'>This feature is not available in the Constance Release.</h3>
+                    <h3 className='text-2xl font-bold text-white'>This feature is not available in the Munich Release.</h3>
                 </div>
                 <div className="text-center">
                     <button
