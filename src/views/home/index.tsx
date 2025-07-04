@@ -238,13 +238,19 @@ export const HomeView: FC = ({ }) => {
   // check space to dedicate
   const isEnoughSpace = (amount: number) => {
     const size = prettyBytes(amount);
-    const splitSize = size?.split(" ", size?.length - 1);
+    const splitSize = size?.split(" ");
 
-    if (parseInt(splitSize[0]) > 10 && splitSize[1].toLowerCase().includes("g")) {
+    const value = parseInt(splitSize[0]);
+    const unit = splitSize[1]?.toLowerCase();
+
+    if (unit.includes("t")) {
+      return true;
+    }
+    if (unit.includes("g") && value > 10) {
       return true;
     }
     return false;
-  }
+  };
 
   //set the dedicating amnt and type on edit
   const setDedicatingAmntOnEdit = (index) => {
