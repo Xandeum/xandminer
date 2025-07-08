@@ -567,7 +567,7 @@ export const HomeView: FC = ({ }) => {
   }
 
   return (
-    <div className="flex mx-auto flex-col items-center md:items-start w-full">
+    <div className="flex mx-auto flex-col items-center md:items-start w-full px-5">
 
       {
         isServerInfoLoading ?
@@ -603,7 +603,7 @@ export const HomeView: FC = ({ }) => {
                 <CircularProgress />
               </div>
               :
-              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-3 justify-items-center justify-center gap-y-16 gap-x-10 mt-5 mb-5 px-5">
+              <div className="w-full mx-auto grid grid-cols-1 md:grid-cols-3 2xl:grid-cols-4 justify-items-center justify-center gap-y-16 gap-x-10 mt-5 mb-5 px-5">
                 {
                   driveInfo?.length > 0 ?
                     driveInfo?.map((drive, index) => {
@@ -781,7 +781,7 @@ export const HomeView: FC = ({ }) => {
                                   disabled
                                 >
                                   <span>
-                                    Not Enough Space
+                                    No More Space to Dedicate
                                   </span>
                                 </button>
                                 :
