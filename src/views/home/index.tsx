@@ -790,7 +790,7 @@ export const HomeView: FC = ({ }) => {
                                     id='dedicateBtn'
                                     className={`w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case ${dedicatingAmnt[index]?.amount > 0 ? 'animate-pulse' : ''}`}
                                     onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
-                                    disabled={isDedicateProcessing || !isEnoughSpace(drive?.available)}
+                                    disabled={isDedicateProcessing || !isEnoughSpace(drive?.available) || !wallet?.connected || isConnectionError || isFetching}
                                   >
                                     {isDedicateProcessing
                                       ?
