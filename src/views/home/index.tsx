@@ -14,8 +14,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
-import RadioButtonCheckedRoundedIcon from '@mui/icons-material/RadioButtonCheckedRounded';
-import Brightness1RoundedIcon from '@mui/icons-material/Brightness1Rounded';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import StopCircleIcon from '@mui/icons-material/StopCircle';
 
 import { CircularProgress, TextField, Tooltip } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
@@ -790,7 +790,7 @@ export const HomeView: FC = ({ }) => {
                                     id='dedicateBtn'
                                     className={`w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case ${dedicatingAmnt[index]?.amount > 0 ? 'animate-pulse' : ''}`}
                                     onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
-                                    disabled={isDedicateProcessing || !isEnoughSpace(drive?.available) || !wallet?.connected || isConnectionError || isFetching}
+                                  // disabled={isDedicateProcessing || !isEnoughSpace(drive?.available) || !wallet?.connected || isConnectionError || isFetching || !isKeypairGenerated || !isPnodeRegistered}
                                   >
                                     {isDedicateProcessing
                                       ?
@@ -855,14 +855,29 @@ export const HomeView: FC = ({ }) => {
                 <table className='w-full mt-4'>
                   <tbody>
                     <tr className='border-none'>
+                      <td className='p-1 w-6 text-left hover:cursor-pointer'>
+                        <Tooltip title={`Stop the xandminer service`} placement='top'>
+                          <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                        </Tooltip>
+                      </td>
                       <td className='p-1 text-left'>xandminer</td>
                       <td className='p-1 text-right'>{VERSION_NO}</td>
                     </tr>
                     <tr className='border-none'>
+                      <td className='p-1 w-6 text-left hover:cursor-pointer'>
+                        <Tooltip title={`Stop the xandminerd service`} placement='top'>
+                          <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                        </Tooltip>
+                      </td>
                       <td className='p-1 text-left'>xandminerd</td>
                       <td className='p-1 text-right'>{xandminderdVersion}</td>
                     </tr>
                     <tr className='border-none'>
+                      <td className='p-1 w-6 text-left hover:cursor-pointer'>
+                        <Tooltip title={`Stop the pod service`} placement='top'>
+                          <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                        </Tooltip>
+                      </td>
                       <td className='p-1 text-left'>pod</td>
                       <td className='p-1 text-right'>{podVersion}</td>
                     </tr>
