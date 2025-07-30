@@ -37,6 +37,7 @@ import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
 import { dedicateSpace } from 'services/driveServices';
 import InstallPod from 'views/install-pod';
 import { VERSION_NO } from 'CONSTS';
+import { getServiceStatus } from 'services/systemServices';
 
 export const HomeView: FC = ({ }) => {
 
@@ -86,10 +87,32 @@ export const HomeView: FC = ({ }) => {
   const [isShowInstallModal, setIsShowInstallModal] = React.useState(false);
   const [xandminderdVersion, setXandminderdVersion] = React.useState<string>("");
   const [podVersion, setPodVersion] = React.useState<string>("");
+  const [serviceStatus, setServiceStatus] = React.useState<any>({
+    pod: 'unknown',
+    xandminer: 'unknown',
+    xandminerd: 'unknown'
+  });
 
   //read the drive info from the server on page load
   React.useEffect(() => {
     setIsFetching(true);
+
+    // check service status
+    getServiceStatus().then((response) => {
+      if (response.ok) {
+        console.log("service status >>> ", response.data);
+        setServiceStatus(response.data);
+        setIsConnectionError(false);
+        setIsServiceOnline(true);
+      } else {
+        setIsConnectionError(true);
+        setIsServiceOnline(false);
+      }
+    }).catch((error) => {
+      setIsConnectionError(true);
+      setIsServiceOnline(false);
+      console.log("error while fetching service status", error);
+    });
 
     getDriveInfo().then((response) => {
       if (response.ok) {
@@ -856,27 +879,48 @@ export const HomeView: FC = ({ }) => {
                   <tbody>
                     <tr className='border-none'>
                       <td className='p-1 w-6 text-left hover:cursor-pointer'>
-                        <Tooltip title={`Stop the xandminer service`} placement='top'>
-                          <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
-                        </Tooltip>
+                        {
+                          serviceStatus?.xandminer === 'started' ?
+                            <Tooltip title={`Stop the xandminer service`} placement='top'>
+                              <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                            </Tooltip>
+                            :
+                            <Tooltip title={`Start the xandminer service`} placement='top'>
+                              <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                            </Tooltip>
+                        }
                       </td>
                       <td className='p-1 text-left'>xandminer</td>
                       <td className='p-1 text-right'>{VERSION_NO}</td>
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1 w-6 text-left hover:cursor-pointer'>
-                        <Tooltip title={`Stop the xandminerd service`} placement='top'>
-                          <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
-                        </Tooltip>
+                        {
+                          serviceStatus?.xandminerd === 'started' ?
+                            <Tooltip title={`Stop the xandminerd service`} placement='top'>
+                              <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                            </Tooltip>
+                            :
+                            <Tooltip title={`Start the xandminerd service`} placement='top'>
+                              <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                            </Tooltip>
+                        }
                       </td>
                       <td className='p-1 text-left'>xandminerd</td>
                       <td className='p-1 text-right'>{xandminderdVersion}</td>
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1 w-6 text-left hover:cursor-pointer'>
-                        <Tooltip title={`Stop the pod service`} placement='top'>
-                          <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
-                        </Tooltip>
+                        {
+                          serviceStatus?.pod === 'started' ?
+                            <Tooltip title={`Stop the pod service`} placement='top'>
+                              <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                            </Tooltip>
+                            :
+                            <Tooltip title={`Start the pod service`} placement='top'>
+                              <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                            </Tooltip>
+                        }
                       </td>
                       <td className='p-1 text-left'>pod</td>
                       <td className='p-1 text-right'>{podVersion}</td>
