@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         }
 
         try {
-            const command = `sudo systemctl ${action} ${service}.service`;
+            const command = `systemctl daemon-reload && sudo systemctl ${action} ${service}.service`;
             const { stdout, stderr } = await execPromise(command);
 
             if (stderr) {

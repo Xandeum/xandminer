@@ -37,7 +37,7 @@ import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
 import { dedicateSpace } from 'services/driveServices';
 import InstallPod from 'views/install-pod';
 import { VERSION_NO } from 'CONSTS';
-import { getServiceStatus } from 'services/systemServices';
+import { callService, getServiceStatus } from 'services/systemServices';
 
 export const HomeView: FC = ({ }) => {
 
@@ -99,8 +99,7 @@ export const HomeView: FC = ({ }) => {
 
     // check service status
     getServiceStatus().then((response) => {
-      if (response.ok) {
-        console.log("service status >>> ", response.data);
+      if (response?.ok) {
         setServiceStatus(response.data);
         setIsConnectionError(false);
         setIsServiceOnline(true);
@@ -115,7 +114,7 @@ export const HomeView: FC = ({ }) => {
     });
 
     getDriveInfo().then((response) => {
-      if (response.ok) {
+      if (response?.ok) {
         setIsConnectionError(false);
         setIsServiceOnline(true);
         setDriveInfo(response.data);
@@ -589,6 +588,35 @@ export const HomeView: FC = ({ }) => {
     setIsShowInstallModal(true);
   }
 
+  const onServiceAction = async (action: string, service: string) => {
+    const response = await callService(action, service);
+    if (response.ok) {
+      // check service status
+      getServiceStatus().then((response) => {
+        if (response?.ok) {
+          setServiceStatus(response.data);
+          notify({
+            message: "Success",
+            description: `${service} service ${action}ed successfully`,
+            type: "success",
+          });
+          setIsConnectionError(false);
+        } else {
+          setIsConnectionError(true);
+        }
+      }).catch((error) => {
+        setIsConnectionError(true);
+        console.log("error while fetching service status", error);
+      });
+    } else {
+      notify({
+        message: `Failed to ${action} ${service} service`,
+        description: `${response.error}`,
+        type: "error",
+      });
+    }
+  }
+
   return (
     <div className="flex mx-auto flex-col items-center md:items-start w-full px-5">
 
@@ -882,11 +910,15 @@ export const HomeView: FC = ({ }) => {
                         {
                           serviceStatus?.xandminer === 'started' ?
                             <Tooltip title={`Stop the xandminer service`} placement='top'>
-                              <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                              <button onClick={(e) => { e.preventDefault(); onServiceAction('stop', 'xandminer') }}>
+                                <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                              </button>
                             </Tooltip>
                             :
                             <Tooltip title={`Start the xandminer service`} placement='top'>
-                              <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                              <button onClick={(e) => { e.preventDefault(); onServiceAction('start', 'xandminer') }}>
+                                <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                              </button>
                             </Tooltip>
                         }
                       </td>
@@ -898,11 +930,15 @@ export const HomeView: FC = ({ }) => {
                         {
                           serviceStatus?.xandminerd === 'started' ?
                             <Tooltip title={`Stop the xandminerd service`} placement='top'>
-                              <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                              <button onClick={(e) => { e.preventDefault(); onServiceAction('stop', 'xandminerd') }}>
+                                <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                              </button>
                             </Tooltip>
                             :
                             <Tooltip title={`Start the xandminerd service`} placement='top'>
-                              <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                              <button onClick={(e) => { e.preventDefault(); onServiceAction('start', 'xandminerd') }}>
+                                <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                              </button>
                             </Tooltip>
                         }
                       </td>
@@ -914,11 +950,15 @@ export const HomeView: FC = ({ }) => {
                         {
                           serviceStatus?.pod === 'started' ?
                             <Tooltip title={`Stop the pod service`} placement='top'>
-                              <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                              <button onClick={(e) => { e.preventDefault(); onServiceAction('stop', 'pod') }}>
+                                <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                              </button>
                             </Tooltip>
                             :
                             <Tooltip title={`Start the pod service`} placement='top'>
-                              <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                              <button onClick={(e) => { e.preventDefault(); onServiceAction('start', 'pod') }}>
+                                <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                              </button>
                             </Tooltip>
                         }
                       </td>
