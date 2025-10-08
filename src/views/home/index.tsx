@@ -36,7 +36,7 @@ import { createPnode, getPnode } from 'services/pnodeServices';
 import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
 import { dedicateSpace } from 'services/driveServices';
 import InstallPod from 'views/install-pod';
-import { VERSION_NO } from 'CONSTS';
+import { SYSTEM_RESERVE, VERSION_NO } from 'CONSTS';
 
 export const HomeView: FC = ({ }) => {
 
@@ -742,15 +742,15 @@ export const HomeView: FC = ({ }) => {
                               <IconButton
                                 aria-label="delete"
                                 color='info'
-                                disabled={dedicatingAmnt[index]?.amount + 11_000_000_000 > drive?.available}
+                                disabled={dedicatingAmnt[index]?.amount + 31_000_000_000 > drive?.available}
                                 onClick={() => {
                                   setDedicatingAmnt(prevState => {
                                     const updatedArray = [...prevState];
-                                    if (dedicatingAmnt[index]?.amount + 20_000_000_000 < drive?.available) {
+                                    if (dedicatingAmnt[index]?.amount + 40_000_000_000 < drive?.available) {
                                       updatedArray[index] = { disk: index, amount: updatedArray[index].amount + 10_000_000_000, type: ((prettyBytes(dedicatingAmnt[index]?.amount + 10_000_000_000 || 0))?.split(" ")[1]), isEditing: false };
                                       return updatedArray;
                                     }
-                                    updatedArray[index] = { disk: index, amount: drive?.available - 10_000_000_000, type: ((prettyBytes(drive?.available - 10_000_000_000 || 0))?.split(" ")[1]), isEditing: false }
+                                    updatedArray[index] = { disk: index, amount: drive?.available - SYSTEM_RESERVE, type: ((prettyBytes(drive?.available - SYSTEM_RESERVE || 0))?.split(" ")[1]), isEditing: false }
                                     return updatedArray;
                                   });
                                 }}
@@ -766,7 +766,7 @@ export const HomeView: FC = ({ }) => {
                                     size="medium"
                                     defaultValue={0}
                                     min={10_000_000_000}
-                                    max={drive?.available - 10_000_000_000}
+                                    max={drive?.available - SYSTEM_RESERVE}
                                     aria-label="Small"
                                     valueLabelDisplay="off"
                                     value={dedicatingAmnt[index] == undefined ? 0 : dedicatingAmnt[index]?.amount}
@@ -788,7 +788,7 @@ export const HomeView: FC = ({ }) => {
                                       },
                                     ]}
                                     step={1_000_000_000}
-                                    disabled={drive?.capacity - 10_000_000_000 <= 0 || drive?.available == 0}
+                                    disabled={drive?.capacity - SYSTEM_RESERVE <= 0 || drive?.available == 0}
                                   />
                                 </Box>
                               </Box>
@@ -808,7 +808,7 @@ export const HomeView: FC = ({ }) => {
                                 <div className='w-full'>
                                   <button
                                     id='dedicateBtn'
-                                    className={`w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case ${dedicatingAmnt[index]?.amount > 0 ? 'animate-pulse' : ''}`}
+                                    className={`w-full btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] disabled:text-black text-white normal-case ${dedicatingAmnt[index]?.amount > 0 && isPnodeRegistered && isKeypairGenerated ? 'animate-pulse' : ''}`}
                                     onClick={() => { onDedicateSpace(index, drive?.mount?.toString()) }}
                                     disabled={isDedicateProcessing || !isEnoughSpace(drive?.available) || !wallet?.connected || isConnectionError || isFetching || !isKeypairGenerated || !isPnodeRegistered}
                                   >
