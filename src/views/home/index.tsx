@@ -151,7 +151,7 @@ export const HomeView: FC = ({ }) => {
         }).catch((error) => {
           setIsPnodeRegistered(false);
           setIsPnodeCheck(false);
-          console.log("erroe while reading pnode registry", error);
+          console.log("error while reading pnode registry", error);
         });
 
         setKeypairPubkey(response.data);
@@ -529,7 +529,10 @@ export const HomeView: FC = ({ }) => {
           txid: res?.data
         });
         setIsRegisterProcessing(false);
-        window.location.reload()
+        // wait 10 seconds and then refresh the page
+        setTimeout(() => {
+          window?.location?.reload();
+        }, 10000);
         return;
       }
 
@@ -538,17 +541,34 @@ export const HomeView: FC = ({ }) => {
         description: res?.error?.message,
         type: "error",
       });
+
       setIsRegisterProcessing(false);
-      window.location.reload()
+      // wait 10 seconds and then refresh the page
+      setTimeout(() => {
+        window?.location?.reload();
+      }, 10000);
+      return;
 
     } catch (error) {
-      notify({
-        message: "Error",
-        description: error,
-        type: "error",
-      });
+      // check if the error is not text but an object or something else
+      if (typeof error === "object") {
+        notify({
+          message: "Error",
+          description: error?.message,
+          type: "error",
+        });
+      } else {
+        notify({
+          message: "Error",
+          description: error,
+          type: "error",
+        });
+      }
       setIsRegisterProcessing(false);
-      window.location.reload()
+      // wait 10 seconds and then refresh the page
+      setTimeout(() => {
+        window?.location?.reload();
+      }, 10000);
     }
   }
 
