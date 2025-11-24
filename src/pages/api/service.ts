@@ -61,7 +61,10 @@ export default async function handler(req, res) {
                 output: stdout,
             });
         } catch (error) {
-            res.status(500).json({ error: `Failed to ${action} service: ${error.message}` });
+            let errorMsg = error?.message?.toString()?.includes("not found") ?
+                `Service ${service} does not exist. Please ensure you have updated to the latest version.` :
+                error.message;
+            res.status(500).json(`${errorMsg}`);
         }
     } else {
         res.setHeader('Allow', ['GET', 'POST']);

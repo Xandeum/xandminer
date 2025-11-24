@@ -610,6 +610,31 @@ export const HomeView: FC = ({ }) => {
   }
 
   const onServiceAction = async (action: string, service: string) => {
+    if (!wallet?.connected) {
+      notify({
+        message: "Error",
+        description: "Please connect your wallet first.",
+        type: "error",
+      });
+      return;
+    }
+    if (!isPnodeRegistered) {
+      notify({
+        message: "Error",
+        description: "Please register your pNode first.",
+        type: "error",
+      });
+      return;
+    }
+    if (!isKeypairGenerated) {
+      notify({
+        message: "Error",
+        description: "Please generate your keypair first.",
+        type: "error",
+      });
+      return;
+    }
+
     const response = await callService(action, service);
     if (response.ok) {
       // check service status
@@ -937,7 +962,9 @@ export const HomeView: FC = ({ }) => {
                             </Tooltip>
                             :
                             <Tooltip title={`Start the xandminer service`} placement='top'>
-                              <button onClick={(e) => { e.preventDefault(); onServiceAction('start', 'xandminer') }}>
+                              <button
+                                onClick={(e) => { e.preventDefault(); onServiceAction('start', 'xandminer') }}
+                              >
                                 <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
                               </button>
                             </Tooltip>
@@ -957,7 +984,9 @@ export const HomeView: FC = ({ }) => {
                             </Tooltip>
                             :
                             <Tooltip title={`Start the xandminerd service`} placement='top'>
-                              <button onClick={(e) => { e.preventDefault(); onServiceAction('start', 'xandminerd') }}>
+                              <button
+                                onClick={(e) => { e.preventDefault(); onServiceAction('start', 'xandminerd') }}
+                              >
                                 <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
                               </button>
                             </Tooltip>
@@ -977,7 +1006,9 @@ export const HomeView: FC = ({ }) => {
                             </Tooltip>
                             :
                             <Tooltip title={`Start the pod service`} placement='top'>
-                              <button onClick={(e) => { e.preventDefault(); onServiceAction('start', 'pod') }}>
+                              <button
+                                onClick={(e) => { e.preventDefault(); onServiceAction('start', 'pod') }}
+                              >
                                 <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
                               </button>
                             </Tooltip>
