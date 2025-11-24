@@ -11,4 +11,4 @@ export const PNODE_PROGRAM = new PublicKey("3hMZVwdgRHYSyqkdK3Y8MdZzNwLkjzXod1Xr
 
 export const SYSTEM_RESERVE = 30_000_000_000;
 
-export const VERSION_NO = "v0.3.2";
+export const VERSION_NO = "v0.5.0";

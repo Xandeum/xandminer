@@ -14,8 +14,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
-import RadioButtonCheckedRoundedIcon from '@mui/icons-material/RadioButtonCheckedRounded';
-import Brightness1RoundedIcon from '@mui/icons-material/Brightness1Rounded';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
+import StopCircleIcon from '@mui/icons-material/StopCircle';
 
 import { CircularProgress, TextField, Tooltip } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
@@ -36,6 +36,8 @@ import { createPnode, getPnode } from 'services/pnodeServices';
 import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
 import { dedicateSpace } from 'services/driveServices';
 import InstallPod from 'views/install-pod';
+
+import { callService, getServiceStatus } from 'services/systemServices';
 import { SYSTEM_RESERVE, VERSION_NO } from 'CONSTS';
 
 export const HomeView: FC = ({ }) => {
@@ -86,13 +88,34 @@ export const HomeView: FC = ({ }) => {
   const [isShowInstallModal, setIsShowInstallModal] = React.useState(false);
   const [xandminderdVersion, setXandminderdVersion] = React.useState<string>("");
   const [podVersion, setPodVersion] = React.useState<string>("");
+  const [serviceStatus, setServiceStatus] = React.useState<any>({
+    pod: 'unknown',
+    xandminer: 'unknown',
+    xandminerd: 'unknown'
+  });
 
   //read the drive info from the server on page load
   React.useEffect(() => {
     setIsFetching(true);
 
+    // check service status
+    getServiceStatus().then((response) => {
+      if (response?.ok) {
+        setServiceStatus(response.data);
+        setIsConnectionError(false);
+        setIsServiceOnline(true);
+      } else {
+        setIsConnectionError(true);
+        setIsServiceOnline(false);
+      }
+    }).catch((error) => {
+      setIsConnectionError(true);
+      setIsServiceOnline(false);
+      console.log("error while fetching service status", error);
+    });
+
     getDriveInfo().then((response) => {
-      if (response.ok) {
+      if (response?.ok) {
         setIsConnectionError(false);
         setIsServiceOnline(true);
         setDriveInfo(response.data);
@@ -586,6 +609,60 @@ export const HomeView: FC = ({ }) => {
     setIsShowInstallModal(true);
   }
 
+  const onServiceAction = async (action: string, service: string) => {
+    if (!wallet?.connected) {
+      notify({
+        message: "Error",
+        description: "Please connect your wallet first.",
+        type: "error",
+      });
+      return;
+    }
+    if (!isPnodeRegistered) {
+      notify({
+        message: "Error",
+        description: "Please register your pNode first.",
+        type: "error",
+      });
+      return;
+    }
+    if (!isKeypairGenerated) {
+      notify({
+        message: "Error",
+        description: "Please generate your keypair first.",
+        type: "error",
+      });
+      return;
+    }
+
+    const response = await callService(action, service);
+    if (response.ok) {
+      // check service status
+      getServiceStatus().then((response) => {
+        if (response?.ok) {
+          setServiceStatus(response.data);
+          notify({
+            message: "Success",
+            description: `${service} service ${action}ed successfully`,
+            type: "success",
+          });
+          setIsConnectionError(false);
+        } else {
+          setIsConnectionError(true);
+        }
+      }).catch((error) => {
+        setIsConnectionError(true);
+        console.log("error while fetching service status", error);
+      });
+    } else {
+      notify({
+        message: `Failed to ${action} ${service} service`,
+        description: `${response.error}`,
+        type: "error",
+      });
+    }
+  }
+
   return (
     <div className="flex mx-auto flex-col items-center md:items-start w-full px-5">
 
@@ -875,14 +952,68 @@ export const HomeView: FC = ({ }) => {
                 <table className='w-full mt-4'>
                   <tbody>
                     <tr className='border-none'>
+                      <td className='p-1 w-6 text-left hover:cursor-pointer'>
+                        {
+                          serviceStatus?.xandminer === 'started' ?
+                            <Tooltip title={`Stop the xandminer service`} placement='top'>
+                              <button onClick={(e) => { e.preventDefault(); onServiceAction('stop', 'xandminer') }}>
+                                <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                              </button>
+                            </Tooltip>
+                            :
+                            <Tooltip title={`Start the xandminer service`} placement='top'>
+                              <button
+                                onClick={(e) => { e.preventDefault(); onServiceAction('start', 'xandminer') }}
+                              >
+                                <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                              </button>
+                            </Tooltip>
+                        }
+                      </td>
                       <td className='p-1 text-left'>xandminer</td>
                       <td className='p-1 text-right'>{VERSION_NO}</td>
                     </tr>
                     <tr className='border-none'>
+                      <td className='p-1 w-6 text-left hover:cursor-pointer'>
+                        {
+                          serviceStatus?.xandminerd === 'started' ?
+                            <Tooltip title={`Stop the xandminerd service`} placement='top'>
+                              <button onClick={(e) => { e.preventDefault(); onServiceAction('stop', 'xandminerd') }}>
+                                <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                              </button>
+                            </Tooltip>
+                            :
+                            <Tooltip title={`Start the xandminerd service`} placement='top'>
+                              <button
+                                onClick={(e) => { e.preventDefault(); onServiceAction('start', 'xandminerd') }}
+                              >
+                                <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                              </button>
+                            </Tooltip>
+                        }
+                      </td>
                       <td className='p-1 text-left'>xandminerd</td>
                       <td className='p-1 text-right'>{xandminderdVersion}</td>
                     </tr>
                     <tr className='border-none'>
+                      <td className='p-1 w-6 text-left hover:cursor-pointer'>
+                        {
+                          serviceStatus?.pod === 'started' ?
+                            <Tooltip title={`Stop the pod service`} placement='top'>
+                              <button onClick={(e) => { e.preventDefault(); onServiceAction('stop', 'pod') }}>
+                                <StopCircleIcon sx={{ color: '#fda31b', width: "24px", height: "24px" }} />
+                              </button>
+                            </Tooltip>
+                            :
+                            <Tooltip title={`Start the pod service`} placement='top'>
+                              <button
+                                onClick={(e) => { e.preventDefault(); onServiceAction('start', 'pod') }}
+                              >
+                                <PlayCircleIcon sx={{ color: '#198476', width: "24px", height: "24px" }} />
+                              </button>
+                            </Tooltip>
+                        }
+                      </td>
                       <td className='p-1 text-left'>pod</td>
                       <td className='p-1 text-right'>{podVersion}</td>
                     </tr>
