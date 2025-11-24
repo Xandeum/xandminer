@@ -9,4 +9,6 @@ export const REFUNDABLE_DEPOSIT_ACC = new PublicKey("FaWhmBgWevoJGcJyrx7CHaf6WNd
 export const DEVNET_PROGRAM = new PublicKey("6Bzz3KPvzQruqBg2vtsvkuitd6Qb4iCcr5DViifCwLsL");
 export const PNODE_PROGRAM = new PublicKey("3hMZVwdgRHYSyqkdK3Y8MdZzNwLkjzXod1XrKcniXw56");
 
-export const VERSION_NO = "v0.4.0";
+export const SYSTEM_RESERVE = 30_000_000_000;
+
+export const VERSION_NO = "v0.5.0";
