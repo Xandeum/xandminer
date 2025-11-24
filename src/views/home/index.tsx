@@ -38,7 +38,7 @@ import { dedicateSpace } from 'services/driveServices';
 import InstallPod from 'views/install-pod';
 
 import { callService, getServiceStatus } from 'services/systemServices';
-import { SYSTEM_RESERVE, VERSION_NO } from 'CONSTS';
+import { SYSTEM_RESERVE, VERSION_NAME, VERSION_NO } from 'CONSTS';
 
 export const HomeView: FC = ({ }) => {
 
@@ -971,7 +971,7 @@ export const HomeView: FC = ({ }) => {
                         }
                       </td>
                       <td className='p-1 text-left'>xandminer</td>
-                      <td className='p-1 text-right'>{VERSION_NO}</td>
+                      <td className='p-1 text-right'>{VERSION_NO} ({VERSION_NAME})</td>
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1 w-6 text-left hover:cursor-pointer'>
@@ -993,7 +993,7 @@ export const HomeView: FC = ({ }) => {
                         }
                       </td>
                       <td className='p-1 text-left'>xandminerd</td>
-                      <td className='p-1 text-right'>{xandminderdVersion}</td>
+                      <td className='p-1 text-right'>{xandminderdVersion} ({VERSION_NAME})</td>
                     </tr>
                     <tr className='border-none'>
                       <td className='p-1 w-6 text-left hover:cursor-pointer'>
