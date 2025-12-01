@@ -13,3 +13,16 @@ export const SYSTEM_RESERVE = 30_000_000_000;
 
 export const VERSION_NO = "v0.5.0";
 export const VERSION_NAME = "Ingolstadt";
+
+export const getVersionName = (versionNo: string) => {
+    if (versionNo.startsWith("v0.5.")) {
+        return "Ingolstadt";
+    } else if (versionNo.startsWith("v0.4.")) {
+        return "Herrenberg";
+    } else if (versionNo.startsWith("v0.3.")) {
+        return "Munich";
+    } else {
+        return " "
+    }
+}
+
