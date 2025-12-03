@@ -3,7 +3,13 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   darkMode: "media",
   theme: {
-    extend: {},
+    extend: {
+      backgroundColor: {
+        'tiles': "#050b27",
+        'tiles-dark': "#08113b",
+        'btn-primary': '#d98c18',
+      },
+    },
   },
   plugins: [
     require('daisyui'),
