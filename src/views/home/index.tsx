@@ -62,6 +62,7 @@ export const HomeView: FC = ({ }) => {
   const [networkStats, setNetworkStats] = React.useState({
     isFetching: false,
     isError: false,
+    error: null,
     data: {
       download: "0 Mbps",
       upload: "0 Mbps",
@@ -231,9 +232,9 @@ export const HomeView: FC = ({ }) => {
         setNetworkStats({ ...networkStats, isFetching: false, isError: false, data: response.data });
         return;
       }
-      setNetworkStats({ ...networkStats, isFetching: false, isError: true, data: null });
+      setNetworkStats({ ...networkStats, isFetching: false, isError: true, error: response?.error, data: null });
     } catch (error) {
-      setNetworkStats({ ...networkStats, isFetching: false, isError: true, data: null });
+      setNetworkStats({ ...networkStats, isFetching: false, isError: true, error: error, data: null });
     }
   }
 
@@ -1117,7 +1118,7 @@ export const HomeView: FC = ({ }) => {
                     setShowNetworkSpeedModal(false);
                     networkStats?.data?.download == "0Mbps" ?
                       setNetworkStats({
-                        isFetching: false, isError: false, data: null
+                        isFetching: false, isError: false, error: null, data: null,
                       })
                       :
                       null
@@ -1135,7 +1136,9 @@ export const HomeView: FC = ({ }) => {
                   :
                   networkStats?.isError ?
                     <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
-                      <p className='text-2xl mb-4 '>Something went wrong. Please try again...</p>
+                      {/* <p className='text-2xl mb-4 '>Something went wrong. Please try again...</p> */}
+                      <p className='text-2xl mb-4 '>Failed to run network speed test</p>
+                      <p className='text-lg mb-4 '>{networkStats?.error}. {networkStats?.error?.includes("Failed to install") ? "Please manually install speedtest-cli and try again." : ""}</p>
                       <button
                         className="px-5 py-2 btn btn-sm bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
                         onClick={async () => { await getNetworkStats() }}
