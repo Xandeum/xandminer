@@ -8,7 +8,7 @@ import { fetchAllManagers, fetchManagerData, serializeBorshString, updateManager
 import { FC, useEffect, useState } from "react";
 import { notify } from "utils/notifications";
 
-export const ManageView: FC = ({ }) => {
+export const ManagerView: FC = ({ }) => {
 
     const wallet = useWallet();
     // const { connection } = useConnection();
@@ -31,7 +31,6 @@ export const ManageView: FC = ({ }) => {
     const fetchData = async () => {
         setIsLoading(true);
         const managersData = await fetchAllManagers(connection);
-        console.log("managersData >>> ", managersData);
         if (managersData && managersData.length > 0) {
             const formattedManagers = managersData.map((manager) => ({
                 pubkey: manager?.data?.pubkey.toString(),
@@ -231,7 +230,7 @@ export const ManageView: FC = ({ }) => {
 
 
     return (
-        <div className="container flex mx-auto flex-col items-center w-full max-w-4xl p-4 mb-10 relative ">
+        <div className="container flex mx-auto flex-col items-center w-full max-w-4xl p-4 mb-10 relative">
 
             <>
                 <h2 className="text-3xl font-medium text-white md:leading-tight  my-5">pNode Managers</h2>
