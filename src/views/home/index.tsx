@@ -39,6 +39,7 @@ import InstallPod from 'views/install-pod';
 
 import { callService, getServiceStatus } from 'services/systemServices';
 import { getVersionName, SYSTEM_RESERVE, VERSION_NAME, VERSION_NO } from 'CONSTS';
+import Link from 'next/link';
 
 export const HomeView: FC = ({ }) => {
 
@@ -1093,6 +1094,12 @@ export const HomeView: FC = ({ }) => {
                 :
                 null
             }
+
+            <Link href={"/docs/pnode-setup"} target="_self" rel="noopener noreferrer" className='w-full'>
+              <button className='btn bg-transparent hover:bg-[#622657] rounded-lg font-light w-full text-white mt-4 normal-case border-[#4a4a4a]'>
+                Manage pNode
+              </button>
+            </Link>
           </div>
         </div>
       </div>

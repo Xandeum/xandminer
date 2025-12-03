@@ -14,6 +14,16 @@ export const SYSTEM_RESERVE = 30_000_000_000;
 export const VERSION_NO = "v0.5.0";
 export const VERSION_NAME = "Ingolstadt";
 
+
+export const GLOBAL_SEED = "pnodestore";
+export const OWNER_SEED = "owner5";
+export const PNODE_OWNER_SEED = "pnodeowner";
+export const MANAGER_SEED = "manager5";
+export const MANAGER_ACCOUNT_SIZE = 143;
+
+export const PROGRAM = new PublicKey("GSfmK1JX1yh7WYWt1QySC8VYp9PfgUM2paMc9F6YD1F1"); // devnet - Abhi
+
+
 export const getVersionName = (versionNo: string) => {
     if (versionNo.startsWith("v0.5.")) {
         return "Ingolstadt";
