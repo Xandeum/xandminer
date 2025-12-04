@@ -1,5 +1,5 @@
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import Loader from "components/Loader";
 import { fetchAllManagers, fetchOwnerData, fetchPNodeOwnerData, updatePnodeDetails } from "helpers/manageHelpers";
 import dynamic from "next/dynamic";
@@ -13,6 +13,8 @@ import { readMetaplexMetadata } from "helpers/tokenHelpers";
 import { NftLogo } from "components/NftLogo";
 
 import { InputAdornment, TextField } from "@mui/material";
+import { loadKeypairFromFile } from "utils/loadKeypair";
+import { getKeypairForSigning } from "services/keypairServices";
 
 const WalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -150,12 +152,6 @@ export const OwnerView: FC = ({ }) => {
                 return;
             }
 
-            if (!hasPnode) {
-                notify({ type: 'error', message: 'You need to own a pNode to assign a manager' });
-                setSavingRow(null);
-                return;
-            }
-
             const DEFAULT_VALUE = "11111111111111111111111111111111";
             let pnodeInfo = data[index];
 
@@ -185,8 +181,31 @@ export const OwnerView: FC = ({ }) => {
                 manager: pnodeInfo.manager instanceof PublicKey ? pnodeInfo.manager : new PublicKey(pnodeInfo.manager || DEFAULT_VALUE),
             }
 
+            // Read current pnode info to check if pnode key is changing
+            const currentPnodeInfos = await readPnodeInfoArray(connection, wallet?.publicKey);
+            const oldPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ?
+                currentPnodeInfos[index].pnode : PublicKey.default;
+
+            const pNodeKeyChanging = !oldPnodeKey.equals(pnodeInfo.pnode);
+
+            const keypairForSigning = await getKeypairForSigning();
+            if (!keypairForSigning?.ok || !keypairForSigning?.data?.keypair) {
+                notify({ type: 'error', message: 'Failed to retrieve keypair for signing.' });
+                return;
+            }
+            const walletToSign = Keypair.fromSecretKey(new Uint8Array(keypairForSigning?.data?.keypair?.privateKey));
+
+            if (pNodeKeyChanging) {
+                console.log("⚠️  Pnode key is changing from", oldPnodeKey.toString(), "to", pnodeInfo.pnode.toString());
+                if (!walletToSign) {
+                    console.error("❌ Error: When changing pnode key, the new pnode keypair must be provided as the 5th parameter");
+                    throw new Error("Missing pnode keypair for pnode key change");
+                }
+                console.log("✅ New pnode keypair provided and will sign the transaction");
+            }
+
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager);
+            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, walletToSign, pNodeKeyChanging);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -200,12 +219,24 @@ export const OwnerView: FC = ({ }) => {
                 await connection.getLatestBlockhashAndContext('confirmed');
 
             transaction.recentBlockhash = blockhash;
+            console.log("walletToSign >>> ", walletToSign.publicKey.toString());
             transaction.feePayer = wallet.publicKey;
+            let tx = '';
 
-            const tx = await wallet.sendTransaction(transaction, connection, {
+            if (pNodeKeyChanging) {
+                transaction.partialSign(walletToSign);
+                const signedTx = await wallet.signTransaction(transaction);
+                tx = await wallet.sendTransaction(signedTx, connection, {
+                    minContextSlot,
+                    skipPreflight: true,
+                    preflightCommitment: 'confirmed',
+                });
+            }
+
+            tx = await wallet.sendTransaction(transaction, connection, {
                 minContextSlot,
                 skipPreflight: true,
-                preflightCommitment: 'confirmed'
+                preflightCommitment: 'confirmed',
             });
 
             await new Promise(resolve => setTimeout(resolve, 4000));

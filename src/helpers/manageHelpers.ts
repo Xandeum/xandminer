@@ -1,6 +1,7 @@
 import BN from "bn.js";
 import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { ADMIN_WALLET, GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_SEED, OWNER_SEED, PNODE_OWNER_SEED, PROGRAM } from "CONSTS";
+import { GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_SEED, OWNER_SEED, PNODE_OWNER_SEED, PROGRAM } from "CONSTS";
+import { readPnodeInfoArray } from "./pNodeHelpers";
 
 // Helper functions for data deserialization
 function arrayToNum(array) {
@@ -532,7 +533,7 @@ export async function registerRewardWallet(publicKey: PublicKey, rewardWalletPub
     }
 }
 
-export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null): Promise<TransactionInstruction> {
+export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null, pnodeKeypair, pnodeKeyChanging: boolean): Promise<TransactionInstruction> {
 
     console.log("Updating pnode details with info:", pnodeInfo);
 
@@ -585,7 +586,12 @@ export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, 
             isSigner: false,
             isWritable: newManagerPda && !newManagerPda.equals(PublicKey.default),
         },
-
+        {
+            // 5. Pnode account (must sign when pnode key is changing)
+            pubkey: pnodeInfo.pnode,
+            isSigner: pnodeKeyChanging,
+            isWritable: false,
+        },
     ];
 
     // Instruction tag 6 for UpdatePnodeDetails
@@ -622,67 +628,6 @@ export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, 
         programId: PROGRAM,
         data: data,
     });
-}
-
-
-export async function approveManager(publicKey: PublicKey): Promise<TransactionInstruction | { error: string }> {
-    try {
-
-        if (!publicKey.equals(ADMIN_WALLET)) {
-            return { error: `Only admin can approve managers.` };
-        }
-
-        const [managerPda] = PublicKey.findProgramAddressSync(
-            [Buffer.from(MANAGER_SEED), publicKey.toBuffer()],
-            PROGRAM
-        );
-
-        const instructionData = Buffer.from([11]);
-
-        return new TransactionInstruction({
-            keys: [
-                { pubkey: publicKey, isSigner: true, isWritable: false },
-                { pubkey: managerPda, isSigner: false, isWritable: true },
-            ],
-            programId: PROGRAM,
-            data: instructionData,
-        });
-
-    } catch (error) {
-        console.error("Error while approving manager:", error);
-        return { error: `Failed to approve manager: ${error?.message || error}` };
-
-    }
-}
-
-export async function disApproveManager(publicKey: PublicKey): Promise<TransactionInstruction | { error: string }> {
-    try {
-
-        if (!publicKey.equals(ADMIN_WALLET)) {
-            return { error: `Only admin can approve managers.` };
-        }
-
-        const [managerPda] = PublicKey.findProgramAddressSync(
-            [Buffer.from(MANAGER_SEED), publicKey.toBuffer()],
-            PROGRAM
-        );
-
-        const instructionData = Buffer.from([12]);
-
-        return new TransactionInstruction({
-            keys: [
-                { pubkey: publicKey, isSigner: true, isWritable: false },
-                { pubkey: managerPda, isSigner: false, isWritable: true },
-            ],
-            programId: PROGRAM,
-            data: instructionData,
-        });
-
-    } catch (error) {
-        console.error("Error while approving manager:", error);
-        return { error: `Failed to approve manager: ${error?.message || error}` };
-
-    }
 }
 
 

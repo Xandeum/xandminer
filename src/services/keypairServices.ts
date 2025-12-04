@@ -38,3 +38,21 @@ export const getKeypair = async () => {
     }
 }
 
+// get keypair to signing
+export const getKeypairForSigning = async () => {
+    try {
+        const headers = {
+            'content-type': 'application/json',
+        };
+        const options = {
+            method: 'GET',
+            url: `api/sign`,
+            headers,
+        };
+        const response = await axios(options);
+        return { ok: true, data: response?.data }
+    } catch (error) {
+        console.log("error in reading keypair for signing >>> ", error);
+        return { ok: false, error: error.message }
+    }
+}

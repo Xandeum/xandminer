@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 
 export const API_BASE_URL = "http://localhost:4000";
 
@@ -20,6 +20,7 @@ export const OWNER_SEED = "owner5";
 export const PNODE_OWNER_SEED = "pnodeowner";
 export const MANAGER_SEED = "manager5";
 export const MANAGER_ACCOUNT_SIZE = 143;
+export const KEYPAIR_PATH = "../xandminerd/keypairs/pnode-keypair.json";
 
 export const PROGRAM = new PublicKey("GSfmK1JX1yh7WYWt1QySC8VYp9PfgUM2paMc9F6YD1F1"); // devnet - Abhi
 
