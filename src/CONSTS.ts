@@ -11,11 +11,13 @@ export const PNODE_PROGRAM = new PublicKey("3hMZVwdgRHYSyqkdK3Y8MdZzNwLkjzXod1Xr
 
 export const SYSTEM_RESERVE = 30_000_000_000;
 
-export const VERSION_NO = "v0.5.0";
-export const VERSION_NAME = "Ingolstadt";
+export const VERSION_NO = "v0.6.0";
+export const VERSION_NAME = "Stuttgart";
 
 export const getVersionName = (versionNo: string) => {
-    if (versionNo.startsWith("v0.5.")) {
+    if  (versionNo.startsWith("v0.6.")) {
+        return "Stuttgart";
+    } else if (versionNo.startsWith("v0.5.")) {
         return "Ingolstadt";
     } else if (versionNo.startsWith("v0.4.")) {
         return "Herrenberg";
