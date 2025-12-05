@@ -4,22 +4,17 @@ import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
-import { getNetworkInfo } from '../../services/getNetworkInfo';
 import { createKeypair, getKeypair } from '../../services/keypairServices'
 import { getServerIP, getVersions } from '../../services/getServerInfo';
 import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
-import SpeedIcon from '@mui/icons-material/Speed';
-import CloseIcon from '@mui/icons-material/Close';
-import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
 
 import { CircularProgress, TextField, Tooltip } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
-import { AddBox, IndeterminateCheckBox, Edit, CheckBox } from '@mui/icons-material';
+import { AddBox, IndeterminateCheckBox, Edit } from '@mui/icons-material';
 
 import usePnodeStatsStore from "../../stores/usePnodeStatsStore"
 
@@ -59,19 +54,7 @@ export const HomeView: FC = ({ }) => {
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
   const [dedicatingAmnt, setDedicatingAmnt] = React.useState([{ disk: 0, amount: 0, type: "GB", isEditing: false }]);
   const [inputValue, setInputValue] = React.useState([{ index: 0, amount: 0, type: "GB" }]);
-  const [networkStats, setNetworkStats] = React.useState({
-    isFetching: false,
-    isError: false,
-    error: null,
-    data: {
-      download: "0 Mbps",
-      upload: "0 Mbps",
-      ping: "0 ms",
-      latency: "0 ms",
-    }
-  });
 
-  const [showNetworkSpeedModal, setShowNetworkSpeedModal] = React.useState(false);
   const [isRegisterProcessing, setIsRegisterProcessing] = React.useState(false);
   const [isGenerateProcessing, setIsGenerateProcessing] = React.useState(false);
   const [showFeatureInfoModal, setShowFeatureInfoModal] = React.useState(false);
@@ -80,9 +63,7 @@ export const HomeView: FC = ({ }) => {
   const [isPnodeRegistered, setIsPnodeRegistered] = React.useState(false);
   const [keypairPubkey, setKeypairPubkey] = React.useState<string>(null);
   const [isKeypairGenerated, setIsKeypairGenerated] = React.useState(false);
-  const [isServiceOnline, setIsServiceOnline] = React.useState(true);
   const [isDedicateProcessing, setIsDedicateProcessing] = React.useState(false);
-  const [isDedicateWholeProcessing, setIsDedicateWholeProcessing] = React.useState(false);
   const [serverIP, setServerIP] = React.useState("");
   const [serverHostname, setServerHostname] = React.useState("");
   const [isServerInfoLoading, setIsServerInfoLoading] = React.useState(true);
@@ -104,34 +85,28 @@ export const HomeView: FC = ({ }) => {
       if (response?.ok) {
         setServiceStatus(response.data);
         setIsConnectionError(false);
-        setIsServiceOnline(true);
       } else {
         setIsConnectionError(true);
-        setIsServiceOnline(false);
       }
     }).catch((error) => {
       setIsConnectionError(true);
-      setIsServiceOnline(false);
       console.log("error while fetching service status", error);
     });
 
     getDriveInfo().then((response) => {
       if (response?.ok) {
         setIsConnectionError(false);
-        setIsServiceOnline(true);
         setDriveInfo(response.data);
         setDedicatedInitialAmnt(response.data)
         setIsFetching(false);
         return;
       }
       setIsConnectionError(true);
-      setIsServiceOnline(false);
       setIsFetching(false);
 
     }).catch((error) => {
       setIsFetching(false);
       setIsConnectionError(true);
-      setIsServiceOnline(false);
       console.log("error while fetching drive info", error);
     })
 
@@ -193,11 +168,6 @@ export const HomeView: FC = ({ }) => {
 
   }, []);
 
-  //set Service status also on isConnectionError state
-  useEffect(() => {
-    isConnectionError ? setIsServiceOnline(false) : setIsServiceOnline(true);
-  }, [isConnectionError])
-
   //function to set the initial values for dedicating amnt
   const setDedicatedInitialAmnt = (data: Array<any>) => {
     let drives = [];
@@ -221,22 +191,6 @@ export const HomeView: FC = ({ }) => {
       scrollToDedicateBtn();
     }
   }, [dedicatingAmnt]);
-
-  //function related to read the network stats
-  const getNetworkStats = async () => {
-    setNetworkStats({ ...networkStats, isFetching: true, isError: false, data: null });
-    setShowNetworkSpeedModal(true);
-    try {
-      const response = await getNetworkInfo();
-      if (response.ok) {
-        setNetworkStats({ ...networkStats, isFetching: false, isError: false, data: response.data });
-        return;
-      }
-      setNetworkStats({ ...networkStats, isFetching: false, isError: true, error: response?.error, data: null });
-    } catch (error) {
-      setNetworkStats({ ...networkStats, isFetching: false, isError: true, error: error, data: null });
-    }
-  }
 
   //copy to clipboard method 
   function copyToClipboard() {
@@ -327,78 +281,6 @@ export const HomeView: FC = ({ }) => {
       return (amount / 10_000_000_00000)?.toFixed(2);
     }
     return (amount / 1000000000)?.toFixed(2);
-  }
-
-  // format to dedicate whole drive
-  const onDedicateWholeDrive = async (amount: number, mount: string) => {
-
-    try {
-      setIsDedicateWholeProcessing(true);
-      let space = 0;
-      const size = prettyBytes(amount);
-      const splitSize = size?.split(" ", size?.length - 1);
-
-      if (splitSize[0] == '0') {
-        notify({
-          message: "Error",
-          description: "Dedicating space cannot be 0",
-          type: "error",
-        });
-        setIsDedicateWholeProcessing(false);
-        return;
-      }
-
-      if (splitSize[1] == 'GB') {
-        space = parseInt(splitSize[0]) - 10;
-      } else if (splitSize[1] == 'TB') {
-        space = parseInt(splitSize[0]) * 10;
-      }
-
-      const res = await dedicateSpace(space, mount);
-
-      if (res?.ok) {
-        notify({
-          message: "Success",
-          description: "Successfully dedicated the entire drive",
-          type: "success",
-        });
-        setIsDedicateWholeProcessing(false);
-        setIsFetching(true);
-        getDriveInfo().then((response) => {
-          if (response.ok) {
-            setIsConnectionError(false);
-            setDriveInfo(response.data);
-            setDedicatedInitialAmnt(response.data)
-            setIsFetching(false);
-            return;
-          }
-          setIsConnectionError(true);
-          setIsFetching(false);
-
-        }).catch((error) => {
-          setIsFetching(false);
-          setIsConnectionError(true);
-          console.log("error while fetching drive info", error);
-        })
-
-        return;
-      }
-      notify({
-        message: "Failed to dedicate the whole drive.",
-        description: "Please try again",
-        type: "error",
-      });
-      setIsDedicateWholeProcessing(false);
-
-    } catch (error) {
-      console.log("error while dedicating the space >>> ", error)
-      notify({
-        message: "Failed to dedicate the whole drive.",
-        description: error,
-        type: "error",
-      });
-      setIsDedicateWholeProcessing(false);
-    }
   }
 
   const onDedicateSpace = async (index: number, mount: string) => {
@@ -683,7 +565,6 @@ export const HomeView: FC = ({ }) => {
           <div className='flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-3 md:gap-10'>
             <span>IP address : <span className='text-[#fda31b]'>{serverIP}</span></span>
             <span>Hostname : <span className='text-[#fda31b]'>{serverHostname}</span></span>
-            <span className="underline cursor-pointer text-white hover:text-[#fda31b]" onClick={async () => { await getNetworkStats(); setShowNetworkSpeedModal(true) }}>Test Network Speed</span>
           </div>
       }
       {/* div with one side is 1/3 of the full screen with and rest with another div */}
@@ -1096,96 +977,6 @@ export const HomeView: FC = ({ }) => {
           </div>
         </div>
       </div>
-
-      {/* Modals */}
-
-      {/* network speed check modal */}
-      {
-        showNetworkSpeedModal ?
-          <div className="flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 focus:outline-none bg-[#0000009b] opacity-100">
-            <div className="justify-center items-center flex-col overflow-x-hidden overflow-y-auto fixed  z-9999 rounded-lg px-10 py-5 bg-[#08113b]">
-              <div className="absolute top-0 right-0 p-5 ">
-                <CloseIcon sx={[{ color: "#b7094c", transform: "scale(1.5)" },
-                { transition: "transform .1s" },
-                {
-                  '&:hover': {
-                    // color: 'white',
-                    cursor: 'pointer',
-                    transform: "scale(1.7)"
-                  },
-                }]}
-                  onClick={() => {
-                    setShowNetworkSpeedModal(false);
-                    networkStats?.data?.download == "0Mbps" ?
-                      setNetworkStats({
-                        isFetching: false, isError: false, error: null, data: null,
-                      })
-                      :
-                      null
-                  }}
-                >
-                </CloseIcon>
-              </div>
-              {
-                networkStats?.isFetching ?
-                  <div className='text-center font-normal my-5 w-[50ch]'>
-                    <p className='text-2xl mb-7 text-center'>Network Speed Status</p>
-
-                    <CircularProgress />
-                  </div>
-                  :
-                  networkStats?.isError ?
-                    <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
-                      {/* <p className='text-2xl mb-4 '>Something went wrong. Please try again...</p> */}
-                      <p className='text-2xl mb-4 '>Failed to run network speed test</p>
-                      <p className='text-lg mb-4 '>{networkStats?.error}. {networkStats?.error?.includes("Failed to install") ? "Please manually install speedtest-cli and try again." : ""}</p>
-                      <button
-                        className="px-5 py-2 btn btn-sm bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
-                        onClick={async () => { await getNetworkStats() }}
-                      >
-                        Retry
-                      </button>
-                    </div>
-                    :
-                    <div className='text-left font-normal my-5 w-[50ch]'>
-                      <p className='text-2xl mb-4 text-center'>Network Speed Status</p>
-                      <div className='border-b border-[#4a4a4a] my-4 w-full' />
-                      <div className='flex flex-row items-center justify-between mb-4'>
-                        <div className="flex flex-col gap-4">
-                          <p className='text-xl'>
-                            <span className='mr-2'><DownloadOutlinedIcon /></span>
-                            Download Speed
-                          </p>
-                          <p className='text-xl'>
-                            <span className='mr-2'><PublishOutlinedIcon /></span>
-                            Upload Speed
-                          </p>
-                        </div>
-                        <div className="flex flex-col  gap-4">
-                          <p className='text-xl'>
-                            :
-                          </p>
-                          <p className='text-xl'>
-                            :
-                          </p>
-                        </div>
-                        <div className="flex flex-col  gap-4">
-                          <p className='text-xl'>
-                            {networkStats?.data?.download}
-                          </p>
-                          <p className='text-xl'>
-                            {networkStats?.data?.upload}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-              }
-
-            </div>
-          </div>
-          :
-          null
-      }
 
       {/* feature info modal */}
       {
