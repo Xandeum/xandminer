@@ -2,6 +2,7 @@ import { Telegram } from "@mui/icons-material";
 import { BN } from "@project-serum/anchor";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import Loader from "components/Loader";
 import { MANAGER_SEED, PROGRAM } from "CONSTS";
 import { fetchAllManagers, fetchManagerData, getPnodesForManager, serializeBorshString, updateManagerAccount } from "helpers/manageHelpers";
 
@@ -35,10 +36,6 @@ export const ManagerView: FC = ({ }) => {
         if (managersData && managersData.length > 0) {
             const formattedManagers = managersData.map((manager) => ({
                 pubkey: manager?.data?.pubkey.toString(),
-                commission: manager?.data?.commission, // Convert basis points to percentage
-                currentlyOperating: manager?.data?.currentlyOperating,
-                Telegram: `https://t.me/${(manager?.data?.telegramId)}`,
-                discord: manager?.data?.discordId
             }));
             let alreadyRegistered = formattedManagers?.find(manager => manager?.pubkey?.toString() == wallet?.publicKey?.toString()) ? true : false;
 
@@ -181,12 +178,6 @@ export const ManagerView: FC = ({ }) => {
 
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = wallet.publicKey;
-            // const signedTx = await wallet.signTransaction(transaction);
-
-            // const simulate = await connection.simulateTransaction(signedTx);
-            // console.log("simulate >>> ", simulate);
-            // return;
-
             const tx = await wallet?.sendTransaction(transaction, connection, {
                 minContextSlot,
                 skipPreflight: true,
@@ -238,7 +229,7 @@ export const ManagerView: FC = ({ }) => {
         <div className="container flex mx-auto flex-col items-center w-full max-w-4xl p-4 mb-10 relative">
 
             <>
-                <h2 className="text-3xl font-medium text-white md:leading-tight  my-5">Manage pNode - pNode Manager</h2>
+                <h2 className="text-3xl font-medium text-white md:leading-tight  my-5">Manage pNode - pNode(s) Managed</h2>
                 {
                     // check if the wallet pubkey exists in the managers list
                     isRegistered
@@ -250,7 +241,17 @@ export const ManagerView: FC = ({ }) => {
                 }
 
                 {
-                    isRegistered ?
+                    isLoading ?
+                        <div className="w-full mt-5 flex flex-col items-center justify-center">
+                            <Loader />
+                        </div>
+                        :
+                        null
+                }
+
+                {
+                    !isLoading &&
+                        isRegistered ?
                         <div className="w-full mt-5 flex flex-col items-center justify-center">
                             {
                                 managedPnodes?.length == 0 ?
@@ -273,7 +274,7 @@ export const ManagerView: FC = ({ }) => {
                                                     <tr key={index} className="font-light text-white text-sm">
                                                         <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.pnodeKey?.toString())}>{pnode?.pnodeKey?.toString().slice(0, 4)}...{pnode?.pnodeKey?.toString().slice(-4)}</td>
                                                         <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.owner?.toString())}>{pnode?.owner?.toString().slice(0, 4)}...{pnode?.owner?.toString().slice(-4)}</td>
-                                                        <td className="bg-tiles-dark text-center">{new Date(Number(pnode?.registrationTime) * 1000).toLocaleString()}</td>
+                                                        <td className="bg-tiles-dark text-center">{new Date(Number(pnode?.registrationTime)).toLocaleString()}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>

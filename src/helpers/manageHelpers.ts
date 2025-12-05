@@ -367,9 +367,6 @@ export async function fetchOwnerData(connection: Connection, walletPubkey: Publi
 }
 
 export async function getPnodesForManager(managerWalletPubkey: PublicKey, connection: Connection) {
-    console.log("\n" + "=".repeat(80));
-    console.log("🔎 Searching for PNodes managed by:", managerWalletPubkey.toString());
-    console.log("=".repeat(80));
 
     // Derive the manager PDA from the wallet pubkey
     const [managerPda] = PublicKey.findProgramAddressSync(
@@ -398,7 +395,7 @@ export async function getPnodesForManager(managerWalletPubkey: PublicKey, connec
                 }
 
                 // Check if this pnode's manager matches our manager PDA
-                if (pnodeInfo.manager.equals(managerPda)) {
+                if (pnodeInfo.manager.equals(managerWalletPubkey)) {
                     managedPnodes.push({
                         // Owner information
                         owner: ownerData.user.toString(),
