@@ -3,7 +3,7 @@ import { BN } from "@project-serum/anchor";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import { MANAGER_SEED, PROGRAM } from "CONSTS";
-import { fetchAllManagers, fetchManagerData, serializeBorshString, updateManagerAccount } from "helpers/manageHelpers";
+import { fetchAllManagers, fetchManagerData, getPnodesForManager, serializeBorshString, updateManagerAccount } from "helpers/manageHelpers";
 
 import { FC, useEffect, useState } from "react";
 import { notify } from "utils/notifications";
@@ -15,6 +15,7 @@ export const ManagerView: FC = ({ }) => {
     const connection = new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed');
 
     const [managers, setManagers] = useState<any[]>([]);
+    const [managedPnodes, setManagedPnodes] = useState<any[]>([]);
     const [rewardWallet, setRewardWallet] = useState<string>('');
     const [commission, setCommission] = useState<string>('');
     const [discord, setDiscord] = useState<string>('');
@@ -44,6 +45,9 @@ export const ManagerView: FC = ({ }) => {
             setIsRegistered(wallet?.publicKey && alreadyRegistered);
             if (alreadyRegistered) {
                 const currentManagerData = await fetchManagerData(connection, wallet?.publicKey);
+                const managedPnodes = await getPnodesForManager(wallet?.publicKey, connection);
+                console.log("managedPnodes >>> ", managedPnodes);
+                setManagedPnodes(managedPnodes);
                 setRewardWallet(currentManagerData?.rewardsWallet.toString());
                 setCommission((currentManagerData?.commission / 100).toString());
                 setDiscord(currentManagerData?.discordId);
@@ -55,6 +59,7 @@ export const ManagerView: FC = ({ }) => {
 
         } else {
             setManagers([]);
+            setManagedPnodes([]);
             setIsLoading(false);
         }
     };
@@ -233,7 +238,7 @@ export const ManagerView: FC = ({ }) => {
         <div className="container flex mx-auto flex-col items-center w-full max-w-4xl p-4 mb-10 relative">
 
             <>
-                <h2 className="text-3xl font-medium text-white md:leading-tight  my-5">pNode Managers</h2>
+                <h2 className="text-3xl font-medium text-white md:leading-tight  my-5">Manage pNode - pNode Manager</h2>
                 {
                     // check if the wallet pubkey exists in the managers list
                     isRegistered
@@ -244,60 +249,41 @@ export const ManagerView: FC = ({ }) => {
 
                 }
 
-                <div className="overflow-x-auto w-full">
-                    <table className="table table-auto w-full normal-case border-collapse border border-gray-400">
-                        {/* head */}
-                        <thead>
-                            <tr className="border-b border-gray-400">
-                                <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Public Key</th>
-                                <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Percentage</th>
-                                <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Currently Operating</th>
-                                <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Discord</th>
-                                <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Telegram</th>
-                            </tr>
-                        </thead>
-                        {
-                            isLoading ?
-                                <tbody>
-                                    <tr>
-                                        <td colSpan={5} className="bg-tiles-dark text-center">
-                                            <div className="flex flex-col items-center justify-center my-5">
-                                                <span className="loading loading-spinner loading-lg"></span>
-                                                <span className="text-gray-500">Loading Managers...</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                                :
-                                managers?.length == 0 ?
-                                    <tbody>
-                                        <tr>
-                                            <td colSpan={5} className="bg-tiles-dark text-center">
-                                                <div className="flex flex-col items-center justify-center my-5">
-                                                    <span className="text-gray-500">No Managers found.</span>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
+                {
+                    isRegistered ?
+                        <div className="w-full mt-5 flex flex-col items-center justify-center">
+                            {
+                                managedPnodes?.length == 0 ?
+                                    <div className="flex flex-col items-center justify-center my-5">
+                                        <span className="text-gray-500">No pNodes managed by you.</span>
+                                    </div>
                                     :
-                                    <tbody>
-                                        {managers.map((manager, index) => (
-                                            <tr key={index} className="font-light text-white text-sm">
-                                                <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(manager.pubkey?.toString())}>{manager?.pubkey?.slice(0, 4)}...{manager.pubkey?.slice(-4)}</td>
-                                                <td className="bg-tiles-dark text-center">{Number(manager?.commission) / 100}%</td>
-                                                <td className="bg-tiles-dark text-center">{manager?.currentlyOperating}</td>
-                                                <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(manager?.discord?.toString())}>{manager?.discord}</td>
-                                                <td className="bg-tiles-dark text-center">
-                                                    <a href={manager?.Telegram} target="_blank" rel="noreferrer">
-                                                        <Telegram className="text-white" />
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                        }
-                    </table>
-                </div>
+                                    <div className="overflow-x-auto w-full">
+                                        <table className="table table-auto w-full normal-case border-collapse border border-gray-400">
+                                            {/* head */}
+                                            <thead>
+                                                <tr className="border-b border-gray-400">
+                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">pNode Pubkey</th>
+                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Owner</th>
+                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Registration Time</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {managedPnodes.map((pnode, index) => (
+                                                    <tr key={index} className="font-light text-white text-sm">
+                                                        <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.pnodeKey?.toString())}>{pnode?.pnodeKey?.toString().slice(0, 4)}...{pnode?.pnodeKey?.toString().slice(-4)}</td>
+                                                        <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.owner?.toString())}>{pnode?.owner?.toString().slice(0, 4)}...{pnode?.owner?.toString().slice(-4)}</td>
+                                                        <td className="bg-tiles-dark text-center">{new Date(Number(pnode?.registrationTime) * 1000).toLocaleString()}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                            }
+                        </div>
+                        :
+                        null
+                }
 
                 {/* popup to register as a pNode Manager */}
                 {
