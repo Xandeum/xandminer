@@ -4,6 +4,17 @@ import util from 'util';
 const execPromise = util.promisify(exec);
 
 export default async function handler(req, res) {
+    // SECURITY: Authentication Check
+    // We check for the API Key defined in environment variables.
+    // This prevents unauthorized network access and CSRF attacks.
+    const apiKey = process.env.XANDMINER_API_KEY;
+    const clientKey = req.headers['x-api-key'];
+
+    // If an API key is configured, strictly enforce it.
+    if (apiKey && clientKey !== apiKey) {
+        return res.status(401).json({ error: 'Unauthorized: Invalid or missing API Key' });
+    }
+
     const services = ['xandminer', 'xandminerd', 'pod'];
     const validActions = ['start', 'stop'];
 
