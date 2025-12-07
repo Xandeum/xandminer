@@ -1,16 +1,15 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import util from 'util';
 
-const execPromise = util.promisify(exec);
+// Use execFile instead of exec. 
+// execFile does not spawn a shell, preventing shell injection attacks.
+const execFilePromise = util.promisify(execFile);
 
 export default async function handler(req, res) {
-    // SECURITY: Authentication Check
-    // We check for the API Key defined in environment variables.
-    // This prevents unauthorized network access and CSRF attacks.
+    // SECURITY: Authentication Check (From Fix #1)
     const apiKey = process.env.XANDMINER_API_KEY;
     const clientKey = req.headers['x-api-key'];
 
-    // If an API key is configured, strictly enforce it.
     if (apiKey && clientKey !== apiKey) {
         return res.status(401).json({ error: 'Unauthorized: Invalid or missing API Key' });
     }
@@ -22,9 +21,11 @@ export default async function handler(req, res) {
         // Handle status check for all services
         try {
             const statusPromises = services.map(async (service) => {
-                const command = `systemctl is-active ${service}.service`;
+                // Use execFile for safety. 'systemctl' is usually in /bin or /usr/bin.
+                // We assume /bin/systemctl here, but you might need /usr/bin/systemctl depending on your OS.
                 try {
-                    const { stdout, stderr } = await execPromise(command);
+                    const { stdout, stderr } = await execFilePromise('/bin/systemctl', ['is-active', `${service}.service`]);
+
                     if (stderr) {
                         return { service, status: 'unknown', rawStatus: stderr };
                     }
@@ -37,7 +38,16 @@ export default async function handler(req, res) {
                     };
                     return { service, status: statusMap[status] || 'unknown', rawStatus: status };
                 } catch (error) {
-                    return { service, status: 'unknown', rawStatus: error.message };
+                    // execFile throws if the command fails (exit code != 0), which systemctl does if service is inactive/failed
+                    // We try to recover the status from stdout if available, or error message
+                    const status = error.stdout ? error.stdout.trim() : 'unknown';
+                    const statusMap = {
+                        active: 'started',
+                        inactive: 'stopped',
+                        failed: 'failed',
+                        unknown: 'unknown',
+                    };
+                    return { service, status: statusMap[status] || 'unknown', rawStatus: error.message };
                 }
             });
 
@@ -49,10 +59,10 @@ export default async function handler(req, res) {
 
             res.status(200).json(statusObject);
         } catch (error) {
-            res.status(500).json({ error: `Failed to get service statuses: ${error.message}` });
+            // Avoid leaking detailed system error messages
+            res.status(500).json({ error: 'Failed to get service statuses' });
         }
     } else if (req.method === 'POST') {
-        // Handle start/stop/restart/reload actions
         const { action, service } = req.body;
 
         if (!validActions.includes(action) || !services.includes(service)) {
@@ -60,11 +70,16 @@ export default async function handler(req, res) {
         }
 
         try {
-            const command = `systemctl daemon-reload && sudo systemctl ${action} ${service}.service`;
-            const { stdout, stderr } = await execPromise(command);
+            // SECURITY FIX: 
+            // 1. Removed 'daemon-reload' (requires high privs).
+            // 2. Used execFile with 'sudo' as the binary and arguments passed separately.
+            // 3. Ensure full path to binaries (/usr/bin/sudo, /bin/systemctl) to avoid path hijacking.
+            const { stdout, stderr } = await execFilePromise('/usr/bin/sudo', ['/bin/systemctl', action, `${service}.service`]);
 
             if (stderr) {
-                return res.status(500).json({ error: `Command error: ${stderr}` });
+                // Note: systemctl sometimes writes warnings to stderr even on success. 
+                // You might want to log this server-side instead of returning it.
+                console.warn(`Service control stderr: ${stderr}`);
             }
 
             res.status(200).json({
@@ -72,10 +87,13 @@ export default async function handler(req, res) {
                 output: stdout,
             });
         } catch (error) {
-            let errorMsg = error?.message?.toString()?.includes("not found") ?
-                `Service ${service} does not exist. Please ensure you have updated to the latest version.` :
-                error.message;
-            res.status(500).json(`${errorMsg}`);
+            // SECURITY: Do not leak raw system errors to the client.
+            const errorMsg = error?.message?.toString()?.includes("not found") ?
+                `Service ${service} does not exist.` :
+                "Failed to execute service command.";
+
+            console.error(error); // Log the real error server-side
+            res.status(500).json({ error: errorMsg });
         }
     } else {
         res.setHeader('Allow', ['GET', 'POST']);
