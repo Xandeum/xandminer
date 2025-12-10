@@ -138,10 +138,9 @@ export const OwnerView: FC = ({ }) => {
 
 
     // function on saving changes
-    const onHandleChanges = async (index?: number, type?: string, oldManager?: PublicKey) => {
+    const onHandleChanges = async (index?: number, type?: string) => {
         if (index === undefined) return;
-        console.log("onHandleChanges called for index:", index, "type:", type, "oldManager:", oldManager);
-
+        console.log("onHandleChanges called for index:", index, "type:", type, "oldManager:", pNodeData[index]?.manager);
         setSavingRow(index);
         setIsProcessing({ task: 'assign', status: true, index });
 
@@ -151,7 +150,7 @@ export const OwnerView: FC = ({ }) => {
                 setSavingRow(null);
                 return;
             }
-
+            const oldManager = pNodeData[index]?.manager
             const DEFAULT_VALUE = "11111111111111111111111111111111";
             let pnodeInfo = data[index];
 
@@ -205,7 +204,7 @@ export const OwnerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, walletToSign, pNodeKeyChanging);
+            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, pNodeKeyChanging);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -225,19 +224,19 @@ export const OwnerView: FC = ({ }) => {
 
             if (pNodeKeyChanging) {
                 transaction.partialSign(walletToSign);
-                const signedTx = await wallet.signTransaction(transaction);
-                tx = await wallet.sendTransaction(signedTx, connection, {
+                // const signedTx = await wallet.signTransaction(transaction);
+                tx = await wallet.sendTransaction(transaction, connection, {
+                    minContextSlot,
+                    skipPreflight: true,
+                    preflightCommitment: 'confirmed',
+                });
+            } else {
+                tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
                     skipPreflight: true,
                     preflightCommitment: 'confirmed',
                 });
             }
-
-            tx = await wallet.sendTransaction(transaction, connection, {
-                minContextSlot,
-                skipPreflight: true,
-                preflightCommitment: 'confirmed',
-            });
 
             await new Promise(resolve => setTimeout(resolve, 4000));
 
@@ -399,20 +398,20 @@ export const OwnerView: FC = ({ }) => {
                         <table className="table table-auto table-zebra w-full normal-case border-collapse border border-gray-400">
                             <thead>
                                 <tr className="border-b border-gray-400">
-                                    <th className="bg-black text-white normal-case font-medium text-base text-center">Index</th>
-                                    <th className="bg-black text-white normal-case font-medium text-base text-center">Registration Time</th>
-                                    <th className="bg-black text-white normal-case font-medium text-base text-center">pNode PubKey</th>
-                                    {/* <th className="bg-black text-white normal-case font-medium text-base text-center">NFT PubKey</th> */}
-                                    <th className="bg-black text-white normal-case font-medium text-base text-center">Manager</th>
-                                    <th className="bg-black text-white normal-case font-medium text-base text-center">Commission</th>
-                                    <th className="bg-black text-white normal-case font-medium text-base text-center">Actions</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Index</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Registration Time</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">pNode PubKey</th>
+                                    {/* <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">NFT PubKey</th> */}
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Manager</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Commission</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Actions</th>
                                 </tr>
                             </thead>
                             {
                                 isLoading ?
                                     <tbody>
                                         <tr>
-                                            <td colSpan={6} className="bg-black text-center">
+                                            <td colSpan={6} className="bg-tiles-dark text-center">
                                                 <div className="flex flex-col items-center justify-center my-2">
                                                     <Loader />
                                                 </div>
@@ -423,7 +422,7 @@ export const OwnerView: FC = ({ }) => {
                                     !hasPnode ?
                                         <tbody>
                                             <tr>
-                                                <td colSpan={6} className="bg-black text-center">
+                                                <td colSpan={6} className="bg-tiles-dark text-center">
                                                     <div className="flex flex-col items-center justify-center my-5 text-[#fda31b]">
                                                         <span className="text-lg">No pNodes found</span>
                                                     </div>
@@ -432,21 +431,21 @@ export const OwnerView: FC = ({ }) => {
                                         </tbody>
                                         :
                                         <tbody>
-                                            {data.map((pnode, index) => {
+                                            {data?.map((pnode, index) => {
                                                 const isModified = modifiedRows.includes(index);
                                                 const isSaving = savingRow === index;
 
                                                 return (
                                                     <tr key={index} className="font-light text-white text-sm">
                                                         {/* Index */}
-                                                        <td className="bg-black text-center">
+                                                        <td className="bg-tiles-dark text-center">
                                                             <div className="flex items-center justify-center h-full min-h-[40px]">
                                                                 <span>{index + 1}</span>
                                                             </div>
                                                         </td>
 
                                                         {/* Registration Time */}
-                                                        <td className="bg-black text-center">
+                                                        <td className="bg-tiles-dark text-center">
                                                             <div className="flex items-center justify-center h-full min-h-[40px]">
                                                                 <span>
                                                                     {pnode?.registrationTime && pnode.registrationTime > 0
@@ -457,7 +456,7 @@ export const OwnerView: FC = ({ }) => {
                                                         </td>
 
                                                         {/* pNode PubKey */}
-                                                        <td className="bg-black text-center relative group">
+                                                        <td className="bg-tiles-dark text-center relative group">
                                                             <div className="flex flex-row items-center justify-center gap-3 h-full min-h-[40px]">
                                                                 {editingCell?.row === index && editingCell?.col === 'pnode' ? (
                                                                     <input
@@ -494,7 +493,7 @@ export const OwnerView: FC = ({ }) => {
                                                         </td>
 
                                                         {/* NFT */}
-                                                        {/* <td className="bg-black text-center">
+                                                        {/* <td className="bg-tiles-dark text-center">
                                                             <div className="flex items-center justify-center h-full min-h-[40px] gap-2">
                                                                 {showPopupSelectNFT && editingCell?.row === index && editingCell?.col === 'nft' ? (
                                                                     <span className="text-xs text-orange-400">Selecting NFT...</span>
@@ -531,7 +530,7 @@ export const OwnerView: FC = ({ }) => {
                                                         </td> */}
 
                                                         {/* Manager */}
-                                                        <td className="bg-black text-center">
+                                                        <td className="bg-tiles-dark text-center">
                                                             <div className="flex items-center justify-center gap-2 h-full min-h-[40px]">
                                                                 {showPopupSelectManager && editingCell?.row === index && editingCell?.col === 'manager' ? (
                                                                     <span className="text-xs text-orange-400">Selecting...</span>
@@ -572,20 +571,20 @@ export const OwnerView: FC = ({ }) => {
                                                         </td>
 
                                                         {/* Commission */}
-                                                        <td className="bg-black text-center">
+                                                        <td className="bg-tiles-dark text-center">
                                                             <span>
                                                                 {pnode?.managerCommission > 0 ? `${Number(pnode.managerCommission) / 100}%` : '-'}
                                                             </span>
                                                         </td>
 
                                                         {/* Action Buttons: Save & Cancel (only if modified) */}
-                                                        <td className="bg-black text-center">
+                                                        <td className="bg-tiles-dark text-center">
                                                             {isModified && (
                                                                 <div className="flex items-center justify-center gap-2 h-full min-h-[40px]">
                                                                     {/* Save Button */}
                                                                     <button
                                                                         className={`btn btn-xs ${isSaving ? 'bg-gray-600' : 'bg-[#198476] hover:bg-[#1e9c8b]'} text-white normal-case`}
-                                                                        onClick={() => onHandleChanges(index, "", pnode?.manager)}
+                                                                        onClick={() => onHandleChanges(index, "")}
                                                                         disabled={isSaving}
                                                                     >
                                                                         {isSaving ? (

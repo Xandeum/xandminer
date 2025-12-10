@@ -1,13 +1,17 @@
 import { Telegram } from "@mui/icons-material";
 import { BN } from "@project-serum/anchor";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import EditIcon from '@mui/icons-material/Edit';
+
 import Loader from "components/Loader";
 import { MANAGER_SEED, PROGRAM } from "CONSTS";
-import { fetchAllManagers, fetchManagerData, getPnodesForManager, serializeBorshString, updateManagerAccount } from "helpers/manageHelpers";
+import { fetchAllManagers, fetchManagerData, getPnodesForManager, serializeBorshString, updateManagerAccount, updatePnodeDetails } from "helpers/manageHelpers";
 
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 import { notify } from "utils/notifications";
+import { readPnodeInfoArray } from "helpers/pNodeHelpers";
+import { getKeypairForSigning } from "services/keypairServices";
 
 export const ManagerView: FC = ({ }) => {
 
@@ -15,8 +19,9 @@ export const ManagerView: FC = ({ }) => {
     // const { connection } = useConnection();
     const connection = new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed');
 
-    const [managers, setManagers] = useState<any[]>([]);
+
     const [managedPnodes, setManagedPnodes] = useState<any[]>([]);
+    const [data, setData] = useState(managedPnodes || []);
     const [rewardWallet, setRewardWallet] = useState<string>('');
     const [commission, setCommission] = useState<string>('');
     const [discord, setDiscord] = useState<string>('');
@@ -25,6 +30,11 @@ export const ManagerView: FC = ({ }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isRegistered, setIsRegistered] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [editValue, setEditValue] = useState('');
+    const [modifiedRows, setModifiedRows] = useState<number[]>([]);
+    const [savingRow, setSavingRow] = useState<number | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -51,11 +61,9 @@ export const ManagerView: FC = ({ }) => {
                 setTelegram(currentManagerData?.telegramId);
             }
 
-            setManagers(formattedManagers);
             setIsLoading(false);
 
         } else {
-            setManagers([]);
             setManagedPnodes([]);
             setIsLoading(false);
         }
@@ -127,7 +135,7 @@ export const ManagerView: FC = ({ }) => {
                 const existingManagerData = await fetchManagerData(connection, wallet.publicKey);
                 if (existingManagerData) {
                     console.error("Error: Manager is already registered!");
-                    console.log("Existing manager data:", existingManagerData);
+                    notify({ type: 'error', message: 'Manager account already exists' });
                     setIsProcessing(false);
                     return;
                 }
@@ -224,6 +232,228 @@ export const ManagerView: FC = ({ }) => {
         }
     }
 
+    function processPublicKey(key: PublicKey) {
+        if (key?.toString() == "11111111111111111111111111111111") {
+            return '';
+        }
+        return key?.toString();
+    }
+
+    // Sync data when pNodeData changes
+    useEffect(() => {
+        if (!isLoading) {
+            setData(managedPnodes || []);
+        }
+    }, [managedPnodes, isLoading]);
+
+    // Focus input when editing starts
+    useEffect(() => {
+        if (editingCell && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [editingCell]);
+
+    const startEditing = (row: number, col: string, currentValue: any) => {
+        console.log("startEditing called with ", row, col, currentValue);
+        setEditingCell({ row, col });
+        setEditValue(String(currentValue || ''));
+
+    };
+
+    const saveEdit = () => {
+        try {
+            if (editingCell === null) return;
+            const { row, col } = editingCell;
+            const newValue = editValue.trim();
+            console.log("managedPnodes:", managedPnodes);
+            const oldValue = managedPnodes[row]?.[col];
+
+            const updatedData = [...data];
+
+            console.log("Saving edit for row:", row, "col:", col, "newValue:", newValue, "oldValue:", oldValue);
+
+            //updated the pnode registration time if pnode value changed
+            if (col === 'pnodeKey' && newValue !== oldValue?.toString()) {
+                if (newValue === '') {
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111"), ["registrationTime"]: 0 };
+                } else if (!PublicKey.isOnCurve(newValue)) {
+                    notify({ type: 'error', message: 'Invalid Public Key format.' });
+                    setEditingCell(null);
+                    setEditValue('');
+                    return;
+                }
+                // check if the new pnode value is already exists in other rows
+                else if (updatedData.some((item, index) => index !== row && item.pnodeKey?.toString() === newValue)) {
+                    notify({ type: 'error', message: 'This pNode Public Key is already registered.' });
+                    setEditingCell(null);
+                    setEditValue('');
+                    return;
+                } else {
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue), ["registrationTime"]: Date.now() };
+                }
+            }
+
+            setData(updatedData);
+
+            // Detect if this row is now modified
+            const rowChanged = JSON.stringify(updatedData[row]) !== JSON.stringify(managedPnodes[row]);
+            setModifiedRows(prev =>
+                rowChanged
+                    ? [...new Set([...prev, row])]
+                    : prev.filter(i => i !== row)
+            );
+
+            setEditingCell(null);
+            setEditValue('');
+        } catch (error) {
+            notify({ type: 'error', message: `Error while saving edit: ${error?.message || error}` });
+            setEditingCell(null);
+            setEditValue('');
+        }
+    };
+
+    const cancelEdit = () => {
+        setEditingCell(null);
+        setEditValue('');
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') saveEdit();
+        if (e.key === 'Escape') cancelEdit();
+    };
+
+    // function on saving changes
+    const onHandleChanges = async (index?: number, type?: string, oldManager?: PublicKey) => {
+        if (index === undefined) return;
+        console.log("onHandleChanges called for index:", index, "type:", type, "oldManager:", oldManager);
+
+        setSavingRow(index);
+        // setIsProcessing({ task: 'assign', status: true, index });
+
+        try {
+            if (!wallet || !wallet.publicKey) {
+                notify({ type: 'error', message: 'Please connect your wallet' });
+                setSavingRow(null);
+                return;
+            }
+
+            const DEFAULT_VALUE = "11111111111111111111111111111111";
+            let pnodeInfo = data[index];
+
+            if (type === 'manager') {
+                pnodeInfo = {
+                    ...pnodeInfo,
+                    manager: new PublicKey(DEFAULT_VALUE),
+                    managerCommission: 0
+                };
+            } else if (type === 'nft1') {
+                pnodeInfo = {
+                    ...pnodeInfo,
+                    nft_slot_1: new PublicKey(DEFAULT_VALUE),
+                };
+            } else if (type === 'nft2') {
+                pnodeInfo = {
+                    ...pnodeInfo,
+                    nft_slot_2: new PublicKey(DEFAULT_VALUE),
+                };
+            }
+
+            pnodeInfo = {
+                ...pnodeInfo,
+                pnode: pnodeInfo.pnode instanceof PublicKey ? pnodeInfo.pnode : new PublicKey(pnodeInfo.pnode || DEFAULT_VALUE),
+                nft_slot_1: pnodeInfo.nft_slot_1 instanceof PublicKey ? pnodeInfo.nft_slot_1 : new PublicKey(pnodeInfo.nft_slot_1 || DEFAULT_VALUE),
+                nft_slot_2: pnodeInfo.nft_slot_2 instanceof PublicKey ? pnodeInfo.nft_slot_2 : new PublicKey(pnodeInfo.nft_slot_2 || DEFAULT_VALUE),
+                manager: pnodeInfo.manager instanceof PublicKey ? pnodeInfo.manager : new PublicKey(pnodeInfo.manager || DEFAULT_VALUE),
+            }
+
+            // Read current pnode info to check if pnode key is changing
+            const currentPnodeInfos = await readPnodeInfoArray(connection, wallet?.publicKey);
+            const oldPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ?
+                currentPnodeInfos[index].pnode : PublicKey.default;
+
+            const pNodeKeyChanging = !oldPnodeKey.equals(pnodeInfo.pnode);
+
+            const keypairForSigning = await getKeypairForSigning();
+            if (!keypairForSigning?.ok || !keypairForSigning?.data?.keypair) {
+                notify({ type: 'error', message: 'Failed to retrieve keypair for signing.' });
+                return;
+            }
+            const walletToSign = Keypair.fromSecretKey(new Uint8Array(keypairForSigning?.data?.keypair?.privateKey));
+
+            if (pNodeKeyChanging) {
+                console.log("⚠️  Pnode key is changing from", oldPnodeKey.toString(), "to", pnodeInfo.pnode.toString());
+                if (!walletToSign) {
+                    console.error("❌ Error: When changing pnode key, the new pnode keypair must be provided as the 5th parameter");
+                    throw new Error("Missing pnode keypair for pnode key change");
+                }
+                console.log("✅ New pnode keypair provided and will sign the transaction");
+            }
+
+            const transaction = new Transaction();
+            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, pNodeKeyChanging);
+
+            if (txIx && typeof txIx === 'object' && 'error' in txIx) {
+                notify({ type: 'error', message: `${(txIx as any).error}` });
+                setSavingRow(null);
+                return;
+            }
+
+            transaction.add(txIx as TransactionInstruction);
+
+            const { context: { slot: minContextSlot }, value: { blockhash, lastValidBlockHeight } } =
+                await connection.getLatestBlockhashAndContext('confirmed');
+
+            transaction.recentBlockhash = blockhash;
+            console.log("walletToSign >>> ", walletToSign.publicKey.toString());
+            transaction.feePayer = wallet.publicKey;
+            let tx = '';
+
+            if (pNodeKeyChanging) {
+                transaction.partialSign(walletToSign);
+                // const signedTx = await wallet.signTransaction(transaction);
+                tx = await wallet.sendTransaction(transaction, connection, {
+                    minContextSlot,
+                    skipPreflight: true,
+                    preflightCommitment: 'confirmed',
+                });
+            } else {
+                tx = await wallet.sendTransaction(transaction, connection, {
+                    minContextSlot,
+                    skipPreflight: true,
+                    preflightCommitment: 'confirmed',
+                });
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 4000));
+
+            const confirmTx = await connection.getSignatureStatuses([tx], { searchTransactionHistory: true });
+            const status = confirmTx?.value[0];
+
+            if (!status || status.err) {
+                notify({
+                    type: 'error',
+                    message: status?.err ? 'Transaction failed!' : 'Unable to confirm',
+                    description: status?.err?.toString(),
+                    txid: tx
+                });
+            } else {
+                notify({
+                    type: 'success',
+                    message: 'Saved successfully!',
+                    description: `PNode #${index + 1} updated`,
+                    txid: tx
+                });
+                setModifiedRows(prev => prev.filter(i => i !== index));
+                await fetchData();
+            }
+        } catch (error: any) {
+            notify({ type: 'error', message: `Transaction failed: ${error?.message || error}` });
+        } finally {
+            setSavingRow(null);
+            // setIsProcessing({ task: '', status: false, index: 0 });
+        }
+    };
 
     return (
         <div className="container flex mx-auto flex-col items-center w-full max-w-4xl p-4 mb-10 relative">
@@ -252,31 +482,115 @@ export const ManagerView: FC = ({ }) => {
                 {
                     !isLoading &&
                         isRegistered ?
-                        <div className="w-full mt-5 flex flex-col items-center justify-center">
+                        // <div className="w-full mt-5 flex flex-col items-center justify-center">
+                        <div className='flex flex-col gap-8 bg-tiles border-xnd w-full text-white p-5 relative text-base'>
+                            <div className="absolute -inset-2 -z-10 bg-gradient-to-r from-[#fda31b] via-[#622657] to-[#198476] border-xnd blur  "></div>
                             {
                                 managedPnodes?.length == 0 ?
                                     <div className="flex flex-col items-center justify-center my-5">
                                         <span className="text-gray-500">No pNodes managed by you.</span>
                                     </div>
                                     :
-                                    <div className="overflow-x-auto w-full">
+                                    <div className="overflow-x-auto w-full ">
+                                        <div className="absolute -inset-2 -z-10 bg-gradient-to-r from-[#fda31b] via-[#622657] to-[#198476] border-xnd blur  "></div>
+
                                         <table className="table table-auto w-full normal-case border-collapse border border-gray-400">
                                             {/* head */}
                                             <thead>
                                                 <tr className="border-b border-gray-400">
+                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Index</th>
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">pNode Pubkey</th>
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Owner</th>
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Registration Time</th>
+                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {managedPnodes.map((pnode, index) => (
-                                                    <tr key={index} className="font-light text-white text-sm">
-                                                        <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.pnodeKey?.toString())}>{pnode?.pnodeKey?.toString().slice(0, 4)}...{pnode?.pnodeKey?.toString().slice(-4)}</td>
-                                                        <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.owner?.toString())}>{pnode?.owner?.toString().slice(0, 4)}...{pnode?.owner?.toString().slice(-4)}</td>
-                                                        <td className="bg-tiles-dark text-center">{new Date(Number(pnode?.registrationTime)).toLocaleString()}</td>
-                                                    </tr>
-                                                ))}
+                                                {data?.map((pnode, index) => {
+                                                    const isModified = modifiedRows.includes(index);
+                                                    const isSaving = savingRow === index;
+                                                    return (
+                                                        <tr key={index} className="font-light text-white text-sm">
+                                                            <td className="bg-tiles-dark text-center">{index + 1}</td>
+                                                            {/* <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.pnodeKey?.toString())}>{pnode?.pnodeKey?.toString().slice(0, 4)}...{pnode?.pnodeKey?.toString().slice(-4)}</td> */}
+                                                            <td className="bg-tiles-dark text-center relative group">
+                                                                <div className="flex flex-row items-center justify-center gap-3 h-full min-h-[40px]">
+                                                                    {editingCell?.row === index && editingCell?.col === 'pnodeKey' ? (
+                                                                        <input
+                                                                            ref={inputRef}
+                                                                            type="text"
+                                                                            value={editValue}
+                                                                            onChange={(e) => setEditValue(e.target.value)}
+                                                                            onBlur={saveEdit}
+                                                                            onKeyDown={handleKeyDown}
+                                                                            className="bg-gray-800 text-white text-center w-32 px-2 py-1 rounded text-xs"
+                                                                            placeholder="Enter pubkey..."
+                                                                        />
+                                                                    ) : (
+                                                                        <>
+                                                                            {
+                                                                                processPublicKey(pnode?.pnodeKey) == '' ?
+                                                                                    '-' :
+                                                                                    <span
+                                                                                        className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
+                                                                                        onClick={() => copyToClipboard(processPublicKey(pnode?.pnodeKey) || '')}
+                                                                                    >
+                                                                                        {processPublicKey(pnode?.pnodeKey)?.slice(0, 4)}...{processPublicKey(pnode?.pnodeKey)?.slice(-4)}
+                                                                                    </span>
+                                                                            }
+                                                                            <button
+                                                                                onClick={() => startEditing(index, 'pnodeKey', pnode?.pnodeKey?.toString())}
+                                                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                            >
+                                                                                <EditIcon fontSize="small" className="text-gray-400" />
+                                                                            </button>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                            <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.owner?.toString())}>{pnode?.owner?.toString().slice(0, 4)}...{pnode?.owner?.toString().slice(-4)}</td>
+                                                            <td className="bg-tiles-dark text-center">{new Date(Number(pnode?.registrationTime)).toLocaleString()}</td>
+                                                            {/* Action Buttons: Save & Cancel (only if modified) */}
+                                                            <td className="bg-tiles-dark text-center">
+                                                                {isModified && (
+                                                                    <div className="flex items-center justify-center gap-2 h-full min-h-[40px]">
+                                                                        {/* Save Button */}
+                                                                        <button
+                                                                            className={`btn btn-xs ${isSaving ? 'bg-gray-600' : 'bg-[#198476] hover:bg-[#1e9c8b]'} text-white normal-case`}
+                                                                            onClick={() => onHandleChanges(index, "", pnode?.manager)}
+                                                                            disabled={isSaving}
+                                                                        >
+                                                                            {isSaving ? (
+                                                                                <span className="loading loading-spinner loading-xs"></span>
+                                                                            ) : (
+                                                                                'Save'
+                                                                            )}
+                                                                        </button>
+
+                                                                        {/* Cancel Button */}
+                                                                        <button
+                                                                            className="btn btn-xs btn-ghost text-gray-400 hover:text-white normal-case"
+                                                                            onClick={() => {
+                                                                                // Revert row to original data
+                                                                                const originalRow = managedPnodes[index];
+                                                                                const updatedData = [...data];
+                                                                                updatedData[index] = { ...originalRow };
+                                                                                setData(updatedData);
+
+                                                                                // Remove from modified rows
+                                                                                setModifiedRows(prev => prev.filter(i => i !== index));
+                                                                            }}
+                                                                            disabled={isSaving}
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                }
+                                                )}
                                             </tbody>
                                         </table>
                                     </div>
@@ -404,9 +718,6 @@ export const ManagerView: FC = ({ }) => {
                                 </div>
 
                             </div>
-
-
-
 
                             <div className="text-center">
                                 {

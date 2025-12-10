@@ -645,9 +645,7 @@ export async function registerRewardWallet(publicKey: PublicKey, rewardWalletPub
     }
 }
 
-export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null, pnodeKeypair, pnodeKeyChanging: boolean): Promise<TransactionInstruction> {
-
-    console.log("Updating pnode details with info:", pnodeInfo);
+export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null, pnodeKeyChanging?: boolean): Promise<TransactionInstruction> {
 
     const [pnodeOwnerPda] = PublicKey.findProgramAddressSync(
         [Buffer.from(PNODE_OWNER_SEED), ownerWallet?.toBuffer()],
