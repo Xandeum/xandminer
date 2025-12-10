@@ -1,22 +1,46 @@
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import util from 'util';
 
-const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 
 export default async function handler(req, res) {
+    // SECURITY: Authentication Check (Fix #1)
+    const apiKey = process.env.XANDMINER_API_KEY;
+    const clientKey = req.headers['x-api-key'];
+
+    if (apiKey && clientKey !== apiKey) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // SECURITY: CSRF Protection (Fix #3)
+    const origin = req.headers.origin;
+    const host = req.headers.host;
+    if (origin) {
+        try {
+            const originUrl = new URL(origin);
+            if (originUrl.host !== host) {
+                return res.status(403).json({ error: 'Forbidden' });
+            }
+        } catch (e) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+    }
+
     const services = ['xandminer', 'xandminerd', 'pod'];
     const validActions = ['start', 'stop'];
 
     if (req.method === 'GET') {
-        // Handle status check for all services
         try {
             const statusPromises = services.map(async (service) => {
-                const command = `systemctl is-active ${service}.service`;
                 try {
-                    const { stdout, stderr } = await execPromise(command);
+                    const { stdout, stderr } = await execFilePromise('/bin/systemctl', ['is-active', `${service}.service`]);
+
+                    // SECURITY FIX #5: Sanitize stderr
                     if (stderr) {
-                        return { service, status: 'unknown', rawStatus: stderr };
+                        console.error(`[System Error] ${service}: ${stderr}`); // Log internal detail
+                        return { service, status: 'unknown', rawStatus: 'Service check failed' }; // Generic client message
                     }
+
                     const status = stdout.trim();
                     const statusMap = {
                         active: 'started',
@@ -26,7 +50,9 @@ export default async function handler(req, res) {
                     };
                     return { service, status: statusMap[status] || 'unknown', rawStatus: status };
                 } catch (error) {
-                    return { service, status: 'unknown', rawStatus: error.message };
+                    // SECURITY FIX #5: Sanitize catch block errors
+                    console.error(`[Execution Error] ${service}:`, error);
+                    return { service, status: 'unknown', rawStatus: 'Service check failed' };
                 }
             });
 
@@ -38,36 +64,44 @@ export default async function handler(req, res) {
 
             res.status(200).json(statusObject);
         } catch (error) {
-            res.status(500).json({ error: `Failed to get service statuses: ${error.message}` });
+            console.error('[Critical Error] GET handler failed:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
         }
     } else if (req.method === 'POST') {
-        // Handle start/stop/restart/reload actions
         const { action, service } = req.body;
 
         if (!validActions.includes(action) || !services.includes(service)) {
-            return res.status(400).json({ error: 'Invalid or missing action or service' });
+            return res.status(400).json({ error: 'Invalid parameters' });
         }
 
         try {
-            const command = `systemctl daemon-reload && sudo systemctl ${action} ${service}.service`;
-            const { stdout, stderr } = await execPromise(command);
+            // Fix #2: Use execFile and sudo
+            const { stdout, stderr } = await execFilePromise('/usr/bin/sudo', ['/bin/systemctl', action, `${service}.service`]);
 
             if (stderr) {
-                return res.status(500).json({ error: `Command error: ${stderr}` });
+                // Warning logging
+                console.warn(`[System Warning] ${service} ${action}: ${stderr}`);
             }
 
             res.status(200).json({
                 message: `Service ${service} ${action}ed successfully`,
-                output: stdout,
+                output: stdout, // stdout is generally safe for systemctl (e.g., "Service started")
             });
         } catch (error) {
-            let errorMsg = error?.message?.toString()?.includes("not found") ?
-                `Service ${service} does not exist. Please ensure you have updated to the latest version.` :
-                error.message;
-            res.status(500).json(`${errorMsg}`);
+            // SECURITY FIX #5: Genericize error messages
+            console.error(`[Command Failed] ${service} ${action}:`, error);
+
+            // We can return a slightly descriptive error if it's safe, or just 500
+            // Here we check if the error was likely "service not found" without exposing the raw error
+            const isNotFound = error?.message?.includes("not found") || error?.stderr?.includes("not found");
+            const clientMsg = isNotFound
+                ? "Service not found"
+                : "Failed to execute service command";
+
+            res.status(500).json({ error: clientMsg });
         }
     } else {
         res.setHeader('Allow', ['GET', 'POST']);
-        res.status(405).json({ error: `Method ${req.method} not allowed` });
+        res.status(405).json({ error: 'Method Not Allowed' });
     }
 }

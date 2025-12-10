@@ -1,18 +1,26 @@
 /** @type {import('next').NextConfig} */
+const withPlugins = require('next-compose-plugins');
+
 const nextConfig = {
   reactStrictMode: true,
-  webpack(config) {
+  swcMinify: true,
+  // New Native Transpilation (replacing next-transpile-modules)
+  transpilePackages: [
+    '@solana/wallet-adapter-base',
+    '@solana/wallet-adapter-react',
+    '@solana/wallet-adapter-react-ui',
+    '@solana/wallet-adapter-wallets',
+    '@solana/web3.js'
+  ],
+  webpack: (config) => {
     config.resolve.fallback = {
-
-      // if you miss it, all the other options in fallback, specified
-      // by next.js will be dropped.
-      ...config.resolve.fallback,
-
-      fs: false, // the solution
+      fs: false,
+      os: false,
+      path: false,
+      crypto: false,
     };
-
     return config;
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = withPlugins([], nextConfig);
