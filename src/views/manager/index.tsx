@@ -40,6 +40,15 @@ export const ManagerView: FC = ({ }) => {
         fetchData();
     }, [wallet, wallet?.publicKey]);
 
+
+
+    // Sync data when pNodeData changes
+    useEffect(() => {
+        if (!isLoading) {
+            setData(managedPnodes || []);
+        }
+    }, [managedPnodes, isLoading, wallet, wallet?.publicKey]);
+
     const fetchData = async () => {
         setIsLoading(true);
         const managersData = await fetchAllManagers(connection);
@@ -239,13 +248,6 @@ export const ManagerView: FC = ({ }) => {
         return key?.toString();
     }
 
-    // Sync data when pNodeData changes
-    useEffect(() => {
-        if (!isLoading) {
-            setData(managedPnodes || []);
-        }
-    }, [managedPnodes, isLoading]);
-
     // Focus input when editing starts
     useEffect(() => {
         if (editingCell && inputRef.current) {
@@ -276,7 +278,7 @@ export const ManagerView: FC = ({ }) => {
             //updated the pnode registration time if pnode value changed
             if (col === 'pnodeKey' && newValue !== oldValue?.toString()) {
                 if (newValue === '') {
-                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111"), ["registrationTime"]: 0 };
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111") };
                 } else if (!PublicKey.isOnCurve(newValue)) {
                     notify({ type: 'error', message: 'Invalid Public Key format.' });
                     setEditingCell(null);
@@ -290,7 +292,7 @@ export const ManagerView: FC = ({ }) => {
                     setEditValue('');
                     return;
                 } else {
-                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue), ["registrationTime"]: Date.now() };
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue) };
                 }
             }
 
@@ -324,9 +326,9 @@ export const ManagerView: FC = ({ }) => {
     };
 
     // function on saving changes
-    const onHandleChanges = async (index?: number, type?: string, oldManager?: PublicKey) => {
+    const onHandleChanges = async (index?: number, type?: string) => {
         if (index === undefined) return;
-        console.log("onHandleChanges called for index:", index, "type:", type, "oldManager:", oldManager);
+        console.log("onHandleChanges called for index:", index, "type:", type);
 
         setSavingRow(index);
         // setIsProcessing({ task: 'assign', status: true, index });
@@ -338,8 +340,11 @@ export const ManagerView: FC = ({ }) => {
                 return;
             }
 
+            const oldManager = new PublicKey(managedPnodes[index]?.managerPubkey);
+            const pNodeOwnerPubkey = new PublicKey(managedPnodes[index]?.owner);
             const DEFAULT_VALUE = "11111111111111111111111111111111";
             let pnodeInfo = data[index];
+            console.log("pnodeInfo before processing:", pnodeInfo);
 
             if (type === 'manager') {
                 pnodeInfo = {
@@ -361,28 +366,24 @@ export const ManagerView: FC = ({ }) => {
 
             pnodeInfo = {
                 ...pnodeInfo,
-                pnode: pnodeInfo.pnode instanceof PublicKey ? pnodeInfo.pnode : new PublicKey(pnodeInfo.pnode || DEFAULT_VALUE),
-                nft_slot_1: pnodeInfo.nft_slot_1 instanceof PublicKey ? pnodeInfo.nft_slot_1 : new PublicKey(pnodeInfo.nft_slot_1 || DEFAULT_VALUE),
-                nft_slot_2: pnodeInfo.nft_slot_2 instanceof PublicKey ? pnodeInfo.nft_slot_2 : new PublicKey(pnodeInfo.nft_slot_2 || DEFAULT_VALUE),
-                manager: pnodeInfo.manager instanceof PublicKey ? pnodeInfo.manager : new PublicKey(pnodeInfo.manager || DEFAULT_VALUE),
+                pnode: pnodeInfo?.pnodeKey instanceof PublicKey ? pnodeInfo?.pnodeKey : new PublicKey(pnodeInfo?.pnodeKey || DEFAULT_VALUE),
+                nft_slot_1: pnodeInfo?.nftSlot1 instanceof PublicKey ? pnodeInfo?.nftSlot1 : new PublicKey(pnodeInfo?.nftSlot1 || DEFAULT_VALUE),
+                nft_slot_2: pnodeInfo?.nftSlot2 instanceof PublicKey ? pnodeInfo?.nftSlot2 : new PublicKey(pnodeInfo?.nftSlot2 || DEFAULT_VALUE),
+                manager: pnodeInfo?.managerPubkey instanceof PublicKey ? pnodeInfo?.managerPubkey : new PublicKey(pnodeInfo?.managerPubkey || DEFAULT_VALUE),
             }
 
-            // Read current pnode info to check if pnode key is changing
-            const currentPnodeInfos = await readPnodeInfoArray(connection, wallet?.publicKey);
-            const oldPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ?
-                currentPnodeInfos[index].pnode : PublicKey.default;
-
-            const pNodeKeyChanging = !oldPnodeKey.equals(pnodeInfo.pnode);
+            const pNodeKeyChanging = modifiedRows?.includes(index);
 
             const keypairForSigning = await getKeypairForSigning();
             if (!keypairForSigning?.ok || !keypairForSigning?.data?.keypair) {
                 notify({ type: 'error', message: 'Failed to retrieve keypair for signing.' });
                 return;
             }
+
             const walletToSign = Keypair.fromSecretKey(new Uint8Array(keypairForSigning?.data?.keypair?.privateKey));
 
             if (pNodeKeyChanging) {
-                console.log("⚠️  Pnode key is changing from", oldPnodeKey.toString(), "to", pnodeInfo.pnode.toString());
+                console.log("⚠️  Pnode key is changing from", "to", pnodeInfo.pnodeKey.toString());
                 if (!walletToSign) {
                     console.error("❌ Error: When changing pnode key, the new pnode keypair must be provided as the 5th parameter");
                     throw new Error("Missing pnode keypair for pnode key change");
@@ -391,7 +392,7 @@ export const ManagerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, pNodeKeyChanging);
+            const txIx = await updatePnodeDetails(pNodeOwnerPubkey, index, pnodeInfo, oldManager, pNodeKeyChanging, true, wallet?.publicKey);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -406,12 +407,11 @@ export const ManagerView: FC = ({ }) => {
 
             transaction.recentBlockhash = blockhash;
             console.log("walletToSign >>> ", walletToSign.publicKey.toString());
-            transaction.feePayer = wallet.publicKey;
+            transaction.feePayer = wallet?.publicKey;
             let tx = '';
 
-            if (pNodeKeyChanging) {
+            if (modifiedRows?.includes(index)) {
                 transaction.partialSign(walletToSign);
-                // const signedTx = await wallet.signTransaction(transaction);
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
                     skipPreflight: true,
@@ -557,7 +557,7 @@ export const ManagerView: FC = ({ }) => {
                                                                         {/* Save Button */}
                                                                         <button
                                                                             className={`btn btn-xs ${isSaving ? 'bg-gray-600' : 'bg-[#198476] hover:bg-[#1e9c8b]'} text-white normal-case`}
-                                                                            onClick={() => onHandleChanges(index, "", pnode?.manager)}
+                                                                            onClick={() => onHandleChanges(index, "")}
                                                                             disabled={isSaving}
                                                                         >
                                                                             {isSaving ? (

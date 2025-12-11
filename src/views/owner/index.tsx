@@ -204,7 +204,7 @@ export const OwnerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, pNodeKeyChanging);
+            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, pNodeKeyChanging, false);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -218,13 +218,11 @@ export const OwnerView: FC = ({ }) => {
                 await connection.getLatestBlockhashAndContext('confirmed');
 
             transaction.recentBlockhash = blockhash;
-            console.log("walletToSign >>> ", walletToSign.publicKey.toString());
             transaction.feePayer = wallet.publicKey;
             let tx = '';
 
             if (pNodeKeyChanging) {
                 transaction.partialSign(walletToSign);
-                // const signedTx = await wallet.signTransaction(transaction);
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
                     skipPreflight: true,
