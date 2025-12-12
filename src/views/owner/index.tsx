@@ -140,7 +140,6 @@ export const OwnerView: FC = ({ }) => {
     // function on saving changes
     const onHandleChanges = async (index?: number, type?: string) => {
         if (index === undefined) return;
-        console.log("onHandleChanges called for index:", index, "type:", type, "oldManager:", pNodeData[index]?.manager);
         setSavingRow(index);
         setIsProcessing({ task: 'assign', status: true, index });
 
@@ -195,12 +194,9 @@ export const OwnerView: FC = ({ }) => {
             const walletToSign = Keypair.fromSecretKey(new Uint8Array(keypairForSigning?.data?.keypair?.privateKey));
 
             if (pNodeKeyChanging) {
-                console.log("⚠️  Pnode key is changing from", oldPnodeKey.toString(), "to", pnodeInfo.pnode.toString());
                 if (!walletToSign) {
-                    console.error("❌ Error: When changing pnode key, the new pnode keypair must be provided as the 5th parameter");
                     throw new Error("Missing pnode keypair for pnode key change");
                 }
-                console.log("✅ New pnode keypair provided and will sign the transaction");
             }
 
             const transaction = new Transaction();

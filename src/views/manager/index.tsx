@@ -63,7 +63,6 @@ export const ManagerView: FC = ({ }) => {
             if (alreadyRegistered) {
                 const currentManagerData = await fetchManagerData(connection, wallet?.publicKey);
                 const managedPnodes = await getPnodesForManager(wallet?.publicKey, connection);
-                console.log("managedPnodes >>> ", managedPnodes);
                 setManagedPnodes(managedPnodes);
                 setRewardWallet(currentManagerData?.rewardsWallet.toString());
                 setCommission((currentManagerData?.commission / 100).toString());
@@ -258,7 +257,6 @@ export const ManagerView: FC = ({ }) => {
     }, [editingCell]);
 
     const startEditing = (row: number, col: string, currentValue: any) => {
-        console.log("startEditing called with ", row, col, currentValue);
         setEditingCell({ row, col });
         setEditValue(String(currentValue || ''));
 
@@ -269,12 +267,8 @@ export const ManagerView: FC = ({ }) => {
             if (editingCell === null) return;
             const { row, col } = editingCell;
             const newValue = editValue.trim();
-            console.log("managedPnodes:", managedPnodes);
             const oldValue = managedPnodes[row]?.[col];
-
             const updatedData = [...data];
-
-            console.log("Saving edit for row:", row, "col:", col, "newValue:", newValue, "oldValue:", oldValue);
 
             //updated the pnode registration time if pnode value changed
             if (col === 'pnodeKey' && newValue !== oldValue?.toString()) {
@@ -329,7 +323,6 @@ export const ManagerView: FC = ({ }) => {
     // function on saving changes
     const onHandleChanges = async (index?: number, type?: string) => {
         if (index === undefined) return;
-        console.log("onHandleChanges called for index:", index, "type:", type);
 
         setSavingRow(index);
         // setIsProcessing({ task: 'assign', status: true, index });
@@ -345,7 +338,6 @@ export const ManagerView: FC = ({ }) => {
             const pNodeOwnerPubkey = new PublicKey(managedPnodes[index]?.owner);
             const DEFAULT_VALUE = "11111111111111111111111111111111";
             let pnodeInfo = data[index];
-            console.log("pnodeInfo before processing:", pnodeInfo);
 
             if (type === 'manager') {
                 pnodeInfo = {
@@ -384,12 +376,9 @@ export const ManagerView: FC = ({ }) => {
             const walletToSign = Keypair.fromSecretKey(new Uint8Array(keypairForSigning?.data?.keypair?.privateKey));
 
             if (pNodeKeyChanging) {
-                console.log("⚠️  Pnode key is changing from", "to", pnodeInfo.pnodeKey.toString());
                 if (!walletToSign) {
-                    console.error("❌ Error: When changing pnode key, the new pnode keypair must be provided as the 5th parameter");
                     throw new Error("Missing pnode keypair for pnode key change");
                 }
-                console.log("✅ New pnode keypair provided and will sign the transaction");
             }
 
             const transaction = new Transaction();
@@ -407,7 +396,6 @@ export const ManagerView: FC = ({ }) => {
                 await connection.getLatestBlockhashAndContext('confirmed');
 
             transaction.recentBlockhash = blockhash;
-            console.log("walletToSign >>> ", walletToSign.publicKey.toString());
             transaction.feePayer = wallet?.publicKey;
             let tx = '';
 

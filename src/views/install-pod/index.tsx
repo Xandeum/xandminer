@@ -136,13 +136,11 @@ export default function InstallPod({ onClose }) {
         try {
             setIsRestarting(true);
             setCountdown(30);
-            console.log('Sending POST to', `${API_BASE_URL}/api/restart-xandminer`);
             await axios.post(`${API_BASE_URL}/api/restart-xandminer`);
             const interval = setInterval(() => {
                 setCountdown((prev) => {
                     if (prev <= 1) {
                         clearInterval(interval);
-                        console.log('Reloading frontend');
                         window.location.reload();
                         return 0;
                     }

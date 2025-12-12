@@ -227,8 +227,6 @@ export function deserializeManager(data) {
 }
 
 async function getAllOwnerPdas(connection: Connection, programId: PublicKey) {
-    console.log("🔍 Fetching all Owner PDAs from the program...");
-
     try {
         // Get all accounts owned by the program
         // Filter by discriminator or size if needed
@@ -257,7 +255,6 @@ export async function fetchGlobalPdaData(connection: Connection) {
 
     const accountInfo = await connection.getParsedAccountInfo(globalPda);
     if (!accountInfo.value) {
-        console.log("GlobalPda account not found");
         return null;
     }
 
@@ -272,7 +269,6 @@ export async function fetchPNodeOwnerData(connection: Connection, walletPubkey: 
 
     const accountInfo = await connection.getParsedAccountInfo(pnodeOwnerPda);
     if (!accountInfo.value) {
-        console.log("PNodeOwner account not found for wallet:", walletPubkey.toString());
         return null;
     }
 
@@ -287,7 +283,6 @@ export async function fetchCouponData(connection: Connection) {
 
     const accountInfo = await connection.getParsedAccountInfo(couponPda);
     if (!accountInfo.value) {
-        console.log("Coupon account not found");
         return null;
     }
 
@@ -303,7 +298,6 @@ export async function fetchOwnerData(connection: Connection, walletPubkey: Publi
 
         const accountInfo = await connection.getParsedAccountInfo(ownerPda);
         if (!accountInfo.value) {
-            console.log("Owner account not found for wallet:", walletPubkey.toString());
             return null;
         }
 
@@ -427,8 +421,6 @@ export async function getPnodesForManager(managerWalletPubkey: PublicKey, connec
 
         }
     }
-    console.log(`\n✅ Found ${managedPnodes.length} PNode(s) managed by ${managerWalletPubkey.toString()} out of ${totalPnodesScanned} total PNode(s) scanned.\n`);
-
     return managedPnodes;
 }
 
@@ -440,7 +432,6 @@ export async function fetchManagerData(connection: Connection, managerPubkey: Pu
 
     const accountInfo = await connection.getParsedAccountInfo(managerPda);
     if (!accountInfo.value) {
-        console.log("Manager account not found for wallet:", managerPubkey?.toString());
         return null;
     }
 
@@ -460,10 +451,7 @@ export async function fetchAllManagers(connection: Connection) {
             ],
         });
 
-        console.log(`Found ${accounts.length} Manager account(s)\n`);
-
         if (accounts.length === 0) {
-            console.log("No manager accounts found.");
             return [];
         }
 
@@ -646,9 +634,6 @@ export async function registerRewardWallet(publicKey: PublicKey, rewardWalletPub
 }
 
 export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null, pnodeKeyChanging: boolean, isManager: boolean, managerWallet?: PublicKey): Promise<TransactionInstruction> {
-
-    console.log("pnode info in helper:", pnodeInfo);
-
     const [pnodeOwnerPda] = PublicKey.findProgramAddressSync(
         [Buffer.from(PNODE_OWNER_SEED), ownerWallet?.toBuffer()],
         PROGRAM
@@ -671,9 +656,6 @@ export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, 
             [Buffer.from(MANAGER_SEED), pnodeInfo.manager.toBuffer()],
             PROGRAM
         )[0] : PublicKey.default;
-
-    console.log("Old Manager PDA:", oldManagerPda.toString());
-    console.log("New Manager PDA:", newManagerPda.toString());
 
     const keys = [
         {
