@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckIcon from '@mui/icons-material/Check';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
 import { notify } from "utils/notifications";
 import { readMetaplexMetadata } from "helpers/tokenHelpers";
@@ -253,11 +254,14 @@ export const ManageView: FC = ({ }) => {
     return (
         <div className="container flex mx-auto flex-col items-center w-full max-w-6xl p-4 mb-10 relative">
 
+            <div className="flex flex-row items-center justify-center absolute left-0 hover:cursor-pointer" onClick={() => { window.history.back() }}>
+                <ArrowBackIosIcon fontSize="small" className="text-gray-400 " />
+                <span className="text-white text-lg font-medium hover:text-[#fda31b]">Go Back</span>
+            </div>
 
-            <h2 className="text-lg font-medium text-white md:leading-tight  my-5">
+            <h2 className="text-lg font-medium text-white md:leading-tight  my-10">
                 Visit Manager page <Link href={"/manager"} target="_self" rel="noopener noreferrer" className='underline text-[#FDA31B] hover:text-white'>here</Link>
             </h2>
-
 
             <div className='flex flex-col gap-8 bg-tiles border-xnd w-full text-white p-5  mt-8 relative md:mb-0 mb-28 text-base'>
                 <div className="absolute -inset-2 -z-10 bg-gradient-to-r from-[#fda31b] via-[#622657] to-[#198476] border-xnd blur  "></div>
