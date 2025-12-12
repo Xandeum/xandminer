@@ -3,6 +3,7 @@ import { BN } from "@project-serum/anchor";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import EditIcon from '@mui/icons-material/Edit';
+import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
 import Loader from "components/Loader";
 import { MANAGER_SEED, PROGRAM } from "CONSTS";
@@ -457,9 +458,13 @@ export const ManagerView: FC = ({ }) => {
 
     return (
         <div className="container flex mx-auto flex-col items-center w-full max-w-4xl p-4 mb-10 relative">
+            <div className="flex flex-row items-center justify-center absolute left-0 hover:cursor-pointer" onClick={() => { window.history.back() }}>
+                <ArrowBackIosIcon fontSize="small" className="text-gray-400 " />
+                <span className="text-white text-lg font-medium hover:text-[#fda31b]">Go Back</span>
+            </div>
 
             <>
-                <h2 className="text-3xl font-medium text-white md:leading-tight  my-5">Manage pNode - pNode(s) Managed</h2>
+                <h2 className="text-3xl font-medium text-white md:leading-tight  my-10">Manage pNode - pNode(s) Managed</h2>
                 {
                     // check if the wallet pubkey exists in the managers list
                     isRegistered
