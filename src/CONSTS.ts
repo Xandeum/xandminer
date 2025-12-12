@@ -11,10 +11,6 @@ export const PNODE_PROGRAM = new PublicKey("3hMZVwdgRHYSyqkdK3Y8MdZzNwLkjzXod1Xr
 
 export const SYSTEM_RESERVE = 30_000_000_000;
 
-export const VERSION_NO = "v0.5.0";
-export const VERSION_NAME = "Ingolstadt";
-
-
 export const GLOBAL_SEED = "pnodestore";
 export const OWNER_SEED = "owner5";
 export const PNODE_OWNER_SEED = "pnodeowner";
@@ -24,9 +20,17 @@ export const KEYPAIR_PATH = "../xandminerd/keypairs/pnode-keypair.json";
 
 export const PROGRAM = new PublicKey("GSfmK1JX1yh7WYWt1QySC8VYp9PfgUM2paMc9F6YD1F1"); // devnet - Abhi
 
+export const VERSION_NO = "v0.8.0";
+export const VERSION_NAME = "Reinheim";
 
 export const getVersionName = (versionNo: string) => {
-    if (versionNo.startsWith("v0.5.")) {
+    if (versionNo.startsWith("v0.8.")) {
+        return "Reinheim";
+    } else if (versionNo.startsWith("v0.7.")) {
+        return "Heidelberg";
+    } else if (versionNo.startsWith("v0.6.")) {
+        return "Stuttgart";
+    } else if (versionNo.startsWith("v0.5.")) {
         return "Ingolstadt";
     } else if (versionNo.startsWith("v0.4.")) {
         return "Herrenberg";
@@ -36,4 +40,3 @@ export const getVersionName = (versionNo: string) => {
         return " "
     }
 }
-
