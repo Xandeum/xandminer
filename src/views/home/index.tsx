@@ -1094,23 +1094,17 @@ export const HomeView: FC = ({ }) => {
                 :
                 null
             }
-            {/* {
-              isKeypairGenerated && isPnodeRegistered ?
 
+            {
+              isKeypairGenerated && isPnodeRegistered ?
                 <Link href={"/manage"} target="_self" rel="noopener noreferrer" className='w-full'>
                   <button className='btn bg-transparent hover:bg-[#622657] rounded-lg font-light w-full text-white mt-4 normal-case border-[#4a4a4a]'>
-                    Manage pNode
+                    Manage pNode(s)
                   </button>
                 </Link>
                 :
                 null
-            } */}
-
-            <Link href={"/manage"} target="_self" rel="noopener noreferrer" className='w-full'>
-              <button className='btn bg-transparent hover:bg-[#622657] rounded-lg font-light w-full text-white mt-4 normal-case border-[#4a4a4a]'>
-                Manage pNode
-              </button>
-            </Link>
+            }
 
           </div>
         </div>
