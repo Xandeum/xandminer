@@ -40,4 +40,3 @@ export const getVersionName = (versionNo: string) => {
         return " "
     }
 }
-
