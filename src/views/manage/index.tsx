@@ -259,11 +259,8 @@ export const ManageView: FC = ({ }) => {
                 <span className="text-white text-lg font-medium hover:text-[#fda31b]">Go Back</span>
             </div>
 
-            <h2 className="text-lg font-medium text-white md:leading-tight  my-10">
-                Visit Manager page <Link href={"/manager"} target="_self" rel="noopener noreferrer" className='underline text-[#FDA31B] hover:text-white'>here</Link>
-            </h2>
 
-            <div className='flex flex-col gap-8 bg-tiles border-xnd w-full text-white p-5  mt-8 relative md:mb-0 mb-28 text-base'>
+            <div className='flex flex-col gap-8 bg-tiles border-xnd w-full text-white p-5  mt-16 relative md:mb-0 mb-28 text-base'>
                 <div className="absolute -inset-2 -z-10 bg-gradient-to-r from-[#fda31b] via-[#622657] to-[#198476] border-xnd blur  "></div>
 
                 {
@@ -359,7 +356,7 @@ export const ManageView: FC = ({ }) => {
             {
                 hasPnode && wallet?.connected ?
                     <>
-                        <h2 className="text-3xl font-medium text-white md:leading-tight mt-12 my-10">Assign Managers</h2>
+                        <h2 className="text-3xl font-medium text-white md:leading-tight mt-12 my-10">pNode(s) Owned by Me</h2>
                         <OwnerView />
                     </>
                     : null

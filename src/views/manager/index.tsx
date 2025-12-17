@@ -452,7 +452,7 @@ export const ManagerView: FC = ({ }) => {
             </div>
 
             <>
-                <h2 className="text-3xl font-medium text-white md:leading-tight  my-10">Manage pNode - pNode(s) Managed</h2>
+                <h2 className="text-3xl font-medium text-white md:leading-tight  my-10">pNode(s) Managed by Me</h2>
                 {
                     // check if the wallet pubkey exists in the managers list
                     isRegistered
