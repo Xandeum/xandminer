@@ -4,7 +4,6 @@ import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
 import prettyBytes from 'pretty-bytes';
 import { getDriveInfo } from '../../services/getDriveInfo';
-import { getNetworkInfo } from '../../services/getNetworkInfo';
 import { createKeypair, getKeypair } from '../../services/keypairServices'
 import { getServerIP, getVersions } from '../../services/getServerInfo';
 import Slider from '@mui/material/Slider';
@@ -60,19 +59,7 @@ export const HomeView: FC = ({ }) => {
   const [isFetching, setIsFetching] = React.useState<boolean>(false);
   const [dedicatingAmnt, setDedicatingAmnt] = React.useState([{ disk: 0, amount: 0, type: "GB", isEditing: false }]);
   const [inputValue, setInputValue] = React.useState([{ index: 0, amount: 0, type: "GB" }]);
-  const [networkStats, setNetworkStats] = React.useState({
-    isFetching: false,
-    isError: false,
-    error: null,
-    data: {
-      download: "0 Mbps",
-      upload: "0 Mbps",
-      ping: "0 ms",
-      latency: "0 ms",
-    }
-  });
 
-  const [showNetworkSpeedModal, setShowNetworkSpeedModal] = React.useState(false);
   const [isRegisterProcessing, setIsRegisterProcessing] = React.useState(false);
   const [isGenerateProcessing, setIsGenerateProcessing] = React.useState(false);
   const [showFeatureInfoModal, setShowFeatureInfoModal] = React.useState(false);
@@ -222,22 +209,6 @@ export const HomeView: FC = ({ }) => {
       scrollToDedicateBtn();
     }
   }, [dedicatingAmnt]);
-
-  //function related to read the network stats
-  const getNetworkStats = async () => {
-    setNetworkStats({ ...networkStats, isFetching: true, isError: false, data: null });
-    setShowNetworkSpeedModal(true);
-    try {
-      const response = await getNetworkInfo();
-      if (response.ok) {
-        setNetworkStats({ ...networkStats, isFetching: false, isError: false, data: response.data });
-        return;
-      }
-      setNetworkStats({ ...networkStats, isFetching: false, isError: true, error: response?.error, data: null });
-    } catch (error) {
-      setNetworkStats({ ...networkStats, isFetching: false, isError: true, error: error, data: null });
-    }
-  }
 
   //copy to clipboard method 
   function copyToClipboard() {
@@ -684,7 +655,6 @@ export const HomeView: FC = ({ }) => {
           <div className='flex flex-col md:flex-row items-center justify-center w-full mb-6 gap-3 md:gap-10'>
             <span>IP address : <span className='text-[#fda31b]'>{serverIP}</span></span>
             <span>Hostname : <span className='text-[#fda31b]'>{serverHostname}</span></span>
-            <span className="underline cursor-pointer text-white hover:text-[#fda31b]" onClick={async () => { await getNetworkStats(); setShowNetworkSpeedModal(true) }}>Test Network Speed</span>
           </div>
       }
       {/* div with one side is 1/3 of the full screen with and rest with another div */}
@@ -1111,94 +1081,6 @@ export const HomeView: FC = ({ }) => {
       </div>
 
       {/* Modals */}
-
-      {/* network speed check modal */}
-      {
-        showNetworkSpeedModal ?
-          <div className="flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 focus:outline-none bg-[#0000009b] opacity-100">
-            <div className="justify-center items-center flex-col overflow-x-hidden overflow-y-auto fixed  z-9999 rounded-lg px-10 py-5 bg-[#08113b]">
-              <div className="absolute top-0 right-0 p-5 ">
-                <CloseIcon sx={[{ color: "#b7094c", transform: "scale(1.5)" },
-                { transition: "transform .1s" },
-                {
-                  '&:hover': {
-                    // color: 'white',
-                    cursor: 'pointer',
-                    transform: "scale(1.7)"
-                  },
-                }]}
-                  onClick={() => {
-                    setShowNetworkSpeedModal(false);
-                    networkStats?.data?.download == "0Mbps" ?
-                      setNetworkStats({
-                        isFetching: false, isError: false, error: null, data: null,
-                      })
-                      :
-                      null
-                  }}
-                >
-                </CloseIcon>
-              </div>
-              {
-                networkStats?.isFetching ?
-                  <div className='text-center font-normal my-5 w-[50ch]'>
-                    <p className='text-2xl mb-7 text-center'>Network Speed Status</p>
-
-                    <CircularProgress />
-                  </div>
-                  :
-                  networkStats?.isError ?
-                    <div className='text-center font-normal my-5 mt-10 w-[50ch]'>
-                      {/* <p className='text-2xl mb-4 '>Something went wrong. Please try again...</p> */}
-                      <p className='text-2xl mb-4 '>Failed to run network speed test</p>
-                      <p className='text-lg mb-4 '>{networkStats?.error}. {networkStats?.error?.includes("Failed to install") ? "Please manually install speedtest-cli and try again." : ""}</p>
-                      <button
-                        className="px-5 py-2 btn btn-sm bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-white hover:text-black"
-                        onClick={async () => { await getNetworkStats() }}
-                      >
-                        Retry
-                      </button>
-                    </div>
-                    :
-                    <div className='text-left font-normal my-5 w-[50ch]'>
-                      <p className='text-2xl mb-4 text-center'>Network Speed Status</p>
-                      <div className='border-b border-[#4a4a4a] my-4 w-full' />
-                      <div className='flex flex-row items-center justify-between mb-4'>
-                        <div className="flex flex-col gap-4">
-                          <p className='text-xl'>
-                            <span className='mr-2'><DownloadOutlinedIcon /></span>
-                            Download Speed
-                          </p>
-                          <p className='text-xl'>
-                            <span className='mr-2'><PublishOutlinedIcon /></span>
-                            Upload Speed
-                          </p>
-                        </div>
-                        <div className="flex flex-col  gap-4">
-                          <p className='text-xl'>
-                            :
-                          </p>
-                          <p className='text-xl'>
-                            :
-                          </p>
-                        </div>
-                        <div className="flex flex-col  gap-4">
-                          <p className='text-xl'>
-                            {networkStats?.data?.download}
-                          </p>
-                          <p className='text-xl'>
-                            {networkStats?.data?.upload}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-              }
-
-            </div>
-          </div>
-          :
-          null
-      }
 
       {/* feature info modal */}
       {

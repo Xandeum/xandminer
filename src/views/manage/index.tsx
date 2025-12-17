@@ -359,7 +359,7 @@ export const ManageView: FC = ({ }) => {
             {
                 hasPnode && wallet?.connected ?
                     <>
-                        <h2 className="text-3xl font-medium text-white md:leading-tight mt-12 my-10">Manage pNodes</h2>
+                        <h2 className="text-3xl font-medium text-white md:leading-tight mt-12 my-10">Assign Managers</h2>
                         <OwnerView />
                     </>
                     : null
