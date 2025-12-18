@@ -81,7 +81,8 @@ export const OwnerView: FC = ({ }) => {
                     currentlyOperating: manager?.data?.currentlyOperating,
                     Telegram: `https://t.me/${manager?.data?.telegramId}`,
                     discord: manager?.data?.discordId,
-                    verified: manager?.data?.verified
+                    verified: manager?.data?.verified,
+                    wesiteLink: manager?.data?.websiteLink,
                 }));
 
                 setIsRegistered(wallet?.publicKey && formattedManagers?.find(manager => manager?.pubkey?.toString() == wallet?.publicKey?.toString()) ? true : false);
@@ -792,6 +793,7 @@ export const OwnerView: FC = ({ }) => {
                                             <th className="bg-black text-white normal-case font-medium text-base text-center">Public Key</th>
                                             <th className="bg-black text-white normal-case font-medium text-base text-center">Commission</th>
                                             <th className="bg-black text-white normal-case font-medium text-base text-center">Currently Operating</th>
+                                            <th className="bg-black text-white normal-case font-medium text-base text-center">Website</th>
                                             <th className="bg-black text-white normal-case font-medium text-base text-center">Discord</th>
                                             <th className="bg-black text-white normal-case font-medium text-base text-center">Telegram</th>
                                             <th className="bg-black text-white normal-case font-medium text-base text-center">Action</th>
@@ -817,6 +819,7 @@ export const OwnerView: FC = ({ }) => {
                                                         <td className="bg-black text-center hover:cursor-pointer" onClick={() => copyToClipboard(manager.pubkey?.toString())}>{manager?.pubkey?.slice(0, 4)}...{manager.pubkey?.slice(-4)}</td>
                                                         <td className="bg-black text-center">{Number(manager?.commission) / 100}%</td>
                                                         <td className="bg-black text-center">{manager?.currentlyOperating}</td>
+                                                        <td className="bg-black text-center hover:cursor-pointer" onClick={() => copyToClipboard(manager?.wesiteLink?.toString())}>{manager?.wesiteLink}</td>
                                                         <td className="bg-black text-center hover:cursor-pointer" onClick={() => copyToClipboard(manager?.discord?.toString())}>{manager?.discord}</td>
                                                         <td className="bg-black text-center">
                                                             <a href={manager?.Telegram} target="_blank" rel="noreferrer">

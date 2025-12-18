@@ -26,6 +26,7 @@ export const ManagerView: FC = ({ }) => {
     const [rewardWallet, setRewardWallet] = useState<string>('');
     const [commission, setCommission] = useState<string>('');
     const [discord, setDiscord] = useState<string>('');
+    const [website, setWebsite] = useState<string>('');
     const [telegram, setTelegram] = useState<string>('');
     const [showPopupRegister, setShowPopupRegister] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -68,6 +69,7 @@ export const ManagerView: FC = ({ }) => {
                 setCommission((currentManagerData?.commission / 100).toString());
                 setDiscord(currentManagerData?.discordId);
                 setTelegram(currentManagerData?.telegramId);
+                setWebsite(currentManagerData?.websiteLink)
             }
 
             setIsLoading(false);
@@ -110,7 +112,7 @@ export const ManagerView: FC = ({ }) => {
 
             const pubKey = wallet.publicKey.toString();
 
-            if (!pubKey || !commission || !discord || !telegram) {
+            if (!pubKey || !commission || !discord || !telegram || !website) {
                 notify({ type: 'error', message: 'Please fill all the fields' });
                 setIsProcessing(false);
                 return;
@@ -131,7 +133,7 @@ export const ManagerView: FC = ({ }) => {
                     setIsProcessing(false);
                     return;
                 }
-                const txIx = await updateManagerAccount(connection, wallet?.publicKey, Number(basisCommission), telegram, discord, new PublicKey(rewardWallet));
+                const txIx = await updateManagerAccount(connection, wallet?.publicKey, Number(basisCommission), telegram, discord, website, new PublicKey(rewardWallet));
                 transaction.add(txIx);
             } else {
 
@@ -176,7 +178,8 @@ export const ManagerView: FC = ({ }) => {
                     Buffer.from(Int8Array.from([8]).buffer),
                     Buffer.from(Uint8Array.of(...new BN(basisCommission).toArray("le", 4))),
                     serializeBorshString(telegram),
-                    serializeBorshString(discord)
+                    serializeBorshString(discord),
+                    serializeBorshString(website),
                 ]);
 
                 const txIx = new TransactionInstruction({
@@ -673,6 +676,23 @@ export const ManagerView: FC = ({ }) => {
                                             }}
                                         />
                                         <span className="absolute right-2 md:top-1/2 top-3/4 -translate-y-3/4 md:-translate-y-1/2 text-white">%</span>
+                                    </div>
+                                </div>
+
+                                <div className='flex flex-col w-full justify-between bg-tiles-dark border-xnd gap-4 p-4'>
+                                    <div className='flex flex-col md:flex-row md:items-center md:justify-between relative gap-4'>
+                                        <div className='flex flex-row items-center justify-start md:justify-between gap-2'>
+                                            <p className='text-lg text-[#D98C18] hover:text-[#fda31b]'>Website</p>
+                                        </div>
+                                        <input
+                                            id='website'
+                                            placeholder=''
+                                            inputMode='text'
+                                            type='text'
+                                            className='input-md bg-tiles outline-none box-content border-xnd text-white text-right pr-7 md:min-w-[18rem]'
+                                            value={website}
+                                            onChange={(e) => { setWebsite(e?.target?.value) }}
+                                        />
                                     </div>
                                 </div>
 

@@ -186,43 +186,44 @@ function deserializeBorshString(data, offset) {
 export function deserializeManager(data) {
     let offset = 0;
 
-    // Read pubkey (32 bytes)
-    const pubkey = new PublicKey(data?.slice(offset, offset + 32));
+    const pubkey = new PublicKey(data.slice(offset, offset + 32));
     offset += 32;
 
-    // Read rewards_wallet (32 bytes)
-    const rewardsWallet = new PublicKey(data?.slice(offset, offset + 32));
+    const rewardsWallet = new PublicKey(data.slice(offset, offset + 32));
     offset += 32;
 
-    // Read commission (u32, 4 bytes, little-endian)
-    const commission = data?.readUInt32LE(offset);
+    const commission = data.readUInt32LE(offset);
     offset += 4;
 
-    // Read currently_operating (u16, 2 bytes, little-endian)
-    const currentlyOperating = data?.readUInt16LE(offset);
+    const currentlyOperating = data.readUInt16LE(offset);
     offset += 2;
 
-    // Read telegram_id (Borsh string)
-    const telegramResult = deserializeBorshString(data, offset);
-    const telegramId = telegramResult.value;
-    offset += telegramResult.bytesRead;
+    const telegramLength = data.readUInt32LE(offset);
+    offset += 4;
+    const telegramId = data.slice(offset, offset + telegramLength).toString('utf8');
+    offset += telegramLength;
 
-    // Read discord_id (Borsh string)
-    const discordResult = deserializeBorshString(data, offset);
-    const discordId = discordResult.value;
-    offset += discordResult.bytesRead;
+    const discordLength = data.readUInt32LE(offset);
+    offset += 4;
+    const discordId = data.slice(offset, offset + discordLength).toString('utf8');
+    offset += discordLength;
 
-    // Read verified (bool, 1 byte)
+    const websiteLength = data.readUInt32LE(offset);
+    offset += 4;
+    const websiteLink = data.slice(offset, offset + websiteLength).toString('utf8');
+    offset += websiteLength;
+
     const verified = data.readUInt8(offset) === 1;
 
     return {
-        pubkey: pubkey?.toBase58(),
-        rewardsWallet: rewardsWallet?.toBase58(),
+        pubkey: pubkey.toString(),
+        rewardsWallet: rewardsWallet.toString(),
         commission,
         currentlyOperating,
-        telegramId: telegramId?.toString(),
-        discordId: discordId?.toString(),
-        verified
+        telegramId,
+        discordId,
+        websiteLink,
+        verified,
     };
 }
 
@@ -481,7 +482,7 @@ export async function fetchAllManagers(connection: Connection) {
     }
 }
 
-export const updateManagerAccount = async (connection: Connection, publicKey: PublicKey, newCommission: number, newTelegramId: string, newDiscordId: string, rewardWallet?: PublicKey): Promise<TransactionInstruction> => {
+export const updateManagerAccount = async (connection: Connection, publicKey: PublicKey, newCommission: number, newTelegramId: string, newDiscordId: string, websiteLink: string, rewardWallet?: PublicKey): Promise<TransactionInstruction> => {
     try {
         const [managerPda] = PublicKey.findProgramAddressSync(
             [Buffer.from(MANAGER_SEED), publicKey.toBuffer()],
@@ -524,6 +525,7 @@ export const updateManagerAccount = async (connection: Connection, publicKey: Pu
             Buffer.from(Uint8Array.of(...new BN(newCommission).toArray("le", 4))),
             serializeBorshString(newTelegramId),
             serializeBorshString(newDiscordId),
+            serializeBorshString(websiteLink)
         ]);
 
         return new TransactionInstruction({
