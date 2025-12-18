@@ -116,7 +116,7 @@ export const ManagerView: FC = ({ }) => {
                 return;
             }
             if (parseFloat(commission) < 1 || parseFloat(commission) > 100) {
-                notify({ type: 'error', message: 'Percentage must be between 1 and 100' });
+                notify({ type: 'error', message: 'Commission must be between 1 and 100' });
                 setIsProcessing(false);
                 return;
             }
@@ -655,7 +655,7 @@ export const ManagerView: FC = ({ }) => {
                                 <div className='flex flex-col w-full justify-between bg-tiles-dark border-xnd gap-4 p-4'>
                                     <div className='flex flex-col md:flex-row md:items-center md:justify-between relative'>
                                         <div className='flex flex-row items-center justify-start md:justify-between gap-2'>
-                                            <p className='text-lg text-[#D98C18] hover:text-[#fda31b]'>Percentage</p>
+                                            <p className='text-lg text-[#D98C18] hover:text-[#fda31b]'>Commission</p>
                                         </div>
                                         <input
                                             id='commission'

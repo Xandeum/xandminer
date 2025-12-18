@@ -790,7 +790,7 @@ export const OwnerView: FC = ({ }) => {
                                     <thead>
                                         <tr className="border-b border-gray-400">
                                             <th className="bg-black text-white normal-case font-medium text-base text-center">Public Key</th>
-                                            <th className="bg-black text-white normal-case font-medium text-base text-center">Percentage</th>
+                                            <th className="bg-black text-white normal-case font-medium text-base text-center">Commission</th>
                                             <th className="bg-black text-white normal-case font-medium text-base text-center">Currently Operating</th>
                                             <th className="bg-black text-white normal-case font-medium text-base text-center">Discord</th>
                                             <th className="bg-black text-white normal-case font-medium text-base text-center">Telegram</th>
