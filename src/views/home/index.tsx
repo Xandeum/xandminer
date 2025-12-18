@@ -905,7 +905,7 @@ export const HomeView: FC = ({ }) => {
           }
 
           <div className='w-full flex flex-col items-center justify-between mt-2 gap-2'>
-            <button
+            {/* <button
               className='btn bg-[#198476] hover:bg-[#279d8d] disabled:bg-[#909090] rounded-lg font-light text-white w-full normal-case disabled:hover:bg-none'
               onClick={() => { onShowInstallModal() }}
               disabled={!wallet?.connected || isConnectionError}
@@ -916,7 +916,7 @@ export const HomeView: FC = ({ }) => {
               <span className="block group-disabled:hidden" >
                 Update pNode Software
               </span>
-            </button>
+            </button> */}
 
             {
               !isKeypairGenerated ?
