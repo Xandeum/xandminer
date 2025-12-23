@@ -1068,7 +1068,7 @@ export const HomeView: FC = ({ }) => {
             {
               !isKeypairGenerated && !isPnodeRegistered ?
                 <>
-                  <Link href={"/manage"} target="_self" rel="noopener noreferrer" className='w-full'>
+                  <Link href={"/owner"} target="_self" rel="noopener noreferrer" className='w-full'>
                     <button className='btn bg-transparent hover:bg-[#622657] rounded-lg font-light w-full text-white mt-4 normal-case border-[#4a4a4a]'>
                       pNode(s) Owned by Me
                     </button>

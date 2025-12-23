@@ -259,8 +259,9 @@ export const ManageView: FC = ({ }) => {
                 <span className="text-white text-lg font-medium hover:text-[#fda31b]">Go Back</span>
             </div>
 
+            <h2 className="text-3xl font-medium text-white md:leading-tight my-12">pNode Owner&apos;s Portal</h2>
 
-            <div className='flex flex-col gap-8 bg-tiles border-xnd w-full text-white p-5  mt-16 relative md:mb-0 mb-28 text-base'>
+            <div className='flex flex-col gap-8 bg-tiles border-xnd w-full text-white p-5  relative md:mb-0 mb-28 text-base'>
                 <div className="absolute -inset-2 -z-10 bg-gradient-to-r from-[#fda31b] via-[#622657] to-[#198476] border-xnd blur  "></div>
 
                 {
