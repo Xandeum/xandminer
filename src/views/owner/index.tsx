@@ -626,7 +626,7 @@ export const OwnerView: FC = ({ }) => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
                     {/* Backdrop */}
                     <div
-                        className="absolute inset-0 bg-black opacity-30"
+                        className="absolute inset-0 bg-black opacity-70"
                     />
                     {/* Modal Container */}
                     <div className="relative bg-tiles-dark border-xnd p-6 rounded-lg max-w-4xl w-full max-h-[70vh] overflow-y-auto shadow-2xl">
@@ -714,7 +714,7 @@ export const OwnerView: FC = ({ }) => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4">
                     {/* Backdrop */}
                     <div
-                        className="absolute inset-0 bg-black opacity-30"
+                        className="absolute inset-0 bg-black opacity-70"
                     />
 
                     {/* Modal Container */}

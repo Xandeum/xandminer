@@ -602,7 +602,7 @@ export const ManagerView: FC = ({ }) => {
                 {
                     showPopupRegister &&
                     <div className="flex flex-col justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 focus:outline-none ">
-                        <div className="bg-tiles-dark opacity-30 fixed inset-0"></div>
+                        <div className="bg-black opacity-70 fixed inset-0"></div>
                         <div className="flex justify-center items-center flex-col overflow-x-hidden overflow-y-auto fixed z-50 border-xnd p-5 bg-tiles-dark">
 
                             <div className="absolute top-0 right-0 p-5">
