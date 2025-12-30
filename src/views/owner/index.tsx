@@ -1,4 +1,4 @@
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import Loader from "components/Loader";
 import { fetchAllManagers, fetchOwnerData, fetchPNodeOwnerData, updatePnodeDetails } from "helpers/manageHelpers";
@@ -13,7 +13,6 @@ import { readMetaplexMetadata } from "helpers/tokenHelpers";
 import { NftLogo } from "components/NftLogo";
 
 import { InputAdornment, TextField } from "@mui/material";
-import { loadKeypairFromFile } from "utils/loadKeypair";
 import { getKeypairForSigning } from "services/keypairServices";
 
 const WalletMultiButtonDynamic = dynamic(
@@ -24,8 +23,8 @@ const WalletMultiButtonDynamic = dynamic(
 export const OwnerView: FC = ({ }) => {
 
     const wallet = useWallet();
-    // const { connection } = useConnection();
-    const connection = new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed');
+    const { connection } = useConnection();
+    // const connection = new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed');
 
     const [managers, setManagers] = useState<any[]>([]);
     const [pNodeData, setPNodeData] = useState<any[]>([{

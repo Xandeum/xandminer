@@ -17,9 +17,8 @@ import { getKeypairForSigning } from "services/keypairServices";
 export const ManagerView: FC = ({ }) => {
 
     const wallet = useWallet();
-    // const { connection } = useConnection();
-    const connection = new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed');
-
+    const { connection } = useConnection();
+    // const connection = new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed');
 
     const [managedPnodes, setManagedPnodes] = useState<any[]>([]);
     const [data, setData] = useState(managedPnodes || []);
