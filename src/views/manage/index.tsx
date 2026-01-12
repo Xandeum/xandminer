@@ -13,7 +13,6 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
 import { notify } from "utils/notifications";
 import { readMetaplexMetadata } from "helpers/tokenHelpers";
-import { readPnodeInfoArray } from "helpers/pNodeHelpers";
 import { OwnerView } from "views/owner";
 import Link from "next/link";
 const WalletMultiButtonDynamic = dynamic(
@@ -55,22 +54,17 @@ export const ManageView: FC = ({ }) => {
             const nfts = await readMetaplexMetadata(connection.rpcEndpoint, wallet?.publicKey?.toString());
             setNftQty(nfts?.length)
 
-            const pnodeInfoArray = await readPnodeInfoArray(connection, wallet?.publicKey);
             const pNodeOwnerData = await fetchPNodeOwnerData(connection, wallet?.publicKey);
 
+            const OwnerData = await fetchOwnerData(connection, wallet?.publicKey);
+
             // ask user to register if owner PDA is not there
-            if (pnodeInfoArray == null) {
-                if (pNodeOwnerData?.pnode && Number(pNodeOwnerData?.pnode) > 0) {
-                    setShowPopupRegisterOwner(true);
-                    setIsLoading(false);
-                    return;
-                } else {
-                    setIsLoading(false);
-                    return;
-                }
+            if ((OwnerData == null || !OwnerData) && Number(pNodeOwnerData?.pnode) > 0) {
+                setShowPopupRegisterOwner(true);
+                setIsLoading(false);
+                return;
             }
 
-            const OwnerData = await fetchOwnerData(connection, wallet?.publicKey);
             setHasPNode(Number(pNodeOwnerData?.pnode) > 0);
 
             if (pNodeOwnerData?.pnode && Number(pNodeOwnerData?.pnode) > 0) {
