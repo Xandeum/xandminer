@@ -620,7 +620,7 @@ export async function registerRewardWallet(publicKey: PublicKey, rewardWalletPub
     }
 }
 
-export async function updatePnodeDetails(connection: Connection, ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null): Promise<TransactionInstruction> {
+export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null, expectedSigner: PublicKey, pNodeKeyChanging: boolean): Promise<TransactionInstruction> {
 
     const [pnodeOwnerPda] = PublicKey.findProgramAddressSync(
         [Buffer.from(PNODE_OWNER_SEED), ownerWallet?.toBuffer()],
@@ -633,21 +633,6 @@ export async function updatePnodeDetails(connection: Connection, ownerWallet: Pu
         [Buffer.from(OWNER_SEED), ownerWallet?.toBuffer()],
         PROGRAM
     );
-
-    const currentPnodeAccount = await readPnodeAccount(connection, ownerWallet, index);
-
-    const oldDevnet = currentPnodeAccount?.devnet_pnode || PublicKey.default;
-    const oldMainnet = currentPnodeAccount?.mainnet_pnode || PublicKey.default;
-
-    const devnetChanging = !oldDevnet.equals(pnodeInfo.devnet_pnode);
-    const mainnetChanging = !oldMainnet.equals(pnodeInfo.mainnet_pnode);
-
-    if (devnetChanging && mainnetChanging) {
-        throw new Error("Cannot change both devnet pNode and mainnet pNode in the same transaction");
-    }
-
-    const pnodeSignatureRequired = devnetChanging || mainnetChanging;
-    let expectedSigner = null;
 
     // Determine old and new manager PDAs
     const oldManagerPda = oldManagerPubkey ?
@@ -695,7 +680,7 @@ export async function updatePnodeDetails(connection: Connection, ownerWallet: Pu
         },
         {
             pubkey: expectedSigner || SystemProgram.programId,
-            isSigner: pnodeSignatureRequired,
+            isSigner: pNodeKeyChanging,
             isWritable: false
         },
         {
