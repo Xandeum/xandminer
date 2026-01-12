@@ -1,6 +1,7 @@
 import BN from "bn.js";
-import { Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_SEED, OWNER_SEED, PNODE_OWNER_SEED, PROGRAM } from "CONSTS";
+import { Connection, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js";
+import { GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_SEED, OWNER_SEED, PNODE_OWNER_SEED, PNODE_UPDATE_DATA_SIZE, PROGRAM } from "CONSTS";
+import { derivePnodeAccountPda, readPnodeAccount } from "./pNodeHelpers";
 
 function arrayToNum32(array) {
     const arr = new Uint8Array(array);
@@ -115,6 +116,34 @@ export function deserializeCoupon(data) {
     return new CouponData(
         bytesTou32Array(data.slice(0, 1536)) // 384 * 4 bytes
     );
+}
+
+function serializePnodeUpdateData(pnodeUpdate) {
+    const buffer = Buffer.alloc(PNODE_UPDATE_DATA_SIZE);
+    let offset = 0;
+
+    pnodeUpdate.devnet_pnode.toBuffer().copy(buffer, offset);
+    offset += 32;
+
+    pnodeUpdate.mainnet_pnode.toBuffer().copy(buffer, offset);
+    offset += 32;
+
+    pnodeUpdate.nft_slot_1.toBuffer().copy(buffer, offset);
+    offset += 32;
+
+    pnodeUpdate.nft_slot_2.toBuffer().copy(buffer, offset);
+    offset += 32;
+
+    pnodeUpdate.manager.toBuffer().copy(buffer, offset);
+    offset += 32;
+
+    buffer.writeBigInt64LE(BigInt(pnodeUpdate.registrationTime), offset);
+    offset += 8;
+
+    buffer.writeUInt32LE(pnodeUpdate.managerCommission, offset);
+    offset += 4;
+
+    return buffer;
 }
 
 export function deserializeOwner(data) {
@@ -299,62 +328,18 @@ export async function fetchOwnerData(connection: Connection, walletPubkey: Publi
 
         const accountInfo = await connection.getParsedAccountInfo(ownerPda);
         if (!accountInfo.value) {
+            console.log("Owner account not found for wallet:", walletPubkey.toString());
             return null;
         }
 
         // return deserializeOwner(accountInfo.value.data);
         const data = accountInfo?.value?.data as any;
-        let offset = 0;
-
-        // Deserialize user (32 bytes)
-        const user = new PublicKey(data.slice(offset, offset + 32));
-        offset += 32;
-
-        // Deserialize rewards_wallet (32 bytes)
-        const rewardsWallet = new PublicKey(data.slice(offset, offset + 32));
-        offset += 32;
-
-        // Deserialize pnode_info Vec length (4 bytes)
-        const pnodeInfoLength = data.readUInt32LE(offset);
-        offset += 4;
-
-        // Deserialize each PnodeInfo (140 bytes each)
-        const pnodeInfos = [];
-        for (let i = 0; i < pnodeInfoLength; i++) {
-            const pnode = new PublicKey(data.slice(offset, offset + 32));
-            offset += 32;
-
-            const nft_slot_1 = new PublicKey(data.slice(offset, offset + 32));
-            offset += 32;
-
-            const nft_slot_2 = new PublicKey(data.slice(offset, offset + 32));
-            offset += 32;
-
-            const manager = new PublicKey(data.slice(offset, offset + 32));
-            offset += 32;
-
-            const registrationTime = data.readBigInt64LE(offset);
-            offset += 8;
-
-            const managerCommission = data.readUInt32LE(offset);
-            offset += 4;
-
-            pnodeInfos.push({
-                index: i,
-                pnode,
-                nft_slot_1,
-                nft_slot_2,
-                manager,
-                registrationTime: Number(registrationTime),
-                managerCommission,
-            });
-        }
 
         return {
-            user,
-            rewardsWallet,
-            pnodeInfos,
+            user: new PublicKey(data.slice(0, 32)),
+            rewardsWallet: new PublicKey(data.slice(32, 64)),
         };
+
     } catch (error) {
         console.error("Error fetching owner data:", error);
         return null;
@@ -635,16 +620,34 @@ export async function registerRewardWallet(publicKey: PublicKey, rewardWalletPub
     }
 }
 
-export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null, pnodeKeyChanging: boolean, isManager: boolean, managerWallet?: PublicKey): Promise<TransactionInstruction> {
+export async function updatePnodeDetails(connection: Connection, ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null): Promise<TransactionInstruction> {
+
     const [pnodeOwnerPda] = PublicKey.findProgramAddressSync(
         [Buffer.from(PNODE_OWNER_SEED), ownerWallet?.toBuffer()],
         PROGRAM
     );
 
+    const [pnodeAccountPda] = derivePnodeAccountPda(ownerWallet, index);
+
     const [ownerPda] = PublicKey.findProgramAddressSync(
         [Buffer.from(OWNER_SEED), ownerWallet?.toBuffer()],
         PROGRAM
     );
+
+    const currentPnodeAccount = await readPnodeAccount(connection, ownerWallet, index);
+
+    const oldDevnet = currentPnodeAccount?.devnet_pnode || PublicKey.default;
+    const oldMainnet = currentPnodeAccount?.mainnet_pnode || PublicKey.default;
+
+    const devnetChanging = !oldDevnet.equals(pnodeInfo.devnet_pnode);
+    const mainnetChanging = !oldMainnet.equals(pnodeInfo.mainnet_pnode);
+
+    if (devnetChanging && mainnetChanging) {
+        throw new Error("Cannot change both devnet pNode and mainnet pNode in the same transaction");
+    }
+
+    const pnodeSignatureRequired = devnetChanging || mainnetChanging;
+    let expectedSigner = null;
 
     // Determine old and new manager PDAs
     const oldManagerPda = oldManagerPubkey ?
@@ -661,19 +664,24 @@ export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, 
 
     const keys = [
         {
-            pubkey: isManager ? managerWallet : ownerWallet,
+            pubkey: ownerWallet,
             isSigner: true,
             isWritable: true,
         },
         {
             pubkey: ownerPda,
             isSigner: false,
+            isWritable: false,
+        },
+        {
+            pubkey: pnodeAccountPda,
+            isSigner: false,
             isWritable: true,
         },
         {
             pubkey: pnodeOwnerPda,
             isSigner: false,
-            isWritable: true,
+            isWritable: false,
         },
         {
             pubkey: oldManagerPda,
@@ -686,35 +694,26 @@ export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, 
             isWritable: newManagerPda && !newManagerPda.equals(PublicKey.default),
         },
         {
-            // 5. Pnode account (must sign when pnode key is changing)
-            pubkey: pnodeInfo.pnode,
-            isSigner: pnodeKeyChanging,
-            isWritable: false,
+            pubkey: expectedSigner || SystemProgram.programId,
+            isSigner: pnodeSignatureRequired,
+            isWritable: false
         },
+        {
+            pubkey: SystemProgram.programId,
+            isSigner: false,
+            isWritable: false
+        },
+        {
+            pubkey: SYSVAR_RENT_PUBKEY,
+            isSigner: false,
+            isWritable: false
+        }
     ];
 
     // Instruction tag 6 for UpdatePnodeDetails
     const instructionTag = Buffer.from(Int8Array.from([6]).buffer);
-
     const indexBuffer = Buffer.from([index]);
-
-    const pnodeBuffer = pnodeInfo.pnode.toBuffer();
-    const nftSlot1Buffer = pnodeInfo.nft_slot_1.toBuffer();
-    const nftSlot2Buffer = pnodeInfo.nft_slot_2.toBuffer();
-    const managerBuffer = pnodeInfo.manager.toBuffer();
-    const timeBuffer = Buffer.alloc(8);
-    timeBuffer.writeBigInt64LE(BigInt(pnodeInfo.registrationTime), 0);
-    const commissionBuffer = Buffer.alloc(4);
-    commissionBuffer.writeUInt32LE(pnodeInfo.managerCommission, 0);
-
-    const serializedPnodeInfo = Buffer.concat([
-        pnodeBuffer,
-        nftSlot1Buffer,
-        nftSlot2Buffer,
-        managerBuffer,
-        timeBuffer,
-        commissionBuffer
-    ]);
+    const serializedPnodeInfo = serializePnodeUpdateData(pnodeInfo);
 
     const data = Buffer.concat([
         instructionTag,
@@ -728,5 +727,3 @@ export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, 
         data: data,
     });
 }
-
-
