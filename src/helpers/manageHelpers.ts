@@ -1,7 +1,7 @@
 import BN from "bn.js";
 import { Connection, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js";
 import { GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_SEED, OWNER_SEED, PNODE_OWNER_SEED, PNODE_UPDATE_DATA_SIZE, PROGRAM } from "CONSTS";
-import { derivePnodeAccountPda, readPnodeAccount } from "./pNodeHelpers";
+import { derivePnodeAccountPda, readPnodeAccount, readPnodeInfoArray } from "./pNodeHelpers";
 
 function arrayToNum32(array) {
     const arr = new Uint8Array(array);
@@ -408,6 +408,32 @@ export async function getPnodesForManager(managerWalletPubkey: PublicKey, connec
         }
     }
     return managedPnodes;
+}
+
+export const fetchpNodeInfoWithManager = async (connection: Connection, managerPubkey: PublicKey) => {
+    const ownerAccounts = await getAllOwnerPdas(connection, PROGRAM);
+    let pnodeinfoArr = [];
+    for (const account of ownerAccounts) {
+        try {
+            const ownerData = deserializeOwner(account.account.data);
+            const pNodeOwnerData = await fetchPNodeOwnerData(connection, ownerData?.user);
+
+            const pNodeInfoData = await readPnodeInfoArray(connection, ownerData?.user, pNodeOwnerData?.pnode);
+
+            for (const pnodeInfo of pNodeInfoData) {
+                if (pnodeInfo.manager.equals(managerPubkey)) {
+                    pnodeinfoArr.push({
+                        ...pnodeInfo,
+                    });
+                    // return { pnodeInfo, ownerData, pNodeOwnerData };
+                }
+            }
+
+        } catch (error) {
+            console.error(`⚠️  Error processing account ${account.pubkey.toString()}:`, error.message);
+        }
+    }
+    return pnodeinfoArr;
 }
 
 export async function fetchManagerData(connection: Connection, managerPubkey: PublicKey) {

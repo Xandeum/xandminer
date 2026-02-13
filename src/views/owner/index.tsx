@@ -1,5 +1,5 @@
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
 import Loader from "components/Loader";
 import { fetchAllManagers, fetchOwnerData, fetchPNodeOwnerData, updatePnodeDetails } from "helpers/manageHelpers";
 import dynamic from "next/dynamic";
@@ -113,7 +113,6 @@ export const OwnerView: FC = ({ }) => {
 
             const pNodeInfoData = await readPnodeInfoArray(connection, wallet?.publicKey, Number(pNodeOwnerData?.pnode));
 
-
             if (Number(pNodeOwnerData?.pnode)) {
 
                 setPNodeData(pNodeInfoData.slice(0, pNodeOwnerData?.pnode));
@@ -215,7 +214,9 @@ export const OwnerView: FC = ({ }) => {
 
             const expectedSigner: PublicKey = devnetPnodeKeyChanging ? pnodeInfo?.devnet_pnode : pnodeInfo?.mainnet_pnode;
 
-            if (expectedSigner?.equals(walletToSign.publicKey) === false && pNodeKeyChanging) {
+            const isDeletingPnode = pNodeKeyChanging && ((devnetPnodeKeyChanging && pnodeInfo?.devnet_pnode.equals(PublicKey.default)) || (mainnetPnodeKeyChanging && pnodeInfo?.mainnet_pnode.equals(PublicKey.default)));
+
+            if (expectedSigner?.equals(walletToSign.publicKey) === false && !isDeletingPnode && pNodeKeyChanging) {
                 notify({ type: 'error', message: 'Expected signer mismatch', description: 'The expected signer does not match the loaded pNode keypair' });
                 setSavingRow(null);
                 setIsProcessing({ task: '', status: false, index: 0 });
@@ -223,7 +224,7 @@ export const OwnerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, expectedSigner, pNodeKeyChanging);
+            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, expectedSigner, (isDeletingPnode ? false : pNodeKeyChanging));
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -240,7 +241,7 @@ export const OwnerView: FC = ({ }) => {
             transaction.feePayer = wallet.publicKey;
             let tx = '';
 
-            if (pNodeKeyChanging) {
+            if (pNodeKeyChanging && !isDeletingPnode) {
                 transaction.partialSign(walletToSign);
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
@@ -280,6 +281,7 @@ export const OwnerView: FC = ({ }) => {
                 await fetchData();
             }
         } catch (error: any) {
+            console.error("Error saving changes:", error);
             notify({ type: 'error', message: `Transaction failed: ${error?.message || error}` });
         } finally {
             setSavingRow(null);

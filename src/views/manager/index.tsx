@@ -7,7 +7,7 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
 import Loader from "components/Loader";
 import { MANAGER_SEED, PROGRAM } from "CONSTS";
-import { fetchAllManagers, fetchManagerData, getPnodesForManager, serializeBorshString, updateManagerAccount, updatePnodeDetails } from "helpers/manageHelpers";
+import { fetchAllManagers, fetchManagerData, fetchpNodeInfoWithManager, getPnodesForManager, serializeBorshString, updateManagerAccount, updatePnodeDetails } from "helpers/manageHelpers";
 
 import { FC, useEffect, useRef, useState } from "react";
 import { notify } from "utils/notifications";
@@ -62,8 +62,11 @@ export const ManagerView: FC = ({ }) => {
 
             setIsRegistered(wallet?.publicKey && alreadyRegistered);
             if (alreadyRegistered) {
+                // const managedpnodeInfo = await fetchpNodeInfoWithManager(connection, wallet?.publicKey);
                 const currentManagerData = await fetchManagerData(connection, wallet?.publicKey);
-                const managedPnodes = await getPnodesForManager(wallet?.publicKey, connection);
+                // const managedPnodes = await getPnodesForManager(wallet?.publicKey, connection);
+                const managedPnodes = await fetchpNodeInfoWithManager(connection, wallet?.publicKey);
+                console.log("Managed pNodes fetched for manager:", managedPnodes);
                 setManagedPnodes(managedPnodes);
                 setRewardWallet(currentManagerData?.rewardsWallet.toString());
                 setCommission((currentManagerData?.commission / 100).toString());
@@ -274,9 +277,9 @@ export const ManagerView: FC = ({ }) => {
             const updatedData = [...data];
 
             //updated the pnode registration time if pnode value changed
-            if (col === 'pnodeKey' && newValue !== oldValue?.toString()) {
+            if ((col === 'devnet_pnode' || col === 'mainnet_pnode') && newValue !== oldValue?.toString()) {
                 if (newValue === '') {
-                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111") };
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111"), ["registrationTime"]: 0 };
                 } else if (!PublicKey.isOnCurve(newValue)) {
                     notify({ type: 'error', message: 'Invalid Public Key format.' });
                     setEditingCell(null);
@@ -284,11 +287,18 @@ export const ManagerView: FC = ({ }) => {
                     return;
                 }
                 // check if the new pnode value is already exists in other rows
-                else if (updatedData.some((item, index) => index !== row && item.pnodeKey?.toString() === newValue)) {
-                    notify({ type: 'error', message: 'This pNode Public Key is already registered.' });
+                else if (col === 'devnet_pnode' && updatedData.some((item, index) => index !== row && item.devnet_pnode?.toString() === newValue)) {
+                    notify({ type: 'error', message: 'This devnet pNode Public Key is already registered.' });
                     setEditingCell(null);
                     setEditValue('');
                     return;
+                } else if (col === 'mainnet_pnode' && updatedData.some((item, index) => index !== row && item.mainnet_pnode?.toString() === newValue)) {
+                    notify({ type: 'error', message: 'This mainnet pNode Public Key is already registered.' });
+                    setEditingCell(null);
+                    setEditValue('');
+                    return;
+                } else if (updatedData[row].devnet_pnode?.equals(PublicKey.default) && updatedData[row].mainnet_pnode?.equals(PublicKey.default)) {
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue), ["registrationTime"]: Date.now() };
                 } else {
                     updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue) };
                 }
@@ -337,8 +347,8 @@ export const ManagerView: FC = ({ }) => {
                 return;
             }
 
-            const oldManager = new PublicKey(managedPnodes[index]?.managerPubkey);
-            const pNodeOwnerPubkey = new PublicKey(managedPnodes[index]?.owner);
+            const oldManager = managedPnodes[index]?.manager;
+            const pNodeOwnerPubkey = managedPnodes[index]?.owner;
             const DEFAULT_VALUE = "11111111111111111111111111111111";
             let pnodeInfo = data[index];
 
@@ -362,30 +372,53 @@ export const ManagerView: FC = ({ }) => {
 
             pnodeInfo = {
                 ...pnodeInfo,
-                pnode: pnodeInfo?.pnodeKey instanceof PublicKey ? pnodeInfo?.pnodeKey : new PublicKey(pnodeInfo?.pnodeKey || DEFAULT_VALUE),
-                nft_slot_1: pnodeInfo?.nftSlot1 instanceof PublicKey ? pnodeInfo?.nftSlot1 : new PublicKey(pnodeInfo?.nftSlot1 || DEFAULT_VALUE),
-                nft_slot_2: pnodeInfo?.nftSlot2 instanceof PublicKey ? pnodeInfo?.nftSlot2 : new PublicKey(pnodeInfo?.nftSlot2 || DEFAULT_VALUE),
-                manager: pnodeInfo?.managerPubkey instanceof PublicKey ? pnodeInfo?.managerPubkey : new PublicKey(pnodeInfo?.managerPubkey || DEFAULT_VALUE),
+                index: index,
+                devnet_pnode: pnodeInfo.devnet_pnode instanceof PublicKey ? pnodeInfo.devnet_pnode : new PublicKey(pnodeInfo.devnet_pnode || DEFAULT_VALUE),
+                mainnet_pnode: pnodeInfo.mainnet_pnode instanceof PublicKey ? pnodeInfo.mainnet_pnode : new PublicKey(pnodeInfo.mainnet_pnode || DEFAULT_VALUE),
+                nft_slot_1: pnodeInfo.nft_slot_1 instanceof PublicKey ? pnodeInfo.nft_slot_1 : new PublicKey(pnodeInfo.nft_slot_1 || DEFAULT_VALUE),
+                nft_slot_2: pnodeInfo.nft_slot_2 instanceof PublicKey ? pnodeInfo.nft_slot_2 : new PublicKey(pnodeInfo.nft_slot_2 || DEFAULT_VALUE),
+                manager: pnodeInfo.manager instanceof PublicKey ? pnodeInfo.manager : new PublicKey(pnodeInfo.manager || DEFAULT_VALUE),
             }
 
-            const pNodeKeyChanging = modifiedRows?.includes(index);
+
+            // Read current pnode info to check if pnode key is changing
+            const currentPnodeInfos = await readPnodeInfoArray(connection, pnodeInfo?.owner, managedPnodes?.length);
+            const oldDevnetPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ? currentPnodeInfos[index]?.devnet_pnode : PublicKey.default;
+            const oldMainnetPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ? currentPnodeInfos[index]?.mainnet_pnode : PublicKey.default;
+
+            const devnetPnodeKeyChanging = !oldDevnetPnodeKey.equals(pnodeInfo?.devnet_pnode);
+            const mainnetPnodeKeyChanging = !oldMainnetPnodeKey.equals(pnodeInfo?.mainnet_pnode);
+
+            const pNodeKeyChanging = devnetPnodeKeyChanging || mainnetPnodeKeyChanging;
 
             const keypairForSigning = await getKeypairForSigning();
             if (!keypairForSigning?.ok || !keypairForSigning?.data?.keypair) {
-                notify({ type: 'error', message: 'Failed to retrieve keypair for signing.' });
+                notify({ type: 'error', message: 'pNode keypair missing', description: 'Unable to load pNode keypair for signing' });
                 return;
             }
-
             const walletToSign = Keypair.fromSecretKey(new Uint8Array(keypairForSigning?.data?.keypair?.privateKey));
 
             if (pNodeKeyChanging) {
                 if (!walletToSign) {
-                    throw new Error("Missing pnode keypair for pnode key change");
+                    notify({ type: 'error', message: 'pNode keypair missing', description: 'Missing pNode keypair for pNode key change' });
+                    setSavingRow(null);
+                    return;
                 }
             }
 
+            const expectedSigner: PublicKey = devnetPnodeKeyChanging ? pnodeInfo?.devnet_pnode : pnodeInfo?.mainnet_pnode;
+
+            const isDeletingPnode = pNodeKeyChanging && ((devnetPnodeKeyChanging && pnodeInfo?.devnet_pnode.equals(PublicKey.default)) || (mainnetPnodeKeyChanging && pnodeInfo?.mainnet_pnode.equals(PublicKey.default)));
+
+            if (expectedSigner?.equals(walletToSign.publicKey) === false && !isDeletingPnode && pNodeKeyChanging) {
+                notify({ type: 'error', message: 'Expected signer mismatch', description: 'The expected signer does not match the loaded pNode keypair' });
+                setSavingRow(null);
+                // setIsProcessing({ task: '', status: false, index: 0 });
+                return;
+            }
+
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(pNodeOwnerPubkey, index, pnodeInfo, oldManager, pNodeKeyChanging, true, wallet?.publicKey);
+            const txIx = await updatePnodeDetails(pNodeOwnerPubkey, index, pnodeInfo, oldManager, walletToSign.publicKey, pNodeKeyChanging);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -440,6 +473,7 @@ export const ManagerView: FC = ({ }) => {
                 await fetchData();
             }
         } catch (error: any) {
+            console.error("Error saving changes:", error);
             notify({ type: 'error', message: `Transaction failed: ${error?.message || error}` });
         } finally {
             setSavingRow(null);
@@ -481,7 +515,7 @@ export const ManagerView: FC = ({ }) => {
                     !isLoading &&
                         isRegistered ?
                         // <div className="w-full mt-5 flex flex-col items-center justify-center">
-                        <div className='flex flex-col gap-8 bg-tiles border-xnd w-full text-white p-5 relative text-base'>
+                        <div className='flex flex-col gap-8 bg-tiles border-xnd w-full text-white p-5 relative text-base min-w-max'>
                             <div className="absolute -inset-2 -z-10 bg-gradient-to-r from-[#fda31b] via-[#622657] to-[#198476] border-xnd blur  "></div>
                             {
                                 managedPnodes?.length == 0 ?
@@ -497,9 +531,10 @@ export const ManagerView: FC = ({ }) => {
                                             <thead>
                                                 <tr className="border-b border-gray-400">
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Index</th>
-                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">pNode Pubkey</th>
-                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Owner</th>
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Registration Time</th>
+                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet pNode Pubkey</th>
+                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Mainnet pNode Pubkey</th>
+                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Owner</th>
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Actions</th>
                                                 </tr>
                                             </thead>
@@ -510,10 +545,20 @@ export const ManagerView: FC = ({ }) => {
                                                     return (
                                                         <tr key={index} className="font-light text-white text-sm">
                                                             <td className="bg-tiles-dark text-center">{index + 1}</td>
+                                                            <td className="bg-tiles-dark text-center">
+                                                                <div className="flex items-center justify-center h-full min-h-[40px]">
+                                                                    <span>
+                                                                        {pnode?.registrationTime && pnode.registrationTime > 0
+                                                                            ? new Date(pnode.registrationTime < 10000000000 ? pnode.registrationTime * 1000 : pnode.registrationTime).toLocaleString()
+                                                                            : '-'}
+                                                                    </span>
+                                                                </div>
+                                                            </td>
                                                             {/* <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.pnodeKey?.toString())}>{pnode?.pnodeKey?.toString().slice(0, 4)}...{pnode?.pnodeKey?.toString().slice(-4)}</td> */}
+                                                            {/*devnet pNode PubKey */}
                                                             <td className="bg-tiles-dark text-center relative group">
                                                                 <div className="flex flex-row items-center justify-center gap-3 h-full min-h-[40px]">
-                                                                    {editingCell?.row === index && editingCell?.col === 'pnodeKey' ? (
+                                                                    {editingCell?.row === index && editingCell?.col === 'devnet_pnode' ? (
                                                                         <input
                                                                             ref={inputRef}
                                                                             type="text"
@@ -527,17 +572,54 @@ export const ManagerView: FC = ({ }) => {
                                                                     ) : (
                                                                         <>
                                                                             {
-                                                                                processPublicKey(pnode?.pnodeKey) == '' ?
+                                                                                processPublicKey(pnode?.devnet_pnode) == '' ?
                                                                                     '-' :
                                                                                     <span
                                                                                         className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
-                                                                                        onClick={() => copyToClipboard(processPublicKey(pnode?.pnodeKey) || '')}
+                                                                                        onClick={() => copyToClipboard(processPublicKey(pnode?.devnet_pnode) || '')}
                                                                                     >
-                                                                                        {processPublicKey(pnode?.pnodeKey)?.slice(0, 4)}...{processPublicKey(pnode?.pnodeKey)?.slice(-4)}
+                                                                                        {processPublicKey(pnode?.devnet_pnode)?.slice(0, 4)}...{processPublicKey(pnode?.devnet_pnode)?.slice(-4)}
                                                                                     </span>
                                                                             }
                                                                             <button
-                                                                                onClick={() => startEditing(index, 'pnodeKey', pnode?.pnodeKey?.toString())}
+                                                                                onClick={() => startEditing(index, 'devnet_pnode', pnode.devnet_pnode)}
+                                                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                            >
+                                                                                <EditIcon fontSize="small" className="text-gray-400" />
+                                                                            </button>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+
+                                                            {/*mainnet pNode PubKey */}
+                                                            <td className="bg-tiles-dark text-center relative group">
+                                                                <div className="flex flex-row items-center justify-center gap-3 h-full min-h-[40px]">
+                                                                    {editingCell?.row === index && editingCell?.col === 'mainnet_pnode' ? (
+                                                                        <input
+                                                                            ref={inputRef}
+                                                                            type="text"
+                                                                            value={editValue}
+                                                                            onChange={(e) => setEditValue(e.target.value)}
+                                                                            onBlur={saveEdit}
+                                                                            onKeyDown={handleKeyDown}
+                                                                            className="bg-gray-800 text-white text-center w-32 px-2 py-1 rounded text-xs"
+                                                                            placeholder="Enter pubkey..."
+                                                                        />
+                                                                    ) : (
+                                                                        <>
+                                                                            {
+                                                                                processPublicKey(pnode?.mainnet_pnode) == '' ?
+                                                                                    '-' :
+                                                                                    <span
+                                                                                        className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
+                                                                                        onClick={() => copyToClipboard(processPublicKey(pnode?.mainnet_pnode) || '')}
+                                                                                    >
+                                                                                        {processPublicKey(pnode?.mainnet_pnode)?.slice(0, 4)}...{processPublicKey(pnode?.mainnet_pnode)?.slice(-4)}
+                                                                                    </span>
+                                                                            }
+                                                                            <button
+                                                                                onClick={() => startEditing(index, 'mainnet_pnode', pnode?.mainnet_pnode)}
                                                                                 className="opacity-0 group-hover:opacity-100 transition-opacity"
                                                                             >
                                                                                 <EditIcon fontSize="small" className="text-gray-400" />
@@ -547,7 +629,7 @@ export const ManagerView: FC = ({ }) => {
                                                                 </div>
                                                             </td>
                                                             <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.owner?.toString())}>{pnode?.owner?.toString().slice(0, 4)}...{pnode?.owner?.toString().slice(-4)}</td>
-                                                            <td className="bg-tiles-dark text-center">{new Date(Number(pnode?.registrationTime)).toLocaleString()}</td>
+                                                            {/* <td className="bg-tiles-dark text-center">{new Date(Number(pnode?.registrationTime)).toLocaleString()}</td> */}
                                                             {/* Action Buttons: Save & Cancel (only if modified) */}
                                                             <td className="bg-tiles-dark text-center">
                                                                 {isModified && (
