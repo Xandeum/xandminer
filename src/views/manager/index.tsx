@@ -279,7 +279,7 @@ export const ManagerView: FC = ({ }) => {
             //updated the pnode registration time if pnode value changed
             if ((col === 'devnet_pnode' || col === 'mainnet_pnode') && newValue !== oldValue?.toString()) {
                 if (newValue === '') {
-                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111"), ["registrationTime"]: 0 };
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111") };
                 } else if (!PublicKey.isOnCurve(newValue)) {
                     notify({ type: 'error', message: 'Invalid Public Key format.' });
                     setEditingCell(null);
@@ -372,14 +372,12 @@ export const ManagerView: FC = ({ }) => {
 
             pnodeInfo = {
                 ...pnodeInfo,
-                index: index,
                 devnet_pnode: pnodeInfo.devnet_pnode instanceof PublicKey ? pnodeInfo.devnet_pnode : new PublicKey(pnodeInfo.devnet_pnode || DEFAULT_VALUE),
                 mainnet_pnode: pnodeInfo.mainnet_pnode instanceof PublicKey ? pnodeInfo.mainnet_pnode : new PublicKey(pnodeInfo.mainnet_pnode || DEFAULT_VALUE),
                 nft_slot_1: pnodeInfo.nft_slot_1 instanceof PublicKey ? pnodeInfo.nft_slot_1 : new PublicKey(pnodeInfo.nft_slot_1 || DEFAULT_VALUE),
                 nft_slot_2: pnodeInfo.nft_slot_2 instanceof PublicKey ? pnodeInfo.nft_slot_2 : new PublicKey(pnodeInfo.nft_slot_2 || DEFAULT_VALUE),
                 manager: pnodeInfo.manager instanceof PublicKey ? pnodeInfo.manager : new PublicKey(pnodeInfo.manager || DEFAULT_VALUE),
             }
-
 
             // Read current pnode info to check if pnode key is changing
             const currentPnodeInfos = await readPnodeInfoArray(connection, pnodeInfo?.owner, managedPnodes?.length);
@@ -418,7 +416,7 @@ export const ManagerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(pNodeOwnerPubkey, index, pnodeInfo, oldManager, walletToSign.publicKey, pNodeKeyChanging);
+            const txIx = await updatePnodeDetails(pNodeOwnerPubkey, index, pnodeInfo, oldManager, walletToSign.publicKey, (isDeletingPnode ? false : pNodeKeyChanging));
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -435,7 +433,7 @@ export const ManagerView: FC = ({ }) => {
             transaction.feePayer = wallet?.publicKey;
             let tx = '';
 
-            if (modifiedRows?.includes(index)) {
+            if (pNodeKeyChanging && !isDeletingPnode) {
                 transaction.partialSign(walletToSign);
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,

@@ -9,7 +9,7 @@ export default async function handler(
     res: NextApiResponse
 ) {
     try {
-        const filePath = path.join('../xandminerd', './keypairs', 'pnode-keypair.json')
+        const filePath = path.join('../xandminerd', './keypairs', 'pnode-keypair1.json')
 
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({ error: 'Keypair file does not exist.' });

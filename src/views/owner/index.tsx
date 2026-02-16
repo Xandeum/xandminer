@@ -348,7 +348,7 @@ export const OwnerView: FC = ({ }) => {
             //updated the pnode registration time if pnode value changed
             if ((col === 'devnet_pnode' || col === 'mainnet_pnode') && newValue !== oldValue?.toString()) {
                 if (newValue === '') {
-                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111"), ["registrationTime"]: 0 };
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111") };
                 } else if (!PublicKey.isOnCurve(newValue)) {
                     notify({ type: 'error', message: 'Invalid Public Key format.' });
                     setEditingCell(null);
@@ -700,7 +700,7 @@ export const OwnerView: FC = ({ }) => {
                         className="absolute inset-0 bg-black opacity-70"
                     />
                     {/* Modal Container */}
-                    <div className="relative bg-tiles-dark border-xnd p-6 rounded-lg max-w-4xl w-full max-h-[70vh] overflow-y-auto shadow-2xl">
+                    <div className="relative bg-tiles-dark border-xnd p-6 rounded-lg max-w-5xl w-full max-h-[70vh] overflow-y-auto shadow-2xl">
                         <button
                             onClick={() => setShowPopupSelectNFT(false)}
                             className="absolute top-4 right-4 hover:scale-110 transition-transform duration-100 z-10"
@@ -789,7 +789,7 @@ export const OwnerView: FC = ({ }) => {
                     />
 
                     {/* Modal Container */}
-                    <div className="relative bg-tiles-dark border-xnd p-6 rounded-lg max-w-4xl w-full max-h-[70vh] overflow-y-auto shadow-2xl">
+                    <div className="relative bg-tiles-dark border-xnd p-6 rounded-lg max-w-5xl w-full max-h-[70vh] overflow-y-auto shadow-2xl">
                         <button
                             onClick={() => setShowPopupSelectManager(false)}
                             className="absolute top-4 right-4 hover:scale-110 transition-transform duration-100 z-10"
