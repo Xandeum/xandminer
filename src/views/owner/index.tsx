@@ -33,7 +33,7 @@ export const OwnerView: FC = ({ }) => {
         registration_time: '',
         nft: '',
         manager: '',
-        managerCommission: '',
+        manager_commission: '',
     }]);
     const [modifiedRows, setModifiedRows] = useState<number[]>([]);
 
@@ -84,7 +84,6 @@ export const OwnerView: FC = ({ }) => {
                     verified: manager?.data?.verified,
                     wesiteLink: manager?.data?.websiteLink,
                 }));
-
                 setIsRegistered(wallet?.publicKey && formattedManagers?.find(manager => manager?.pubkey?.toString() == wallet?.publicKey?.toString()) ? true : false);
                 setManagers(formattedManagers);
             } else {
@@ -152,7 +151,6 @@ export const OwnerView: FC = ({ }) => {
                 pnodeInfo = {
                     ...pnodeInfo,
                     manager: new PublicKey(DEFAULT_VALUE),
-                    managerCommission: 0
                 };
             } else if (type === 'nft1') {
                 pnodeInfo = {
@@ -219,7 +217,7 @@ export const OwnerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(wallet.publicKey, pnodeInfo?.index, pnodeInfo, oldManager, expectedSigner, (isDeletingPnode ? false : pNodeKeyChanging));
+            const txIx = await updatePnodeDetails(wallet.publicKey, pnodeInfo?.index, pnodeInfo, oldManager, expectedSigner, (isDeletingPnode ? false : pNodeKeyChanging), false);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -634,7 +632,7 @@ export const OwnerView: FC = ({ }) => {
                                                         {/* Commission */}
                                                         <td className="bg-tiles-dark text-center">
                                                             <span>
-                                                                {pnode?.managerCommission > 0 ? `${Number(pnode?.managerCommission) / 100}%` : '-'}
+                                                                {pnode?.manager_commission > 0 ? `${Number(pnode?.manager_commission) / 100}%` : '-'}
                                                             </span>
                                                         </td>
 
@@ -903,7 +901,7 @@ export const OwnerView: FC = ({ }) => {
                                                                             if (editingCell?.col === 'manager') {
                                                                                 const row = editingCell.row;
                                                                                 const updatedData = [...data];
-                                                                                updatedData[row] = { ...updatedData[row], manager: new PublicKey(manager?.pubkey), managerCommission: Number(manager?.commission) };
+                                                                                updatedData[row] = { ...updatedData[row], manager: new PublicKey(manager?.pubkey), manager_commission: Number(manager?.commission) };
                                                                                 setData(updatedData);
 
                                                                                 const rowChanged = JSON.stringify(updatedData[row]) !== JSON.stringify(pNodeData[row]);

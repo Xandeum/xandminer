@@ -194,7 +194,7 @@ export async function readPnodeInfoArray(connection: Connection, ownerPubkey: Pu
                 nft_slot_2: PublicKey.default,
                 manager: PublicKey.default,
                 registration_time: 0,
-                managerCommission: 0,
+                manager_commission: 0,
             })
             continue;
         }
@@ -211,7 +211,7 @@ export async function readPnodeInfoArray(connection: Connection, ownerPubkey: Pu
             nft_slot_2: new PublicKey(data.slice(offset + 129, offset + 161)),
             manager: new PublicKey(data.slice(offset + 161, offset + 193)),
             registration_time: Number(data.readBigInt64LE(offset + 193)),
-            managerCommission: data.readUInt32LE(offset + 201),
+            manager_commission: data.readUInt32LE(offset + 201),
         };
         pnodeInfos.push(pnodeAccount);
     }
@@ -241,7 +241,7 @@ export async function readPnodeAccount(connection: Connection, ownerPubkey: Publ
         nft_slot_2: new PublicKey(data.slice(offset + 129, offset + 161)),
         manager: new PublicKey(data.slice(offset + 161, offset + 193)),
         registration_time: Number(data.readBigInt64LE(offset + 193)),
-        managerCommission: data.readUInt32LE(offset + 201),
+        manager_commission: data.readUInt32LE(offset + 201),
     };
 
     return pnodeAccount;

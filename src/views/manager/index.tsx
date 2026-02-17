@@ -7,7 +7,7 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
 import Loader from "components/Loader";
 import { MANAGER_SEED, PROGRAM } from "CONSTS";
-import { fetchAllManagers, fetchManagerData, fetchpNodeInfoWithManager, getManagerAssignedPnodes, getPnodesForManager, serializeBorshString, updateManagerAccount, updatePnodeDetails } from "helpers/manageHelpers";
+import { fetchAllManagers, fetchManagerData, getManagerAssignedPnodes, serializeBorshString, updateManagerAccount, updatePnodeDetails } from "helpers/manageHelpers";
 
 import { FC, useEffect, useRef, useState } from "react";
 import { notify } from "utils/notifications";
@@ -354,7 +354,6 @@ export const ManagerView: FC = ({ }) => {
                 pnodeInfo = {
                     ...pnodeInfo,
                     manager: new PublicKey(DEFAULT_VALUE),
-                    managerCommission: 0
                 };
             } else if (type === 'nft1') {
                 pnodeInfo = {
@@ -376,7 +375,8 @@ export const ManagerView: FC = ({ }) => {
                 manager: pnodeInfo.manager instanceof PublicKey ? pnodeInfo.manager : new PublicKey(pnodeInfo.manager || DEFAULT_VALUE),
                 registration_time: pnodeInfo.registration_time,
                 index: pnodeInfo?.index,
-                owner: pnodeInfo?.owner
+                owner: pnodeInfo?.owner,
+                manager_commission: pnodeInfo?.manager_commission,
             }
 
             // Read current pnode info to check if pnode key is changing
@@ -415,13 +415,8 @@ export const ManagerView: FC = ({ }) => {
                 return;
             }
 
-            console.log("pnodeInfo to be saved >>> ", pnodeInfo);
-            console.log("expected signer >>> ", expectedSigner?.toString());
-            console.log("isDeletingPnode >>> ", isDeletingPnode);
-            console.log("is pNode key changing >>> ", pNodeKeyChanging);
-
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(pNodeOwnerPubkey, pnodeInfo?.index, pnodeInfo, oldManager, walletToSign?.publicKey, (isDeletingPnode ? false : pNodeKeyChanging));
+            const txIx = await updatePnodeDetails(pNodeOwnerPubkey, pnodeInfo?.index, pnodeInfo, oldManager, walletToSign?.publicKey, (isDeletingPnode ? false : pNodeKeyChanging), true, pnodeInfo?.manager);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -558,8 +553,8 @@ export const ManagerView: FC = ({ }) => {
                                                             <td className="bg-tiles-dark text-center">
                                                                 <div className="flex items-center justify-center h-full min-h-[40px]">
                                                                     <span>
-                                                                        {pnode?.registration_time && pnode.registration_time > 0
-                                                                            ? new Date(pnode.registration_time < 10000000000 ? pnode.registration_time * 1000 : pnode.registration_time).toLocaleString()
+                                                                        {pnode?.registration_time && pnode?.registration_time > 0
+                                                                            ? new Date(pnode?.registration_time < 10000000000 ? pnode?.registration_time * 1000 : pnode?.registration_time).toLocaleString()
                                                                             : '-'}
                                                                     </span>
                                                                 </div>
