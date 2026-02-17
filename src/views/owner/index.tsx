@@ -87,8 +87,6 @@ export const OwnerView: FC = ({ }) => {
 
                 setIsRegistered(wallet?.publicKey && formattedManagers?.find(manager => manager?.pubkey?.toString() == wallet?.publicKey?.toString()) ? true : false);
                 setManagers(formattedManagers);
-                setIsLoading(false);
-
             } else {
                 setManagers([]);
                 setIsLoading(false);
@@ -116,12 +114,13 @@ export const OwnerView: FC = ({ }) => {
             if (Number(pNodeOwnerData?.pnode)) {
 
                 setPNodeData(pNodeInfoData.slice(0, pNodeOwnerData?.pnode));
-                setIsLoading(false);
 
             } else {
                 setManagers([]);
                 setIsLoading(false);
             }
+
+            setIsLoading(false);
         } catch (error) {
             console.error("Fetch data error:", error);
             notify({ type: 'error', message: `Failed to fetch data: ${error?.message || error}` });
@@ -132,11 +131,6 @@ export const OwnerView: FC = ({ }) => {
     const filteredItems = managers.filter(item =>
         item.pubkey.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
-
-    // const indexOfLastItem = currentPage * itemsPerPage
-    // const indexOfFirstItem = indexOfLastItem - itemsPerPage
-    // const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem)
-
 
     // function on saving changes
     const onHandleChanges = async (index?: number, type?: string) => {
@@ -639,7 +633,7 @@ export const OwnerView: FC = ({ }) => {
                                                         {/* Commission */}
                                                         <td className="bg-tiles-dark text-center">
                                                             <span>
-                                                                {pnode?.managerCommission > 0 ? `${Number(pnode.managerCommission) / 100}%` : '-'}
+                                                                {pnode?.managerCommission > 0 ? `${Number(pnode?.managerCommission) / 100}%` : '-'}
                                                             </span>
                                                         </td>
 

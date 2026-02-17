@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { Connection, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js";
-import { GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_SEED, OWNER_SEED, PNODE_OWNER_SEED, PNODE_UPDATE_DATA_SIZE, PROGRAM } from "CONSTS";
+import { GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_OFFSET, MANAGER_SEED, OWNER_SEED, PNODE_ACCOUNT_SIZE, PNODE_OWNER_SEED, PNODE_UPDATE_DATA_SIZE, PROGRAM } from "CONSTS";
 import { derivePnodeAccountPda, readPnodeAccount, readPnodeInfoArray } from "./pNodeHelpers";
 
 function arrayToNum32(array) {
@@ -256,18 +256,63 @@ export function deserializeManager(data) {
     };
 }
 
+function deserializePnodeAccount(data) {
+    return {
+        owner: new PublicKey(data.slice(0, 32)),
+        index: data[32],
+        devnet_pnode: new PublicKey(data.slice(33, 65)),
+        mainnet_pnode: new PublicKey(data.slice(65, 97)),
+        nft_slot_1: new PublicKey(data.slice(97, 129)),
+        nft_slot_2: new PublicKey(data.slice(129, 161)),
+        manager: new PublicKey(data.slice(161, 193)),
+        registration_time: Number(data.readBigInt64LE(193)),
+        manager_commission: data.readUInt32LE(201),
+    };
+}
+
+export async function getManagerAssignedPnodes(
+    connection: Connection,
+    managerWalletPubkey: PublicKey
+) {
+
+    const accounts = await connection.getProgramAccounts(PROGRAM, {
+        filters: [
+            { dataSize: PNODE_ACCOUNT_SIZE },
+            { memcmp: { offset: MANAGER_OFFSET, bytes: managerWalletPubkey.toBase58() } },
+        ],
+    });
+
+    return accounts.map((acc) => {
+        const p = deserializePnodeAccount(acc.account.data);
+        return {
+            pnodeAccountPda: acc.pubkey,
+            owner: p.owner,
+            index: p.index,
+            devnet_pnode: p.devnet_pnode,
+            mainnet_pnode: p.mainnet_pnode,
+            manager: p.manager,
+            manager_commission: p.manager_commission,
+            registrationTime: p.registration_time,
+            nft_slot_1: p.nft_slot_1,
+            nft_slot_2: p.nft_slot_2,
+        };
+    });
+}
+
 async function getAllOwnerPdas(connection: Connection, programId: PublicKey) {
     try {
         // Get all accounts owned by the program
         // Filter by discriminator or size if needed
-        const accounts = await connection.getProgramAccounts(programId, {
-            filters: [
-                {
-                    // Owner PDA size: 32 + 32 + 4 + (140 * 24) = 3428 bytes
-                    dataSize: 3428,
-                },
-            ],
-        });
+        const accounts = await connection.getProgramAccounts(programId,
+            {
+                filters: [
+                    {
+                        // Owner PDA size: 32 + 32 + 4 + (140 * 24) = 3428 bytes
+                        dataSize: 3428,
+                    },
+                ],
+            }
+        );
 
         return accounts;
     } catch (error) {
@@ -412,6 +457,7 @@ export async function getPnodesForManager(managerWalletPubkey: PublicKey, connec
 
 export const fetchpNodeInfoWithManager = async (connection: Connection, managerPubkey: PublicKey) => {
     const ownerAccounts = await getAllOwnerPdas(connection, PROGRAM);
+    console.log(`Total owner accounts fetched: ${ownerAccounts}`);
     let pnodeinfoArr = [];
     for (const account of ownerAccounts) {
         try {
@@ -419,6 +465,8 @@ export const fetchpNodeInfoWithManager = async (connection: Connection, managerP
             const pNodeOwnerData = await fetchPNodeOwnerData(connection, ownerData?.user);
 
             const pNodeInfoData = await readPnodeInfoArray(connection, ownerData?.user, pNodeOwnerData?.pnode);
+
+            console.log(`Scanned pNodes for owner ${ownerData?.user.toString()}:`, pNodeInfoData);
 
             for (const pnodeInfo of pNodeInfoData) {
                 if (pnodeInfo.manager.equals(managerPubkey)) {

@@ -42,21 +42,6 @@ class PNodeOwner {
     }
 }
 
-class PNodeInfoData {
-    pnode: any;
-    nft: any;
-    manager: any;
-    registration_time: any;
-    manager_commission: any;
-    constructor(pnode, nft, manager, registration_time, manager_commission) {
-        this.pnode = pnode;
-        this.nft = nft;
-        this.manager = manager;
-        this.registration_time = registration_time;
-        this.manager_commission = manager_commission;
-    }
-}
-
 function arrayToNum(array) {
     const arr = new Uint8Array(array);
     const view = new DataView(arr.buffer || arr);

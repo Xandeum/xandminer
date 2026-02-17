@@ -7,7 +7,7 @@ import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 
 import Loader from "components/Loader";
 import { MANAGER_SEED, PROGRAM } from "CONSTS";
-import { fetchAllManagers, fetchManagerData, fetchpNodeInfoWithManager, getPnodesForManager, serializeBorshString, updateManagerAccount, updatePnodeDetails } from "helpers/manageHelpers";
+import { fetchAllManagers, fetchManagerData, fetchpNodeInfoWithManager, getManagerAssignedPnodes, getPnodesForManager, serializeBorshString, updateManagerAccount, updatePnodeDetails } from "helpers/manageHelpers";
 
 import { FC, useEffect, useRef, useState } from "react";
 import { notify } from "utils/notifications";
@@ -58,15 +58,13 @@ export const ManagerView: FC = ({ }) => {
             const formattedManagers = managersData.map((manager) => ({
                 pubkey: manager?.data?.pubkey.toString(),
             }));
-            let alreadyRegistered = formattedManagers?.find(manager => manager?.pubkey?.toString() == wallet?.publicKey?.toString()) ? true : false;
 
+            let alreadyRegistered = formattedManagers?.find(manager => manager?.pubkey?.toString() == wallet?.publicKey?.toString()) ? true : false;
             setIsRegistered(wallet?.publicKey && alreadyRegistered);
             if (alreadyRegistered) {
-                // const managedpnodeInfo = await fetchpNodeInfoWithManager(connection, wallet?.publicKey);
+
                 const currentManagerData = await fetchManagerData(connection, wallet?.publicKey);
-                // const managedPnodes = await getPnodesForManager(wallet?.publicKey, connection);
-                const managedPnodes = await fetchpNodeInfoWithManager(connection, wallet?.publicKey);
-                console.log("Managed pNodes fetched for manager:", managedPnodes);
+                const managedPnodes = await getManagerAssignedPnodes(connection, new PublicKey(currentManagerData?.pubkey));
                 setManagedPnodes(managedPnodes);
                 setRewardWallet(currentManagerData?.rewardsWallet.toString());
                 setCommission((currentManagerData?.commission / 100).toString());
@@ -275,6 +273,8 @@ export const ManagerView: FC = ({ }) => {
             const newValue = editValue.trim();
             const oldValue = managedPnodes[row]?.[col];
             const updatedData = [...data];
+
+            console.log("update data before change", updatedData[row]);
 
             //updated the pnode registration time if pnode value changed
             if ((col === 'devnet_pnode' || col === 'mainnet_pnode') && newValue !== oldValue?.toString()) {

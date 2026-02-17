@@ -19,9 +19,10 @@ export const MANAGER_SEED = "manager6";
 export const MANAGER_ACCOUNT_SIZE = 179;
 export const PNODE_UPDATE_DATA_SIZE = 172;
 export const PNODE_ACCOUNT_SIZE = 205;
+export const MANAGER_OFFSET = 32 + 1 + 32 + 32 + 32 + 32;
 export const KEYPAIR_PATH = "../xandminerd/keypairs/pnode-keypair.json";
 
-export const PROGRAM = new PublicKey("GSfmK1JX1yh7WYWt1QySC8VYp9PfgUM2paMc9F6YD1F1"); // devnet - Abhi
+export const PROGRAM = new PublicKey("BN2fhS98WzgXzaXFCFHLFBxGB6R7QazdgKStaJiry526"); // devnet - Abhi
 
 export const VERSION_NO = "v1.2.0";
 export const VERSION_NAME = "Bonn";
