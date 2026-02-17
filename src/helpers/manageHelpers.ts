@@ -137,7 +137,7 @@ function serializePnodeUpdateData(pnodeUpdate) {
     pnodeUpdate.manager.toBuffer().copy(buffer, offset);
     offset += 32;
 
-    buffer.writeBigInt64LE(BigInt(pnodeUpdate.registrationTime), offset);
+    buffer.writeBigInt64LE(BigInt(pnodeUpdate.registration_time), offset);
     offset += 8;
 
     buffer.writeUInt32LE(pnodeUpdate.managerCommission, offset);
@@ -176,7 +176,7 @@ export function deserializeOwner(data) {
         const manager = new PublicKey(data.slice(offset, offset + 32));
         offset += 32;
 
-        const registrationTime = data.readBigInt64LE(offset);
+        const registration_time = data.readBigInt64LE(offset);
         offset += 8;
 
         const managerCommission = data.readUInt32LE(offset);
@@ -188,7 +188,7 @@ export function deserializeOwner(data) {
             nft_slot_1,
             nft_slot_2,
             manager,
-            registrationTime: Number(registrationTime),
+            registration_time: Number(registration_time),
             managerCommission,
         });
     }
@@ -292,7 +292,7 @@ export async function getManagerAssignedPnodes(
             mainnet_pnode: p.mainnet_pnode,
             manager: p.manager,
             manager_commission: p.manager_commission,
-            registrationTime: p.registration_time,
+            registration_time: p.registration_time,
             nft_slot_1: p.nft_slot_1,
             nft_slot_2: p.nft_slot_2,
         };
@@ -440,9 +440,9 @@ export async function getPnodesForManager(managerWalletPubkey: PublicKey, connec
                         managerCommissionPercent: (pnodeInfo.managerCommission / 100).toFixed(2) + "%",
 
                         // Timing
-                        registrationTime: pnodeInfo.registrationTime,
-                        registrationDate: pnodeInfo.registrationTime > 0
-                            ? new Date(pnodeInfo.registrationTime * 1000).toISOString()
+                        registration_time: pnodeInfo.registration_time,
+                        registrationDate: pnodeInfo.registration_time > 0
+                            ? new Date(pnodeInfo.registration_time * 1000).toISOString()
                             : "Not set",
                     });
                 }

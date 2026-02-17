@@ -11,7 +11,7 @@ import { fetchAllManagers, fetchManagerData, fetchpNodeInfoWithManager, getManag
 
 import { FC, useEffect, useRef, useState } from "react";
 import { notify } from "utils/notifications";
-import { readPnodeInfoArray } from "helpers/pNodeHelpers";
+import { readPnodeAccount, readPnodeInfoArray } from "helpers/pNodeHelpers";
 import { getKeypairForSigning } from "services/keypairServices";
 
 export const ManagerView: FC = ({ }) => {
@@ -274,8 +274,6 @@ export const ManagerView: FC = ({ }) => {
             const oldValue = managedPnodes[row]?.[col];
             const updatedData = [...data];
 
-            console.log("update data before change", updatedData[row]);
-
             //updated the pnode registration time if pnode value changed
             if ((col === 'devnet_pnode' || col === 'mainnet_pnode') && newValue !== oldValue?.toString()) {
                 if (newValue === '') {
@@ -298,7 +296,7 @@ export const ManagerView: FC = ({ }) => {
                     setEditValue('');
                     return;
                 } else if (updatedData[row].devnet_pnode?.equals(PublicKey.default) && updatedData[row].mainnet_pnode?.equals(PublicKey.default)) {
-                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue), ["registrationTime"]: Date.now() };
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue), ["registration_time"]: Date.now() };
                 } else {
                     updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue) };
                 }
@@ -371,18 +369,21 @@ export const ManagerView: FC = ({ }) => {
             }
 
             pnodeInfo = {
-                ...pnodeInfo,
                 devnet_pnode: pnodeInfo.devnet_pnode instanceof PublicKey ? pnodeInfo.devnet_pnode : new PublicKey(pnodeInfo.devnet_pnode || DEFAULT_VALUE),
                 mainnet_pnode: pnodeInfo.mainnet_pnode instanceof PublicKey ? pnodeInfo.mainnet_pnode : new PublicKey(pnodeInfo.mainnet_pnode || DEFAULT_VALUE),
                 nft_slot_1: pnodeInfo.nft_slot_1 instanceof PublicKey ? pnodeInfo.nft_slot_1 : new PublicKey(pnodeInfo.nft_slot_1 || DEFAULT_VALUE),
                 nft_slot_2: pnodeInfo.nft_slot_2 instanceof PublicKey ? pnodeInfo.nft_slot_2 : new PublicKey(pnodeInfo.nft_slot_2 || DEFAULT_VALUE),
                 manager: pnodeInfo.manager instanceof PublicKey ? pnodeInfo.manager : new PublicKey(pnodeInfo.manager || DEFAULT_VALUE),
+                registration_time: pnodeInfo.registration_time,
+                index: pnodeInfo?.index,
+                owner: pnodeInfo?.owner
             }
 
             // Read current pnode info to check if pnode key is changing
-            const currentPnodeInfos = await readPnodeInfoArray(connection, pnodeInfo?.owner, managedPnodes?.length);
-            const oldDevnetPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ? currentPnodeInfos[index]?.devnet_pnode : PublicKey.default;
-            const oldMainnetPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ? currentPnodeInfos[index]?.mainnet_pnode : PublicKey.default;
+            const selectedPnodeInfo = await readPnodeAccount(connection, pnodeInfo?.owner, pnodeInfo?.index);
+
+            const oldDevnetPnodeKey = selectedPnodeInfo && selectedPnodeInfo ? selectedPnodeInfo?.devnet_pnode : PublicKey.default;
+            const oldMainnetPnodeKey = selectedPnodeInfo && selectedPnodeInfo ? selectedPnodeInfo?.mainnet_pnode : PublicKey.default;
 
             const devnetPnodeKeyChanging = !oldDevnetPnodeKey.equals(pnodeInfo?.devnet_pnode);
             const mainnetPnodeKeyChanging = !oldMainnetPnodeKey.equals(pnodeInfo?.mainnet_pnode);
@@ -403,7 +404,6 @@ export const ManagerView: FC = ({ }) => {
                     return;
                 }
             }
-
             const expectedSigner: PublicKey = devnetPnodeKeyChanging ? pnodeInfo?.devnet_pnode : pnodeInfo?.mainnet_pnode;
 
             const isDeletingPnode = pNodeKeyChanging && ((devnetPnodeKeyChanging && pnodeInfo?.devnet_pnode.equals(PublicKey.default)) || (mainnetPnodeKeyChanging && pnodeInfo?.mainnet_pnode.equals(PublicKey.default)));
@@ -415,8 +415,13 @@ export const ManagerView: FC = ({ }) => {
                 return;
             }
 
+            console.log("pnodeInfo to be saved >>> ", pnodeInfo);
+            console.log("expected signer >>> ", expectedSigner?.toString());
+            console.log("isDeletingPnode >>> ", isDeletingPnode);
+            console.log("is pNode key changing >>> ", pNodeKeyChanging);
+
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(pNodeOwnerPubkey, index, pnodeInfo, oldManager, walletToSign.publicKey, (isDeletingPnode ? false : pNodeKeyChanging));
+            const txIx = await updatePnodeDetails(pNodeOwnerPubkey, pnodeInfo?.index, pnodeInfo, oldManager, walletToSign?.publicKey, (isDeletingPnode ? false : pNodeKeyChanging));
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -435,6 +440,13 @@ export const ManagerView: FC = ({ }) => {
 
             if (pNodeKeyChanging && !isDeletingPnode) {
                 transaction.partialSign(walletToSign);
+
+                // const signedTx = await wallet.signTransaction(transaction);
+
+                // const simulate = await connection.simulateTransaction(signedTx);
+                // console.log("simulate >>> ", simulate);
+                // return;
+
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
                     skipPreflight: true,
@@ -546,8 +558,8 @@ export const ManagerView: FC = ({ }) => {
                                                             <td className="bg-tiles-dark text-center">
                                                                 <div className="flex items-center justify-center h-full min-h-[40px]">
                                                                     <span>
-                                                                        {pnode?.registrationTime && pnode.registrationTime > 0
-                                                                            ? new Date(pnode.registrationTime < 10000000000 ? pnode.registrationTime * 1000 : pnode.registrationTime).toLocaleString()
+                                                                        {pnode?.registration_time && pnode.registration_time > 0
+                                                                            ? new Date(pnode.registration_time < 10000000000 ? pnode.registration_time * 1000 : pnode.registration_time).toLocaleString()
                                                                             : '-'}
                                                                     </span>
                                                                 </div>
@@ -627,7 +639,7 @@ export const ManagerView: FC = ({ }) => {
                                                                 </div>
                                                             </td>
                                                             <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.owner?.toString())}>{pnode?.owner?.toString().slice(0, 4)}...{pnode?.owner?.toString().slice(-4)}</td>
-                                                            {/* <td className="bg-tiles-dark text-center">{new Date(Number(pnode?.registrationTime)).toLocaleString()}</td> */}
+                                                            {/* <td className="bg-tiles-dark text-center">{new Date(Number(pnode?.registration_time)).toLocaleString()}</td> */}
                                                             {/* Action Buttons: Save & Cancel (only if modified) */}
                                                             <td className="bg-tiles-dark text-center">
                                                                 {isModified && (

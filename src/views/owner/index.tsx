@@ -8,7 +8,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import { Telegram, Delete, Search } from "@mui/icons-material";
 import { FC, useEffect, useRef, useState } from "react";
 import { notify } from "utils/notifications";
-import { readPnodeInfoArray } from "helpers/pNodeHelpers";
+import { readPnodeAccount, readPnodeInfoArray } from "helpers/pNodeHelpers";
 import { readMetaplexMetadata } from "helpers/tokenHelpers";
 import { NftLogo } from "components/NftLogo";
 
@@ -30,7 +30,7 @@ export const OwnerView: FC = ({ }) => {
     const [managers, setManagers] = useState<any[]>([]);
     const [pNodeData, setPNodeData] = useState<any[]>([{
         pnode: '',
-        registrationTime: '',
+        registration_time: '',
         nft: '',
         manager: '',
         managerCommission: '',
@@ -176,9 +176,10 @@ export const OwnerView: FC = ({ }) => {
             }
 
             // Read current pnode info to check if pnode key is changing
-            const currentPnodeInfos = await readPnodeInfoArray(connection, wallet?.publicKey, pNodeData?.length);
-            const oldDevnetPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ? currentPnodeInfos[index]?.devnet_pnode : PublicKey.default;
-            const oldMainnetPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ? currentPnodeInfos[index]?.mainnet_pnode : PublicKey.default;
+            const selectedPnodeInfo = await readPnodeAccount(connection, pnodeInfo?.owner, pnodeInfo?.index);
+
+            const oldDevnetPnodeKey = selectedPnodeInfo && selectedPnodeInfo ? selectedPnodeInfo?.devnet_pnode : PublicKey.default;
+            const oldMainnetPnodeKey = selectedPnodeInfo && selectedPnodeInfo ? selectedPnodeInfo?.mainnet_pnode : PublicKey.default;
 
             const devnetPnodeKeyChanging = !oldDevnetPnodeKey.equals(pnodeInfo?.devnet_pnode);
             const mainnetPnodeKeyChanging = !oldMainnetPnodeKey.equals(pnodeInfo?.mainnet_pnode);
@@ -218,7 +219,7 @@ export const OwnerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, expectedSigner, (isDeletingPnode ? false : pNodeKeyChanging));
+            const txIx = await updatePnodeDetails(wallet.publicKey, pnodeInfo?.index, pnodeInfo, oldManager, expectedSigner, (isDeletingPnode ? false : pNodeKeyChanging));
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -361,7 +362,7 @@ export const OwnerView: FC = ({ }) => {
                     setEditValue('');
                     return;
                 } else if (updatedData[row].devnet_pnode?.equals(PublicKey.default) && updatedData[row].mainnet_pnode?.equals(PublicKey.default)) {
-                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue), ["registrationTime"]: Date.now() };
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue), ["registration_time"]: Date.now() };
                 } else {
                     updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue) };
                 }
@@ -471,8 +472,8 @@ export const OwnerView: FC = ({ }) => {
                                                         <td className="bg-tiles-dark text-center">
                                                             <div className="flex items-center justify-center h-full min-h-[40px]">
                                                                 <span>
-                                                                    {pnode?.registrationTime && pnode.registrationTime > 0
-                                                                        ? new Date(pnode.registrationTime < 10000000000 ? pnode.registrationTime * 1000 : pnode.registrationTime).toLocaleString()
+                                                                    {pnode?.registration_time && pnode.registration_time > 0
+                                                                        ? new Date(pnode.registration_time < 10000000000 ? pnode.registration_time * 1000 : pnode.registration_time).toLocaleString()
                                                                         : '-'}
                                                                 </span>
                                                             </div>

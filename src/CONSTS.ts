@@ -22,7 +22,7 @@ export const PNODE_ACCOUNT_SIZE = 205;
 export const MANAGER_OFFSET = 32 + 1 + 32 + 32 + 32 + 32;
 export const KEYPAIR_PATH = "../xandminerd/keypairs/pnode-keypair.json";
 
-export const PROGRAM = new PublicKey("BN2fhS98WzgXzaXFCFHLFBxGB6R7QazdgKStaJiry526"); // devnet - Abhi
+export const PROGRAM = new PublicKey("DjXKFpuM6iPVfmPTDsq6JeRAtVaFigxzBoUWzkUs2njg"); // devnet - Abhi
 
 export const VERSION_NO = "v1.2.0";
 export const VERSION_NAME = "Bonn";
