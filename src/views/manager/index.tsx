@@ -538,7 +538,6 @@ export const ManagerView: FC = ({ }) => {
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Index</th>
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Registration Time</th>
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet pNode Pubkey</th>
-                                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Mainnet pNode Pubkey</th>
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Owner</th>
                                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Actions</th>
                                                 </tr>
@@ -559,7 +558,6 @@ export const ManagerView: FC = ({ }) => {
                                                                     </span>
                                                                 </div>
                                                             </td>
-                                                            {/* <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.pnodeKey?.toString())}>{pnode?.pnodeKey?.toString().slice(0, 4)}...{pnode?.pnodeKey?.toString().slice(-4)}</td> */}
                                                             {/*devnet pNode PubKey */}
                                                             <td className="bg-tiles-dark text-center relative group">
                                                                 <div className="flex flex-row items-center justify-center gap-3 h-full min-h-[40px]">
@@ -596,45 +594,7 @@ export const ManagerView: FC = ({ }) => {
                                                                     )}
                                                                 </div>
                                                             </td>
-
-                                                            {/*mainnet pNode PubKey */}
-                                                            <td className="bg-tiles-dark text-center relative group">
-                                                                <div className="flex flex-row items-center justify-center gap-3 h-full min-h-[40px]">
-                                                                    {editingCell?.row === index && editingCell?.col === 'mainnet_pnode' ? (
-                                                                        <input
-                                                                            ref={inputRef}
-                                                                            type="text"
-                                                                            value={editValue}
-                                                                            onChange={(e) => setEditValue(e.target.value)}
-                                                                            onBlur={saveEdit}
-                                                                            onKeyDown={handleKeyDown}
-                                                                            className="bg-gray-800 text-white text-center w-32 px-2 py-1 rounded text-xs"
-                                                                            placeholder="Enter pubkey..."
-                                                                        />
-                                                                    ) : (
-                                                                        <>
-                                                                            {
-                                                                                processPublicKey(pnode?.mainnet_pnode) == '' ?
-                                                                                    '-' :
-                                                                                    <span
-                                                                                        className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
-                                                                                        onClick={() => copyToClipboard(processPublicKey(pnode?.mainnet_pnode) || '')}
-                                                                                    >
-                                                                                        {processPublicKey(pnode?.mainnet_pnode)?.slice(0, 4)}...{processPublicKey(pnode?.mainnet_pnode)?.slice(-4)}
-                                                                                    </span>
-                                                                            }
-                                                                            <button
-                                                                                onClick={() => startEditing(index, 'mainnet_pnode', pnode?.mainnet_pnode)}
-                                                                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                            >
-                                                                                <EditIcon fontSize="small" className="text-gray-400" />
-                                                                            </button>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            </td>
                                                             <td className="bg-tiles-dark text-center hover:cursor-pointer" onClick={() => copyToClipboard(pnode?.owner?.toString())}>{pnode?.owner?.toString().slice(0, 4)}...{pnode?.owner?.toString().slice(-4)}</td>
-                                                            {/* <td className="bg-tiles-dark text-center">{new Date(Number(pnode?.registration_time)).toLocaleString()}</td> */}
                                                             {/* Action Buttons: Save & Cancel (only if modified) */}
                                                             <td className="bg-tiles-dark text-center">
                                                                 {isModified && (

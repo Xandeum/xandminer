@@ -422,8 +422,6 @@ export const OwnerView: FC = ({ }) => {
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Index</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Registration Time</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet pNode</th>
-                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Mainnet pNode</th>
-                                    {/* <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">NFT PubKey</th> */}
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Manager</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Commission</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Actions</th>
@@ -513,80 +511,6 @@ export const OwnerView: FC = ({ }) => {
                                                                 )}
                                                             </div>
                                                         </td>
-
-                                                        {/*mainnet pNode PubKey */}
-                                                        <td className="bg-tiles-dark text-center relative group">
-                                                            <div className="flex flex-row items-center justify-center gap-3 h-full min-h-[40px]">
-                                                                {editingCell?.row === index && editingCell?.col === 'mainnet_pnode' ? (
-                                                                    <input
-                                                                        ref={inputRef}
-                                                                        type="text"
-                                                                        value={editValue}
-                                                                        onChange={(e) => setEditValue(e.target.value)}
-                                                                        onBlur={saveEdit}
-                                                                        onKeyDown={handleKeyDown}
-                                                                        className="bg-gray-800 text-white text-center w-32 px-2 py-1 rounded text-xs"
-                                                                        placeholder="Enter pubkey..."
-                                                                    />
-                                                                ) : (
-                                                                    <>
-                                                                        {
-                                                                            processPublicKey(pnode?.mainnet_pnode) == '' ?
-                                                                                '-' :
-                                                                                <span
-                                                                                    className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
-                                                                                    onClick={() => copyToClipboard(processPublicKey(pnode?.mainnet_pnode) || '')}
-                                                                                >
-                                                                                    {processPublicKey(pnode?.mainnet_pnode)?.slice(0, 4)}...{processPublicKey(pnode?.mainnet_pnode)?.slice(-4)}
-                                                                                </span>
-                                                                        }
-                                                                        <button
-                                                                            onClick={() => startEditing(index, 'mainnet_pnode', pnode?.mainnet_pnode)}
-                                                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                        >
-                                                                            <EditIcon fontSize="small" className="text-gray-400" />
-                                                                        </button>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </td>
-
-                                                        {/* NFT */}
-                                                        {/* <td className="bg-tiles-dark text-center">
-                                                            <div className="flex items-center justify-center h-full min-h-[40px] gap-2">
-                                                                {showPopupSelectNFT && editingCell?.row === index && editingCell?.col === 'nft' ? (
-                                                                    <span className="text-xs text-orange-400">Selecting NFT...</span>
-                                                                ) : processPublicKey(pnode?.nft) ? (
-                                                                    <>
-                                                                        <span
-                                                                            className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
-                                                                            onClick={() => copyToClipboard(pnode.nft.toString())}
-                                                                        >
-                                                                            {pnode.nft.toString().slice(0, 4)}...{pnode.nft.toString().slice(-4)}
-                                                                        </span>
-                                                                        <div className="flex gap-1">
-                                                                            <button onClick={() => startEditing(index, 'nft', pnode.nft)}>
-                                                                                <EditIcon fontSize="small" className="text-gray-400" />
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => window.confirm('Remove NFT?') && onHandleChanges(index, 'nft')}
-                                                                                className="text-red-500 hover:text-red-400"
-                                                                                disabled={isSaving}
-                                                                            >
-                                                                                {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <Delete fontSize="small" />}
-                                                                            </button>
-                                                                        </div>
-                                                                    </>
-                                                                ) : (
-                                                                    <button
-                                                                        className="btn btn-xs bg-[#d98c18] hover:bg-[#fda31b] text-white"
-                                                                        onClick={() => startEditing(index, 'nft', '')}
-                                                                    >
-                                                                        Select NFT
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </td> */}
 
                                                         {/* Manager */}
                                                         <td className="bg-tiles-dark text-center">
