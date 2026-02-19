@@ -15,6 +15,7 @@ import { NftLogo } from "components/NftLogo";
 import { InputAdornment, TextField } from "@mui/material";
 import { loadKeypairFromFile } from "utils/loadKeypair";
 import { getKeypairForSigning } from "services/keypairServices";
+import { fetchDevnetPodsCredits } from "services/podCreditServices";
 
 const WalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -109,11 +110,20 @@ export const OwnerView: FC = ({ }) => {
             setIsRegistered(true);
 
             const pNodeInfoData = await readPnodeInfoArray(connection, wallet?.publicKey, Number(pNodeOwnerData?.pnode));
+            const devnetPodCredits = await fetchDevnetPodsCredits();
+
+            // map through pNodeInfoData and add credits from devnetPodCredits based on matching devnet_pnode
+            const enrichedPNodeInfoData = pNodeInfoData.map((pnodeInfo) => {
+                const devnetCredit = devnetPodCredits?.pods_credits?.find((credit) => credit?.pod_id?.toString() === pnodeInfo?.devnet_pnode.toString());
+
+                return {
+                    ...pnodeInfo,
+                    devnetCredits: devnetCredit ? devnetCredit?.credits : 0,
+                };
+            });
 
             if (Number(pNodeOwnerData?.pnode)) {
-
-                setPNodeData(pNodeInfoData.slice(0, pNodeOwnerData?.pnode));
-
+                setPNodeData(enrichedPNodeInfoData?.slice(0, pNodeOwnerData?.pnode));
             } else {
                 setManagers([]);
                 setIsLoading(false);
@@ -421,7 +431,8 @@ export const OwnerView: FC = ({ }) => {
                                 <tr className="border-b border-gray-400">
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Index</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Registration Time</th>
-                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet pNode</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet pNode PubKey</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet Credits</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Manager</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Commission</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Actions</th>
@@ -509,6 +520,13 @@ export const OwnerView: FC = ({ }) => {
                                                                         </button>
                                                                     </>
                                                                 )}
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Devnet Credits */}
+                                                        <td className="bg-tiles-dark text-center">
+                                                            <div className="flex items-center justify-center h-full min-h-[40px]">
+                                                                {pnode?.devnetCredits?.toLocaleString() || '0'}
                                                             </div>
                                                         </td>
 
