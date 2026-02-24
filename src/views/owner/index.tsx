@@ -1,19 +1,18 @@
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Connection, Keypair, PublicKey, SystemProgram, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import Loader from "components/Loader";
 import { fetchAllManagers, fetchOwnerData, fetchPNodeOwnerData, updatePnodeDetails } from "helpers/manageHelpers";
 import dynamic from "next/dynamic";
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import EditIcon from '@mui/icons-material/Edit';
 import { Telegram, Delete, Search } from "@mui/icons-material";
-import { FC, useEffect, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { notify } from "utils/notifications";
 import { readPnodeAccount, readPnodeInfoArray } from "helpers/pNodeHelpers";
 import { readMetaplexMetadata } from "helpers/tokenHelpers";
 import { NftLogo } from "components/NftLogo";
 
 import { InputAdornment, TextField } from "@mui/material";
-import { loadKeypairFromFile } from "utils/loadKeypair";
 import { getKeypairForSigning } from "services/keypairServices";
 import { fetchDevnetPodsCredits } from "services/podCreditServices";
 
@@ -26,7 +25,7 @@ export const OwnerView: FC = ({ }) => {
 
     const wallet = useWallet();
     // const { connection } = useConnection();
-    const connection = new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed');
+    const connection = useMemo(() => new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed'), []);
 
     const [managers, setManagers] = useState<any[]>([]);
     const [pNodeData, setPNodeData] = useState<any[]>([{
@@ -41,18 +40,13 @@ export const OwnerView: FC = ({ }) => {
     const [showPopupSelectNFT, setShowPopupSelectNFT] = useState(false);
     const [showPopupSelectManager, setShowPopupSelectManager] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [isRegistered, setIsRegistered] = useState(false);
-    const [isManagerUpdated, setIsManagerUpdated] = useState(false);
     const [hasPnode, setHasPNode] = useState(false);
-    const [pNodeIndex, setPNodeIndex] = useState(0);
     const [isProcessing, setIsProcessing] = useState({
         task: '',
         status: false,
         index: 0
     });
     const [searchTerm, setSearchTerm] = useState('')
-    const [currentPage, setCurrentPage] = useState(1)
-    const itemsPerPage = 10
     const [nftData, setNftData] = useState<any[]>([]);
     const [data, setData] = useState(pNodeData || []);
     const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
@@ -60,11 +54,7 @@ export const OwnerView: FC = ({ }) => {
     const [savingRow, setSavingRow] = useState<number | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        fetchData();
-    }, [wallet, wallet?.publicKey]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
             if (!wallet || !wallet.publicKey) {
@@ -85,7 +75,6 @@ export const OwnerView: FC = ({ }) => {
                     verified: manager?.data?.verified,
                     wesiteLink: manager?.data?.websiteLink,
                 }));
-                setIsRegistered(wallet?.publicKey && formattedManagers?.find(manager => manager?.pubkey?.toString() == wallet?.publicKey?.toString()) ? true : false);
                 setManagers(formattedManagers);
             } else {
                 setManagers([]);
@@ -103,11 +92,9 @@ export const OwnerView: FC = ({ }) => {
                     manager: '',
                 }));
                 setIsLoading(false);
-                setIsRegistered(false);
                 setPNodeData(emptyManagers);
                 return;
             }
-            setIsRegistered(true);
 
             const pNodeInfoData = await readPnodeInfoArray(connection, wallet?.publicKey, Number(pNodeOwnerData?.pnode));
             const devnetPodCredits = await fetchDevnetPodsCredits();
@@ -135,7 +122,11 @@ export const OwnerView: FC = ({ }) => {
             notify({ type: 'error', message: `Failed to fetch data: ${error?.message || error}` });
             setIsLoading(false);
         }
-    }
+    }, [wallet, connection]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const filteredItems = managers.filter(item =>
         item.pubkey.toString().toLowerCase().includes(searchTerm.toLowerCase())
@@ -331,10 +322,8 @@ export const OwnerView: FC = ({ }) => {
 
         // Open modal if needed
         if (col === 'nft') {
-            setPNodeIndex(row);
             setShowPopupSelectNFT(true);
         } else if (col === 'manager') {
-            setPNodeIndex(row);
             setShowPopupSelectManager(true);
         }
     };
@@ -374,11 +363,6 @@ export const OwnerView: FC = ({ }) => {
                 } else {
                     updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue) };
                 }
-            }
-
-            // save if the manager value changed
-            if (col === 'manager') {
-                setIsManagerUpdated(true);
             }
 
             setData(updatedData);
@@ -574,7 +558,7 @@ export const OwnerView: FC = ({ }) => {
                                                         {/* Commission */}
                                                         <td className="bg-tiles-dark text-center">
                                                             <span>
-                                                                {pnode?.manager_commission > 0 ? `${Number(pnode?.manager_commission) / 100}%` : '-'}
+                                                                {(processPublicKey(pnode?.manager) != '' && pnode?.manager_commission > 0) ? `${Number(pnode?.manager_commission) / 100}%` : '-'}
                                                             </span>
                                                         </td>
 

@@ -1,6 +1,6 @@
 import { Telegram } from "@mui/icons-material";
 import { BN } from "@project-serum/anchor";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import EditIcon from '@mui/icons-material/Edit';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
@@ -9,17 +9,16 @@ import Loader from "components/Loader";
 import { MANAGER_SEED, PROGRAM } from "CONSTS";
 import { fetchAllManagers, fetchManagerData, getManagerAssignedPnodes, serializeBorshString, updateManagerAccount, updatePnodeDetails } from "helpers/manageHelpers";
 
-import { FC, useEffect, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { notify } from "utils/notifications";
-import { readPnodeAccount, readPnodeInfoArray } from "helpers/pNodeHelpers";
+import { readPnodeAccount } from "helpers/pNodeHelpers";
 import { getKeypairForSigning } from "services/keypairServices";
 
 export const ManagerView: FC = ({ }) => {
 
     const wallet = useWallet();
     // const { connection } = useConnection();
-    const connection = new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed');
-
+    const connection = useMemo(() => new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed'), []);
 
     const [managedPnodes, setManagedPnodes] = useState<any[]>([]);
     const [data, setData] = useState(managedPnodes || []);
@@ -38,20 +37,7 @@ export const ManagerView: FC = ({ }) => {
     const [modifiedRows, setModifiedRows] = useState<number[]>([]);
     const [savingRow, setSavingRow] = useState<number | null>(null);
 
-    useEffect(() => {
-        fetchData();
-    }, [wallet, wallet?.publicKey]);
-
-
-
-    // Sync data when pNodeData changes
-    useEffect(() => {
-        if (!isLoading) {
-            setData(managedPnodes || []);
-        }
-    }, [managedPnodes, isLoading, wallet, wallet?.publicKey]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setIsLoading(true);
         const managersData = await fetchAllManagers(connection);
         if (managersData && managersData.length > 0) {
@@ -79,8 +65,18 @@ export const ManagerView: FC = ({ }) => {
             setManagedPnodes([]);
             setIsLoading(false);
         }
-    };
+    }, [connection, wallet]);
 
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    // Sync data when pNodeData changes
+    useEffect(() => {
+        if (!isLoading) {
+            setData(managedPnodes || []);
+        }
+    }, [managedPnodes, isLoading, wallet, wallet?.publicKey]);
 
     const handlePercentageInputChange = e => {
         const value = e.target.value
