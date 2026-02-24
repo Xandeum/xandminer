@@ -239,13 +239,13 @@ export const OwnerView: FC = ({ }) => {
                 transaction.partialSign(walletToSign);
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
-                    skipPreflight: true,
+                    skipPreflight: false,
                     preflightCommitment: 'confirmed',
                 });
             } else {
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
-                    skipPreflight: true,
+                    skipPreflight: false,
                     preflightCommitment: 'confirmed',
                 });
             }

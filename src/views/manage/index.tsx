@@ -110,7 +110,7 @@ export const ManageView: FC = ({ }) => {
 
             const tx = await wallet.sendTransaction(transaction, connection, {
                 minContextSlot,
-                skipPreflight: true,
+                skipPreflight: false,
                 preflightCommitment: 'confirmed'
             });
 
@@ -186,7 +186,7 @@ export const ManageView: FC = ({ }) => {
 
             const tx = await wallet.sendTransaction(transaction, connection, {
                 minContextSlot,
-                skipPreflight: true,
+                skipPreflight: false,
                 preflightCommitment: 'confirmed'
             });
 

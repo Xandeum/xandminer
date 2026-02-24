@@ -197,8 +197,7 @@ export const ManagerView: FC = ({ }) => {
             transaction.feePayer = wallet.publicKey;
             const tx = await wallet?.sendTransaction(transaction, connection, {
                 minContextSlot,
-                skipPreflight: true,
-                preflightCommitment: 'processed'
+                skipPreflight: false,
             });
 
             await new Promise((resolve) => setTimeout(resolve
@@ -440,13 +439,13 @@ export const ManagerView: FC = ({ }) => {
 
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
-                    skipPreflight: true,
+                    skipPreflight: false,
                     preflightCommitment: 'confirmed',
                 });
             } else {
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
-                    skipPreflight: true,
+                    skipPreflight: false,
                     preflightCommitment: 'confirmed',
                 });
             }
