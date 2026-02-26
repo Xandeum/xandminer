@@ -6,14 +6,15 @@ import dynamic from "next/dynamic";
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import EditIcon from '@mui/icons-material/Edit';
 import { Telegram, Delete, Search } from "@mui/icons-material";
-import { FC, useEffect, useRef, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { notify } from "utils/notifications";
-import { readPnodeInfoArray } from "helpers/pNodeHelpers";
+import { readPnodeAccount, readPnodeInfoArray } from "helpers/pNodeHelpers";
 import { readMetaplexMetadata } from "helpers/tokenHelpers";
 import { NftLogo } from "components/NftLogo";
 
 import { InputAdornment, TextField } from "@mui/material";
 import { getKeypairForSigning } from "services/keypairServices";
+import { fetchDevnetPodsCredits } from "services/podCreditServices";
 
 const WalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -24,33 +25,27 @@ export const OwnerView: FC = ({ }) => {
 
     const wallet = useWallet();
     const { connection } = useConnection();
-    // const connection = new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed');
 
     const [managers, setManagers] = useState<any[]>([]);
     const [pNodeData, setPNodeData] = useState<any[]>([{
         pnode: '',
-        registrationTime: '',
+        registration_time: '',
         nft: '',
         manager: '',
-        managerCommission: '',
+        manager_commission: '',
     }]);
     const [modifiedRows, setModifiedRows] = useState<number[]>([]);
 
     const [showPopupSelectNFT, setShowPopupSelectNFT] = useState(false);
     const [showPopupSelectManager, setShowPopupSelectManager] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [isRegistered, setIsRegistered] = useState(false);
-    const [isManagerUpdated, setIsManagerUpdated] = useState(false);
     const [hasPnode, setHasPNode] = useState(false);
-    const [pNodeIndex, setPNodeIndex] = useState(0);
     const [isProcessing, setIsProcessing] = useState({
         task: '',
         status: false,
         index: 0
     });
     const [searchTerm, setSearchTerm] = useState('')
-    const [currentPage, setCurrentPage] = useState(1)
-    const itemsPerPage = 10
     const [nftData, setNftData] = useState<any[]>([]);
     const [data, setData] = useState(pNodeData || []);
     const [editingCell, setEditingCell] = useState<{ row: number; col: string } | null>(null);
@@ -58,11 +53,7 @@ export const OwnerView: FC = ({ }) => {
     const [savingRow, setSavingRow] = useState<number | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        fetchData();
-    }, [wallet, wallet?.publicKey]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
             if (!wallet || !wallet.publicKey) {
@@ -83,11 +74,7 @@ export const OwnerView: FC = ({ }) => {
                     verified: manager?.data?.verified,
                     wesiteLink: manager?.data?.websiteLink,
                 }));
-
-                setIsRegistered(wallet?.publicKey && formattedManagers?.find(manager => manager?.pubkey?.toString() == wallet?.publicKey?.toString()) ? true : false);
                 setManagers(formattedManagers);
-                setIsLoading(false);
-
             } else {
                 setManagers([]);
                 setIsLoading(false);
@@ -104,39 +91,45 @@ export const OwnerView: FC = ({ }) => {
                     manager: '',
                 }));
                 setIsLoading(false);
-                setIsRegistered(false);
                 setPNodeData(emptyManagers);
                 return;
             }
-            setIsRegistered(true);
 
             const pNodeInfoData = await readPnodeInfoArray(connection, wallet?.publicKey, Number(pNodeOwnerData?.pnode));
+            const devnetPodCredits = await fetchDevnetPodsCredits();
 
+            // map through pNodeInfoData and add credits from devnetPodCredits based on matching devnet_pnode
+            const enrichedPNodeInfoData = pNodeInfoData.map((pnodeInfo) => {
+                const devnetCredit = devnetPodCredits?.pods_credits?.find((credit) => credit?.pod_id?.toString() === pnodeInfo?.devnet_pnode.toString());
+
+                return {
+                    ...pnodeInfo,
+                    devnetCredits: devnetCredit ? devnetCredit?.credits : 0,
+                };
+            });
 
             if (Number(pNodeOwnerData?.pnode)) {
-
-                setPNodeData(pNodeInfoData.slice(0, pNodeOwnerData?.pnode));
-                setIsLoading(false);
-
+                setPNodeData(enrichedPNodeInfoData?.slice(0, pNodeOwnerData?.pnode));
             } else {
                 setManagers([]);
                 setIsLoading(false);
             }
+
+            setIsLoading(false);
         } catch (error) {
             console.error("Fetch data error:", error);
             notify({ type: 'error', message: `Failed to fetch data: ${error?.message || error}` });
             setIsLoading(false);
         }
-    }
+    }, [wallet, connection]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const filteredItems = managers.filter(item =>
         item.pubkey.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
-
-    // const indexOfLastItem = currentPage * itemsPerPage
-    // const indexOfFirstItem = indexOfLastItem - itemsPerPage
-    // const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem)
-
 
     // function on saving changes
     const onHandleChanges = async (index?: number, type?: string) => {
@@ -158,7 +151,6 @@ export const OwnerView: FC = ({ }) => {
                 pnodeInfo = {
                     ...pnodeInfo,
                     manager: new PublicKey(DEFAULT_VALUE),
-                    managerCommission: 0
                 };
             } else if (type === 'nft1') {
                 pnodeInfo = {
@@ -182,9 +174,10 @@ export const OwnerView: FC = ({ }) => {
             }
 
             // Read current pnode info to check if pnode key is changing
-            const currentPnodeInfos = await readPnodeInfoArray(connection, wallet?.publicKey, pNodeData?.length);
-            const oldDevnetPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ? currentPnodeInfos[index]?.devnet_pnode : PublicKey.default;
-            const oldMainnetPnodeKey = currentPnodeInfos && currentPnodeInfos[index] ? currentPnodeInfos[index]?.mainnet_pnode : PublicKey.default;
+            const selectedPnodeInfo = await readPnodeAccount(connection, pnodeInfo?.owner, pnodeInfo?.index);
+
+            const oldDevnetPnodeKey = selectedPnodeInfo && selectedPnodeInfo ? selectedPnodeInfo?.devnet_pnode : PublicKey.default;
+            const oldMainnetPnodeKey = selectedPnodeInfo && selectedPnodeInfo ? selectedPnodeInfo?.mainnet_pnode : PublicKey.default;
 
             const devnetPnodeKeyChanging = !oldDevnetPnodeKey.equals(pnodeInfo?.devnet_pnode);
             const mainnetPnodeKeyChanging = !oldMainnetPnodeKey.equals(pnodeInfo?.mainnet_pnode);
@@ -214,7 +207,9 @@ export const OwnerView: FC = ({ }) => {
 
             const expectedSigner: PublicKey = devnetPnodeKeyChanging ? pnodeInfo?.devnet_pnode : pnodeInfo?.mainnet_pnode;
 
-            if (expectedSigner?.equals(walletToSign.publicKey) === false && pNodeKeyChanging) {
+            const isDeletingPnode = pNodeKeyChanging && ((devnetPnodeKeyChanging && pnodeInfo?.devnet_pnode.equals(PublicKey.default)) || (mainnetPnodeKeyChanging && pnodeInfo?.mainnet_pnode.equals(PublicKey.default)));
+
+            if (expectedSigner?.equals(walletToSign.publicKey) === false && !isDeletingPnode && pNodeKeyChanging) {
                 notify({ type: 'error', message: 'Expected signer mismatch', description: 'The expected signer does not match the loaded pNode keypair' });
                 setSavingRow(null);
                 setIsProcessing({ task: '', status: false, index: 0 });
@@ -222,7 +217,7 @@ export const OwnerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(wallet.publicKey, index, pnodeInfo, oldManager, expectedSigner, pNodeKeyChanging);
+            const txIx = await updatePnodeDetails(wallet.publicKey, pnodeInfo?.index, pnodeInfo, oldManager, expectedSigner, (isDeletingPnode ? false : pNodeKeyChanging), false);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -239,17 +234,17 @@ export const OwnerView: FC = ({ }) => {
             transaction.feePayer = wallet.publicKey;
             let tx = '';
 
-            if (pNodeKeyChanging) {
+            if (pNodeKeyChanging && !isDeletingPnode) {
                 transaction.partialSign(walletToSign);
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
-                    skipPreflight: true,
+                    skipPreflight: false,
                     preflightCommitment: 'confirmed',
                 });
             } else {
                 tx = await wallet.sendTransaction(transaction, connection, {
                     minContextSlot,
-                    skipPreflight: true,
+                    skipPreflight: false,
                     preflightCommitment: 'confirmed',
                 });
             }
@@ -279,6 +274,7 @@ export const OwnerView: FC = ({ }) => {
                 await fetchData();
             }
         } catch (error: any) {
+            console.error("Error saving changes:", error);
             notify({ type: 'error', message: `Transaction failed: ${error?.message || error}` });
         } finally {
             setSavingRow(null);
@@ -325,10 +321,8 @@ export const OwnerView: FC = ({ }) => {
 
         // Open modal if needed
         if (col === 'nft') {
-            setPNodeIndex(row);
             setShowPopupSelectNFT(true);
         } else if (col === 'manager') {
-            setPNodeIndex(row);
             setShowPopupSelectManager(true);
         }
     };
@@ -345,7 +339,7 @@ export const OwnerView: FC = ({ }) => {
             //updated the pnode registration time if pnode value changed
             if ((col === 'devnet_pnode' || col === 'mainnet_pnode') && newValue !== oldValue?.toString()) {
                 if (newValue === '') {
-                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111"), ["registrationTime"]: 0 };
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey("11111111111111111111111111111111") };
                 } else if (!PublicKey.isOnCurve(newValue)) {
                     notify({ type: 'error', message: 'Invalid Public Key format.' });
                     setEditingCell(null);
@@ -364,15 +358,10 @@ export const OwnerView: FC = ({ }) => {
                     setEditValue('');
                     return;
                 } else if (updatedData[row].devnet_pnode?.equals(PublicKey.default) && updatedData[row].mainnet_pnode?.equals(PublicKey.default)) {
-                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue), ["registrationTime"]: Date.now() };
+                    updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue), ["registration_time"]: Date.now() };
                 } else {
                     updatedData[row] = { ...updatedData[row], [col]: new PublicKey(newValue) };
                 }
-            }
-
-            // save if the manager value changed
-            if (col === 'manager') {
-                setIsManagerUpdated(true);
             }
 
             setData(updatedData);
@@ -425,9 +414,8 @@ export const OwnerView: FC = ({ }) => {
                                 <tr className="border-b border-gray-400">
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Index</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Registration Time</th>
-                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet pNode</th>
-                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Mainnet pNode</th>
-                                    {/* <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">NFT PubKey</th> */}
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet pNode PubKey</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet Credits</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Manager</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Commission</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Actions</th>
@@ -474,8 +462,8 @@ export const OwnerView: FC = ({ }) => {
                                                         <td className="bg-tiles-dark text-center">
                                                             <div className="flex items-center justify-center h-full min-h-[40px]">
                                                                 <span>
-                                                                    {pnode?.registrationTime && pnode.registrationTime > 0
-                                                                        ? new Date(pnode.registrationTime < 10000000000 ? pnode.registrationTime * 1000 : pnode.registrationTime).toLocaleString()
+                                                                    {pnode?.registration_time && pnode.registration_time > 0
+                                                                        ? new Date(pnode.registration_time < 10000000000 ? pnode.registration_time * 1000 : pnode.registration_time).toLocaleString()
                                                                         : '-'}
                                                                 </span>
                                                             </div>
@@ -518,79 +506,12 @@ export const OwnerView: FC = ({ }) => {
                                                             </div>
                                                         </td>
 
-                                                        {/*mainnet pNode PubKey */}
-                                                        <td className="bg-tiles-dark text-center relative group">
-                                                            <div className="flex flex-row items-center justify-center gap-3 h-full min-h-[40px]">
-                                                                {editingCell?.row === index && editingCell?.col === 'mainnet_pnode' ? (
-                                                                    <input
-                                                                        ref={inputRef}
-                                                                        type="text"
-                                                                        value={editValue}
-                                                                        onChange={(e) => setEditValue(e.target.value)}
-                                                                        onBlur={saveEdit}
-                                                                        onKeyDown={handleKeyDown}
-                                                                        className="bg-gray-800 text-white text-center w-32 px-2 py-1 rounded text-xs"
-                                                                        placeholder="Enter pubkey..."
-                                                                    />
-                                                                ) : (
-                                                                    <>
-                                                                        {
-                                                                            processPublicKey(pnode?.mainnet_pnode) == '' ?
-                                                                                '-' :
-                                                                                <span
-                                                                                    className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
-                                                                                    onClick={() => copyToClipboard(processPublicKey(pnode?.mainnet_pnode) || '')}
-                                                                                >
-                                                                                    {processPublicKey(pnode?.mainnet_pnode)?.slice(0, 4)}...{processPublicKey(pnode?.mainnet_pnode)?.slice(-4)}
-                                                                                </span>
-                                                                        }
-                                                                        <button
-                                                                            onClick={() => startEditing(index, 'mainnet_pnode', pnode?.mainnet_pnode)}
-                                                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                        >
-                                                                            <EditIcon fontSize="small" className="text-gray-400" />
-                                                                        </button>
-                                                                    </>
-                                                                )}
+                                                        {/* Devnet Credits */}
+                                                        <td className="bg-tiles-dark text-center">
+                                                            <div className="flex items-center justify-center h-full min-h-[40px]">
+                                                                {pnode?.devnetCredits?.toLocaleString() || '0'}
                                                             </div>
                                                         </td>
-
-                                                        {/* NFT */}
-                                                        {/* <td className="bg-tiles-dark text-center">
-                                                            <div className="flex items-center justify-center h-full min-h-[40px] gap-2">
-                                                                {showPopupSelectNFT && editingCell?.row === index && editingCell?.col === 'nft' ? (
-                                                                    <span className="text-xs text-orange-400">Selecting NFT...</span>
-                                                                ) : processPublicKey(pnode?.nft) ? (
-                                                                    <>
-                                                                        <span
-                                                                            className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
-                                                                            onClick={() => copyToClipboard(pnode.nft.toString())}
-                                                                        >
-                                                                            {pnode.nft.toString().slice(0, 4)}...{pnode.nft.toString().slice(-4)}
-                                                                        </span>
-                                                                        <div className="flex gap-1">
-                                                                            <button onClick={() => startEditing(index, 'nft', pnode.nft)}>
-                                                                                <EditIcon fontSize="small" className="text-gray-400" />
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => window.confirm('Remove NFT?') && onHandleChanges(index, 'nft')}
-                                                                                className="text-red-500 hover:text-red-400"
-                                                                                disabled={isSaving}
-                                                                            >
-                                                                                {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <Delete fontSize="small" />}
-                                                                            </button>
-                                                                        </div>
-                                                                    </>
-                                                                ) : (
-                                                                    <button
-                                                                        className="btn btn-xs bg-[#d98c18] hover:bg-[#fda31b] text-white"
-                                                                        onClick={() => startEditing(index, 'nft', '')}
-                                                                    >
-                                                                        Select NFT
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        </td> */}
 
                                                         {/* Manager */}
                                                         <td className="bg-tiles-dark text-center">
@@ -636,7 +557,7 @@ export const OwnerView: FC = ({ }) => {
                                                         {/* Commission */}
                                                         <td className="bg-tiles-dark text-center">
                                                             <span>
-                                                                {pnode?.managerCommission > 0 ? `${Number(pnode.managerCommission) / 100}%` : '-'}
+                                                                {(processPublicKey(pnode?.manager) != '' && pnode?.manager_commission > 0) ? `${Number(pnode?.manager_commission) / 100}%` : '-'}
                                                             </span>
                                                         </td>
 
@@ -697,7 +618,7 @@ export const OwnerView: FC = ({ }) => {
                         className="absolute inset-0 bg-black opacity-70"
                     />
                     {/* Modal Container */}
-                    <div className="relative bg-tiles-dark border-xnd p-6 rounded-lg max-w-4xl w-full max-h-[70vh] overflow-y-auto shadow-2xl">
+                    <div className="relative bg-tiles-dark border-xnd p-6 rounded-lg max-w-5xl w-full max-h-[70vh] overflow-y-auto shadow-2xl">
                         <button
                             onClick={() => setShowPopupSelectNFT(false)}
                             className="absolute top-4 right-4 hover:scale-110 transition-transform duration-100 z-10"
@@ -786,7 +707,7 @@ export const OwnerView: FC = ({ }) => {
                     />
 
                     {/* Modal Container */}
-                    <div className="relative bg-tiles-dark border-xnd p-6 rounded-lg max-w-4xl w-full max-h-[70vh] overflow-y-auto shadow-2xl">
+                    <div className="relative bg-tiles-dark border-xnd p-6 rounded-lg max-w-5xl w-full max-h-[70vh] overflow-y-auto shadow-2xl">
                         <button
                             onClick={() => setShowPopupSelectManager(false)}
                             className="absolute top-4 right-4 hover:scale-110 transition-transform duration-100 z-10"
@@ -905,7 +826,7 @@ export const OwnerView: FC = ({ }) => {
                                                                             if (editingCell?.col === 'manager') {
                                                                                 const row = editingCell.row;
                                                                                 const updatedData = [...data];
-                                                                                updatedData[row] = { ...updatedData[row], manager: new PublicKey(manager?.pubkey), managerCommission: Number(manager?.commission) };
+                                                                                updatedData[row] = { ...updatedData[row], manager: new PublicKey(manager?.pubkey), manager_commission: Number(manager?.commission) };
                                                                                 setData(updatedData);
 
                                                                                 const rowChanged = JSON.stringify(updatedData[row]) !== JSON.stringify(pNodeData[row]);

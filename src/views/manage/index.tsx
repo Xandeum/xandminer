@@ -1,5 +1,5 @@
 'use client';
-import { FC, useEffect, useState } from "react";
+import { FC, useCallback, useEffect, useMemo, useState } from "react";
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
@@ -23,13 +23,11 @@ const WalletMultiButtonDynamic = dynamic(
 export const ManageView: FC = ({ }) => {
 
     const wallet = useWallet();
-    // const connection = new Connection('https://devnet.helius-rpc.com/?api-key=2aca1e9b-9f51-44a0-938b-89dc6c23e9b4', 'confirmed');
     const { connection } = useConnection();
     const [pnodesQty, setPnodesQty] = useState<number>(0);
     const [nftQty, setNftQty] = useState<number>(0);
 
     const [isLoading, setIsLoading] = useState(true);
-    const [isRegistered, setIsRegistered] = useState(false);
     const [hasPnode, setHasPNode] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showPopupRegisterOwner, setShowPopupRegisterOwner] = useState(false);
@@ -39,11 +37,7 @@ export const ManageView: FC = ({ }) => {
     });
     const [isRewardsWalletEditing, setIsRewardsWalletEditing] = useState<boolean>(false);
 
-    useEffect(() => {
-        fetchData();
-    }, [wallet, wallet?.publicKey]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
             if (!wallet || !wallet.publicKey) {
@@ -55,7 +49,6 @@ export const ManageView: FC = ({ }) => {
             setNftQty(nfts?.length)
 
             const pNodeOwnerData = await fetchPNodeOwnerData(connection, wallet?.publicKey);
-
             const OwnerData = await fetchOwnerData(connection, wallet?.publicKey);
 
             // ask user to register if owner PDA is not there
@@ -68,10 +61,9 @@ export const ManageView: FC = ({ }) => {
             setHasPNode(Number(pNodeOwnerData?.pnode) > 0);
 
             if (pNodeOwnerData?.pnode && Number(pNodeOwnerData?.pnode) > 0) {
-                setRewardsWallet({ ...rewardsWallet, value: OwnerData?.rewardsWallet?.toString() || '' });
+                setRewardsWallet(prev => ({ ...prev, value: OwnerData?.rewardsWallet?.toString() || '' }));
                 setPnodesQty(Number(pNodeOwnerData?.pnode));
                 setIsLoading(false);
-
             } else {
                 setIsLoading(false);
             }
@@ -81,7 +73,11 @@ export const ManageView: FC = ({ }) => {
             notify({ type: 'error', message: `Failed to fetch data: ${error?.message || error}` });
             setIsLoading(false);
         }
-    }
+    }, [wallet, connection]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const onOwnerRegister = async () => {
         try {
@@ -112,7 +108,7 @@ export const ManageView: FC = ({ }) => {
 
             const tx = await wallet.sendTransaction(transaction, connection, {
                 minContextSlot,
-                skipPreflight: true,
+                skipPreflight: false,
                 preflightCommitment: 'confirmed'
             });
 
@@ -188,7 +184,7 @@ export const ManageView: FC = ({ }) => {
 
             const tx = await wallet.sendTransaction(transaction, connection, {
                 minContextSlot,
-                skipPreflight: true,
+                skipPreflight: false,
                 preflightCommitment: 'confirmed'
             });
 
@@ -394,7 +390,7 @@ export const ManageView: FC = ({ }) => {
                                         onClick={() => { onOwnerRegister() }}
                                     >
                                         <span className='normal-case'>
-                                            {isRegistered ? "Update" : "Register"}
+                                            Register
                                         </span>
                                     </button>
                             }

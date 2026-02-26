@@ -42,21 +42,6 @@ class PNodeOwner {
     }
 }
 
-class PNodeInfoData {
-    pnode: any;
-    nft: any;
-    manager: any;
-    registration_time: any;
-    manager_commission: any;
-    constructor(pnode, nft, manager, registration_time, manager_commission) {
-        this.pnode = pnode;
-        this.nft = nft;
-        this.manager = manager;
-        this.registration_time = registration_time;
-        this.manager_commission = manager_commission;
-    }
-}
-
 function arrayToNum(array) {
     const arr = new Uint8Array(array);
     const view = new DataView(arr.buffer || arr);
@@ -208,8 +193,8 @@ export async function readPnodeInfoArray(connection: Connection, ownerPubkey: Pu
                 nft_slot_1: PublicKey.default,
                 nft_slot_2: PublicKey.default,
                 manager: PublicKey.default,
-                registrationTime: 0,
-                managerCommission: 0,
+                registration_time: 0,
+                manager_commission: 0,
             })
             continue;
         }
@@ -225,8 +210,8 @@ export async function readPnodeInfoArray(connection: Connection, ownerPubkey: Pu
             nft_slot_1: new PublicKey(data.slice(offset + 97, offset + 129)),
             nft_slot_2: new PublicKey(data.slice(offset + 129, offset + 161)),
             manager: new PublicKey(data.slice(offset + 161, offset + 193)),
-            registrationTime: Number(data.readBigInt64LE(offset + 193)),
-            managerCommission: data.readUInt32LE(offset + 201),
+            registration_time: Number(data.readBigInt64LE(offset + 193)),
+            manager_commission: data.readUInt32LE(offset + 201),
         };
         pnodeInfos.push(pnodeAccount);
     }
@@ -255,8 +240,8 @@ export async function readPnodeAccount(connection: Connection, ownerPubkey: Publ
         nft_slot_1: new PublicKey(data.slice(offset + 97, offset + 129)),
         nft_slot_2: new PublicKey(data.slice(offset + 129, offset + 161)),
         manager: new PublicKey(data.slice(offset + 161, offset + 193)),
-        registrationTime: Number(data.readBigInt64LE(offset + 193)),
-        managerCommission: data.readUInt32LE(offset + 201),
+        registration_time: Number(data.readBigInt64LE(offset + 193)),
+        manager_commission: data.readUInt32LE(offset + 201),
     };
 
     return pnodeAccount;

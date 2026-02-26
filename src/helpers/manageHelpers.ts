@@ -1,7 +1,7 @@
 import BN from "bn.js";
 import { Connection, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js";
-import { GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_SEED, OWNER_SEED, PNODE_OWNER_SEED, PNODE_UPDATE_DATA_SIZE, PROGRAM } from "CONSTS";
-import { derivePnodeAccountPda, readPnodeAccount } from "./pNodeHelpers";
+import { GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_OFFSET, MANAGER_SEED, OWNER_SEED, PNODE_ACCOUNT_SIZE, PNODE_OWNER_SEED, PNODE_UPDATE_DATA_SIZE, PROGRAM } from "CONSTS";
+import { derivePnodeAccountPda, readPnodeAccount, readPnodeInfoArray } from "./pNodeHelpers";
 
 function arrayToNum32(array) {
     const arr = new Uint8Array(array);
@@ -137,10 +137,10 @@ function serializePnodeUpdateData(pnodeUpdate) {
     pnodeUpdate.manager.toBuffer().copy(buffer, offset);
     offset += 32;
 
-    buffer.writeBigInt64LE(BigInt(pnodeUpdate.registrationTime), offset);
+    buffer.writeBigInt64LE(BigInt(pnodeUpdate.registration_time), offset);
     offset += 8;
 
-    buffer.writeUInt32LE(pnodeUpdate.managerCommission, offset);
+    buffer.writeUInt32LE(pnodeUpdate.manager_commission, offset);
     offset += 4;
 
     return buffer;
@@ -176,10 +176,10 @@ export function deserializeOwner(data) {
         const manager = new PublicKey(data.slice(offset, offset + 32));
         offset += 32;
 
-        const registrationTime = data.readBigInt64LE(offset);
+        const registration_time = data.readBigInt64LE(offset);
         offset += 8;
 
-        const managerCommission = data.readUInt32LE(offset);
+        const manager_commission = data.readUInt32LE(offset);
         offset += 4;
 
         pnodeInfos.push({
@@ -188,8 +188,8 @@ export function deserializeOwner(data) {
             nft_slot_1,
             nft_slot_2,
             manager,
-            registrationTime: Number(registrationTime),
-            managerCommission,
+            registration_time: Number(registration_time),
+            manager_commission,
         });
     }
 
@@ -256,18 +256,63 @@ export function deserializeManager(data) {
     };
 }
 
+function deserializePnodeAccount(data) {
+    return {
+        owner: new PublicKey(data.slice(0, 32)),
+        index: data[32],
+        devnet_pnode: new PublicKey(data.slice(33, 65)),
+        mainnet_pnode: new PublicKey(data.slice(65, 97)),
+        nft_slot_1: new PublicKey(data.slice(97, 129)),
+        nft_slot_2: new PublicKey(data.slice(129, 161)),
+        manager: new PublicKey(data.slice(161, 193)),
+        registration_time: Number(data.readBigInt64LE(193)),
+        manager_commission: data.readUInt32LE(201),
+    };
+}
+
+export async function getManagerAssignedPnodes(
+    connection: Connection,
+    managerWalletPubkey: PublicKey
+) {
+
+    const accounts = await connection.getProgramAccounts(PROGRAM, {
+        filters: [
+            { dataSize: PNODE_ACCOUNT_SIZE },
+            { memcmp: { offset: MANAGER_OFFSET, bytes: managerWalletPubkey.toBase58() } },
+        ],
+    });
+
+    return accounts.map((acc) => {
+        const p = deserializePnodeAccount(acc.account.data);
+        return {
+            pnodeAccountPda: acc.pubkey,
+            owner: p.owner,
+            index: p.index,
+            devnet_pnode: p.devnet_pnode,
+            mainnet_pnode: p.mainnet_pnode,
+            manager: p.manager,
+            manager_commission: p.manager_commission,
+            registration_time: p.registration_time,
+            nft_slot_1: p.nft_slot_1,
+            nft_slot_2: p.nft_slot_2,
+        };
+    });
+}
+
 async function getAllOwnerPdas(connection: Connection, programId: PublicKey) {
     try {
         // Get all accounts owned by the program
         // Filter by discriminator or size if needed
-        const accounts = await connection.getProgramAccounts(programId, {
-            filters: [
-                {
-                    // Owner PDA size: 32 + 32 + 4 + (140 * 24) = 3428 bytes
-                    dataSize: 3428,
-                },
-            ],
-        });
+        const accounts = await connection.getProgramAccounts(programId,
+            {
+                filters: [
+                    {
+                        // Owner PDA size: 32 + 32 + 4 + (140 * 24) = 3428 bytes
+                        dataSize: 3428,
+                    },
+                ],
+            }
+        );
 
         return accounts;
     } catch (error) {
@@ -346,68 +391,31 @@ export async function fetchOwnerData(connection: Connection, walletPubkey: Publi
     }
 }
 
-export async function getPnodesForManager(managerWalletPubkey: PublicKey, connection: Connection) {
-
-    // Derive the manager PDA from the wallet pubkey
-    const [managerPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from(MANAGER_SEED), managerWalletPubkey.toBuffer()],
-        PROGRAM
-    );
-
-    // Get all owner PDAs
+export const fetchpNodeInfoWithManager = async (connection: Connection, managerPubkey: PublicKey) => {
     const ownerAccounts = await getAllOwnerPdas(connection, PROGRAM);
 
-    const managedPnodes = [];
-    let totalPnodesScanned = 0;
-
-    // Iterate through each owner account
+    let pnodeinfoArr = [];
     for (const account of ownerAccounts) {
         try {
+
             const ownerData = deserializeOwner(account.account.data);
+            const pNodeOwnerData = await fetchPNodeOwnerData(connection, ownerData?.user);
+            const pNodeInfoData = await readPnodeInfoArray(connection, ownerData?.user, pNodeOwnerData?.pnode);
 
-            // Check each pnode in this owner's pnode_info array
-            for (const pnodeInfo of ownerData.pnodeInfos) {
-                totalPnodesScanned++;
-
-                // Skip default/empty pnodes
-                if (pnodeInfo.pnode.equals(PublicKey.default)) {
-                    continue;
-                }
-
-                // Check if this pnode's manager matches our manager PDA
-                if (pnodeInfo.manager.equals(managerWalletPubkey)) {
-                    managedPnodes.push({
-                        // Owner information
-                        owner: ownerData.user.toString(),
-                        ownerPda: account.pubkey.toString(),
-                        rewardsWallet: ownerData.rewardsWallet.toString(),
-
-                        // PNode information
-                        pnodeIndex: pnodeInfo.index,
-                        pnodeKey: pnodeInfo.pnode.toString(),
-                        nftSlot1: pnodeInfo.nft_slot_1.toString(),
-                        nftSlot2: pnodeInfo.nft_slot_2.toString(),
-
-                        // Manager information
-                        managerPubkey: managerWalletPubkey.toString(),
-                        managerPda: managerPda.toString(),
-                        managerCommission: pnodeInfo.managerCommission,
-                        managerCommissionPercent: (pnodeInfo.managerCommission / 100).toFixed(2) + "%",
-
-                        // Timing
-                        registrationTime: pnodeInfo.registrationTime,
-                        registrationDate: pnodeInfo.registrationTime > 0
-                            ? new Date(pnodeInfo.registrationTime * 1000).toISOString()
-                            : "Not set",
+            for (const pnodeInfo of pNodeInfoData) {
+                if (pnodeInfo.manager.equals(managerPubkey)) {
+                    pnodeinfoArr.push({
+                        ...pnodeInfo,
                     });
+                    // return { pnodeInfo, ownerData, pNodeOwnerData };
                 }
             }
+
         } catch (error) {
             console.error(`⚠️  Error processing account ${account.pubkey.toString()}:`, error.message);
-
         }
     }
-    return managedPnodes;
+    return pnodeinfoArr;
 }
 
 export async function fetchManagerData(connection: Connection, managerPubkey: PublicKey) {
@@ -620,7 +628,7 @@ export async function registerRewardWallet(publicKey: PublicKey, rewardWalletPub
     }
 }
 
-export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null, expectedSigner: PublicKey, pNodeKeyChanging: boolean): Promise<TransactionInstruction> {
+export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null, expectedSigner: PublicKey, pNodeKeyChanging: boolean, isManager: boolean, managerPubkey?: PublicKey): Promise<TransactionInstruction> {
 
     const [pnodeOwnerPda] = PublicKey.findProgramAddressSync(
         [Buffer.from(PNODE_OWNER_SEED), ownerWallet?.toBuffer()],
@@ -649,7 +657,7 @@ export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, 
 
     const keys = [
         {
-            pubkey: ownerWallet,
+            pubkey: isManager ? managerPubkey : ownerWallet,
             isSigner: true,
             isWritable: true,
         },

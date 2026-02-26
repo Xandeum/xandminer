@@ -8,17 +8,13 @@ import { createKeypair, getKeypair } from '../../services/keypairServices'
 import { getServerIP, getVersions } from '../../services/getServerInfo';
 import Slider from '@mui/material/Slider';
 import StorageIcon from '@mui/icons-material/Storage';
-import SpeedIcon from '@mui/icons-material/Speed';
-import CloseIcon from '@mui/icons-material/Close';
-import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
-import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 
 import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import StopCircleIcon from '@mui/icons-material/StopCircle';
 
 import { CircularProgress, TextField, Tooltip } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
-import { AddBox, IndeterminateCheckBox, Edit, CheckBox } from '@mui/icons-material';
+import { AddBox, IndeterminateCheckBox, Edit } from '@mui/icons-material';
 
 import usePnodeStatsStore from "../../stores/usePnodeStatsStore"
 
@@ -178,8 +174,7 @@ export const HomeView: FC = ({ }) => {
       setIsPnodeCheck(false);
     }
     );
-
-  }, []);
+  }, [setIsConnectionError]);
 
   //set Service status also on isConnectionError state
   useEffect(() => {
