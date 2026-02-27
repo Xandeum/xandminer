@@ -7,7 +7,7 @@ import { AutoConnectProvider, useAutoConnect } from './AutoConnectProvider';
 import { notify } from "../utils/notifications";
 import { NetworkConfigurationProvider, useNetworkConfiguration } from './NetworkConfigurationProvider';
 import dynamic from "next/dynamic";
-import { UrlConfigurationProvider } from './UrlProvider';
+import { UrlConfigurationProvider, useRpcConfiguration } from './RpcProvider';
 
 const ReactUIWalletModalProviderDynamic = dynamic(
     async () =>
@@ -18,15 +18,9 @@ const ReactUIWalletModalProviderDynamic = dynamic(
 const WalletContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
     const { autoConnect } = useAutoConnect();
     const { networkConfiguration } = useNetworkConfiguration();
+    const { rpcEndpoint } = useRpcConfiguration();
     const network = networkConfiguration as WalletAdapterNetwork;
-    let endpoint = useMemo(() => clusterApiUrl(network), [network]);
-
-    if (network === WalletAdapterNetwork.Devnet) {
-        endpoint = "https://api.devnet.solana.com";
-    }
-    if (network === WalletAdapterNetwork.Mainnet) {
-        endpoint = "https://api.mainnet-beta.solana.com";
-    }
+    let endpoint = useMemo(() => rpcEndpoint || clusterApiUrl(network), [rpcEndpoint, network]);
 
     const wallets = useMemo(
         () => [
@@ -43,7 +37,6 @@ const WalletContextProvider: FC<{ children: ReactNode }> = ({ children }) => {
     );
 
     return (
-        // TODO: updates needed for updating and referencing endpoint: wallet adapter rework
         <ConnectionProvider endpoint={endpoint}>
             <WalletProvider wallets={wallets} onError={onError} autoConnect={autoConnect}>
                 <ReactUIWalletModalProviderDynamic>

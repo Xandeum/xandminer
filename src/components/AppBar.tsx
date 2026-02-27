@@ -7,6 +7,8 @@ import logo from "../assets/XANDEUM_Logo.png"
 import XANDEUM_LOGO from "../assets/XANDEUM_NEW_LOGO.png"
 
 import Image from 'next/image';
+import { RpcEndpointUpdateModal } from '../modals/rpcEndpointUpdateModal';
+import { useRpcConfiguration } from 'contexts/RpcProvider';
 
 const WalletMultiButtonDynamic = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -15,7 +17,8 @@ const WalletMultiButtonDynamic = dynamic(
 
 export const AppBar: React.FC = () => {
   const { autoConnect, setAutoConnect } = useAutoConnect();
-  const [showUrlModal, setShowUrlModal] = React.useState(false);
+  const { rpcEndpoint } = useRpcConfiguration();
+  const [showRpcModal, setShowRpcModal] = React.useState(false);
 
   const [storedText, setStoredText] = useState<string | null>('');
 
@@ -25,13 +28,13 @@ export const AppBar: React.FC = () => {
       <div className="navbar flex py-0 flex-row md:mb-2 shadow-lg bg-black text-neutral-content border-b border-zinc-600 bg-opacity-66">
         <div className="hidden md:flex md:navbar-start items-center">
           <div className="hidden md:inline md:p-2 ml-10 md:mt-3">
-              <Image
-                src={XANDEUM_LOGO}
-                alt="Xandeum logo"
-                width={280}
-                height={60}
-                priority
-              />
+            <Image
+              src={XANDEUM_LOGO}
+              alt="Xandeum logo"
+              width={280}
+              height={60}
+              priority
+            />
           </div>
 
         </div>
@@ -58,11 +61,28 @@ export const AppBar: React.FC = () => {
           <div className="inline-flex items-center justify-center gap-6">
             {/* <Link href={"/store"} className='text-white hover:text-[#fda31b]'>Store</Link> */}
             <div className='flex items-center gap-4'>
+              <button
+                className="btn btn-ghost btn-sm rounded-btn text-base normal-case"
+                onClick={() => setShowRpcModal(true)}
+              >
+                {
+                  rpcEndpoint ?
+                    rpcEndpoint?.slice(0, 15) + "..." + rpcEndpoint?.slice(-10)
+                    :
+                    "Set RPC"
+                }
+              </button>
               <WalletMultiButtonDynamic className="btn-ghost btn-sm rounded-btn text-lg mr-6" />
             </div>
 
           </div>
         </div>
+        {showRpcModal && (
+          <RpcEndpointUpdateModal
+            closeModal={() => setShowRpcModal(false)}
+            openModal={() => setShowRpcModal(true)}
+          />
+        )}
       </div>
     </div >
   );

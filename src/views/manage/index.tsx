@@ -24,6 +24,7 @@ export const ManageView: FC = ({ }) => {
 
     const wallet = useWallet();
     const { connection } = useConnection();
+
     const [pnodesQty, setPnodesQty] = useState<number>(0);
     const [nftQty, setNftQty] = useState<number>(0);
 
@@ -44,7 +45,7 @@ export const ManageView: FC = ({ }) => {
                 setIsLoading(false);
                 return;
             }
-
+            console.log("connection rpc endpoint >>> ", connection.rpcEndpoint)
             const nfts = await readMetaplexMetadata(connection.rpcEndpoint, wallet?.publicKey?.toString());
             setNftQty(nfts?.length)
 

@@ -35,9 +35,10 @@ import InstallPod from 'views/install-pod';
 import { callService, getServiceStatus } from 'services/systemServices';
 import { getVersionName, SYSTEM_RESERVE, VERSION_NAME, VERSION_NO } from 'CONSTS';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export const HomeView: FC = ({ }) => {
-
+  const router = useRouter();
   const wallet = useWallet();
   const { setIsConnectionError, isConnectionError } = usePnodeStatsStore();
 
@@ -482,6 +483,8 @@ export const HomeView: FC = ({ }) => {
 
   //register the pNode
   const onRegisterPNode = async () => {
+    router.push("/owner")
+    return;
     setIsRegisterProcessing(true);
     try {
 

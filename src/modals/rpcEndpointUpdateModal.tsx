@@ -1,10 +1,9 @@
 import { FC, useEffect, useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 
-
 import { notify } from "../utils/notifications";
 import { TextField } from '@mui/material';
-import { useUrlConfiguration } from '../contexts/UrlProvider';
+import { useRpcConfiguration } from '../contexts/RpcProvider';
 
 
 interface IProps {
@@ -12,25 +11,32 @@ interface IProps {
     openModal: () => void;
 }
 
-export const UrlUpdateModal: FC<IProps> = ({ closeModal, openModal }) => {
-    const { urlConfiguration, setUrlConfiguration } = useUrlConfiguration();
+export const RpcEndpointUpdateModal: FC<IProps> = ({ closeModal, openModal }) => {
+    const { rpcEndpoint, setRpcEndpoint } = useRpcConfiguration();
     const [inputValue, setInputValue] = useState<string>('');
 
     useEffect(() => {
-        if (urlConfiguration) {
-            setInputValue(urlConfiguration)
+        if (rpcEndpoint) {
+            setInputValue(rpcEndpoint)
         }
-    }, [urlConfiguration])
+    }, [rpcEndpoint])
 
     const handleUpdateClick = () => {
 
         if (!inputValue) {
-            notify({ type: 'warning', message: 'URL cannot be empty!' });
+            notify({ type: 'warning', message: 'RPC Endpoint cannot be empty!' });
             return;
         }
-        setUrlConfiguration(inputValue)
+        // check if the input value is a valid URL
+        try {
+            new URL(inputValue);
+        } catch (error) {
+            notify({ type: 'error', message: 'Invalid RPC endpoint format!' });
+            return;
+        }
+        setRpcEndpoint(inputValue)
         // Optionally, you can notify the user or perform any other action
-        notify({ type: 'success', message: 'URL updated successfully' });
+        notify({ type: 'success', message: 'RPC Endpoint updated successfully' });
 
         // Close the modal or perform any other necessary actions
         closeModal();
@@ -76,7 +82,7 @@ export const UrlUpdateModal: FC<IProps> = ({ closeModal, openModal }) => {
                         className="px-8 m-2 btn bg-gradient-to-br from-[#fda31b] to-[#fda31b] hover:from-[#fdb74e] hover:to-[#fdb74e] text-black hover:text-white"
                         onClick={handleUpdateClick}
                     >
-                        <span className='normal-case'>Update the URL</span>
+                        <span className='normal-case'>Update RPC Endpoint</span>
                     </button>
                 </div>
 

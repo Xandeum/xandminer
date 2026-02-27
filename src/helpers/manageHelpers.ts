@@ -373,7 +373,6 @@ export async function fetchOwnerData(connection: Connection, walletPubkey: Publi
 
         const accountInfo = await connection.getParsedAccountInfo(ownerPda);
         if (!accountInfo.value) {
-            console.log("Owner account not found for wallet:", walletPubkey.toString());
             return null;
         }
 
