@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 
 export const API_BASE_URL = "http://localhost:4000";
 
@@ -11,11 +11,26 @@ export const PNODE_PROGRAM = new PublicKey("3hMZVwdgRHYSyqkdK3Y8MdZzNwLkjzXod1Xr
 
 export const SYSTEM_RESERVE = 30_000_000_000;
 
-export const VERSION_NO = "v0.8.0";
-export const VERSION_NAME = "Reinheim";
+export const GLOBAL_SEED = "pnodestore";
+export const OWNER_SEED = "owner";
+export const PNODE_OWNER_SEED = "pnodeowner";
+export const MANAGER_SEED = "manager";
+export const PNODE_ACCOUNT_SEED = "pnode_account";
+export const MANAGER_ACCOUNT_SIZE = 179;
+export const PNODE_UPDATE_DATA_SIZE = 172;
+export const PNODE_ACCOUNT_SIZE = 205;
+export const MANAGER_OFFSET = 32 + 1 + 32 + 32 + 32 + 32;
+export const KEYPAIR_PATH = "../xandminerd/keypairs/pnode-keypair.json";
+
+export const PROGRAM = new PublicKey("CZ9bXL6D4uiLXGsSk5s8KAgTFEVp3gdpxPxTCrgm3VoL"); // mainnet
+
+export const VERSION_NO = "v1.2.1";
+export const VERSION_NAME = "Bonn";
 
 export const getVersionName = (versionNo: string) => {
-    if (versionNo.startsWith("v0.8.")) {
+    if (versionNo.startsWith("v1.2.")) {
+        return VERSION_NAME;
+    } else if (versionNo.startsWith("v0.8.")) {
         return "Reinheim";
     } else if (versionNo.startsWith("v0.7.")) {
         return "Heidelberg";

@@ -34,9 +34,11 @@ import InstallPod from 'views/install-pod';
 
 import { callService, getServiceStatus } from 'services/systemServices';
 import { getVersionName, SYSTEM_RESERVE, VERSION_NAME, VERSION_NO } from 'CONSTS';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export const HomeView: FC = ({ }) => {
-
+  const router = useRouter();
   const wallet = useWallet();
   const { setIsConnectionError, isConnectionError } = usePnodeStatsStore();
 
@@ -165,8 +167,7 @@ export const HomeView: FC = ({ }) => {
       setIsPnodeCheck(false);
     }
     );
-
-  }, []);
+  }, [setIsConnectionError]);
 
   //function to set the initial values for dedicating amnt
   const setDedicatedInitialAmnt = (data: Array<any>) => {
@@ -397,85 +398,7 @@ export const HomeView: FC = ({ }) => {
 
   //register the pNode
   const onRegisterPNode = async () => {
-    setIsRegisterProcessing(true);
-    try {
-
-      const connection = new Connection("https://api.devnet.xandeum.com:8899", 'confirmed');
-
-      // check number of pNodes bought and registered
-      const pNodeManagerInfo = await getPnodeManagerAccountData(connection, wallet?.publicKey?.toString());
-
-      if (pNodeManagerInfo == null) {
-        notify({
-          message: "Error",
-          description: "You need to purchase pNode(s) first. If you already did, please allow about one hour to propagate.",
-          type: "error",
-        });
-        setIsRegisterProcessing(false);
-        return;
-      }
-
-      if (pNodeManagerInfo?.registered_pnodes >= pNodeManagerInfo.purchased_pnodes) {
-        notify({
-          message: "Error",
-          description: "You have already reached your maximum registration limit",
-          type: "error",
-        });
-        setIsRegisterProcessing(false);
-        return;
-      }
-
-      const res = await createPnode(wallet?.publicKey?.toString());
-
-      if (res.ok) {
-        notify({
-          message: "Success",
-          description: "pNode registered successfully",
-          type: "success",
-          txid: res?.data
-        });
-        setIsRegisterProcessing(false);
-        // wait 10 seconds and then refresh the page
-        setTimeout(() => {
-          window?.location?.reload();
-        }, 10000);
-        return;
-      }
-
-      notify({
-        message: "Error",
-        description: res?.error?.message,
-        type: "error",
-      });
-
-      setIsRegisterProcessing(false);
-      // wait 10 seconds and then refresh the page
-      setTimeout(() => {
-        window?.location?.reload();
-      }, 10000);
-      return;
-
-    } catch (error) {
-      // check if the error is not text but an object or something else
-      if (typeof error === "object") {
-        notify({
-          message: "Error",
-          description: error?.message,
-          type: "error",
-        });
-      } else {
-        notify({
-          message: "Error",
-          description: error,
-          type: "error",
-        });
-      }
-      setIsRegisterProcessing(false);
-      // wait 10 seconds and then refresh the page
-      setTimeout(() => {
-        window?.location?.reload();
-      }, 10000);
-    }
+    router.push("/owner")
   }
 
   const onShowInstallModal = () => {
@@ -974,9 +897,30 @@ export const HomeView: FC = ({ }) => {
                 :
                 null
             }
+
+            {
+              isKeypairGenerated && isPnodeRegistered ?
+                <>
+                  <Link href={"/owner"} target="_self" rel="noopener noreferrer" className='w-full'>
+                    <button className='btn bg-transparent hover:bg-[#622657] rounded-lg font-light w-full text-white mt-4 normal-case border-[#4a4a4a]'>
+                      pNode(s) Owned by Me
+                    </button>
+                  </Link>
+                  <Link href={"/manager"} target="_self" rel="noopener noreferrer" className='w-full'>
+                    <button className='btn bg-transparent hover:bg-[#622657] rounded-lg font-light w-full text-white mt-4 normal-case border-[#4a4a4a]'>
+                      pNode(s) Managed by Me
+                    </button>
+                  </Link>
+                </>
+                :
+                null
+            }
+
           </div>
         </div>
       </div>
+
+      {/* Modals */}
 
       {/* feature info modal */}
       {
