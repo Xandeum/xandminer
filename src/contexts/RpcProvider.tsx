@@ -14,7 +14,7 @@ export function useRpcConfiguration(): RpcConfigurationState {
 }
 
 export const UrlConfigurationProvider: FC<{ children: ReactNode }> = ({ children }) => {
-    const [rpcEndpoint, setRpcEndpoint] = useLocalStorage("rpcEndpoint", "https://api.mainnet.solana.com");
+    const [rpcEndpoint, setRpcEndpoint] = useLocalStorage("rpcEndpoint", "https://solana-rpc.publicnode.com");
 
     return (
         <RpcConfigurationContext.Provider value={{ rpcEndpoint, setRpcEndpoint }}>{children}</RpcConfigurationContext.Provider>
