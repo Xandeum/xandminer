@@ -14,7 +14,7 @@ import { NftLogo } from "components/NftLogo";
 
 import { InputAdornment, TextField } from "@mui/material";
 import { getKeypairForSigning } from "services/keypairServices";
-import { fetchDevnetPodsCredits } from "services/podCreditServices";
+import { fetchDevnetPodsCredits, fetchPodsCredits } from "services/podCreditServices";
 
 const WalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -97,14 +97,17 @@ export const OwnerView: FC = ({ }) => {
 
             const pNodeInfoData = await readPnodeInfoArray(connection, wallet?.publicKey, Number(pNodeOwnerData?.pnode));
             const devnetPodCredits = await fetchDevnetPodsCredits();
+            const mainnetPodCredits = await fetchPodsCredits();
 
-            // map through pNodeInfoData and add credits from devnetPodCredits based on matching devnet_pnode
+            // map through pNodeInfoData and add credits from devnetPodCredits and mainnetPodCredits based on matching devnet_pnode and mainnet_pnode
             const enrichedPNodeInfoData = pNodeInfoData.map((pnodeInfo) => {
                 const devnetCredit = devnetPodCredits?.pods_credits?.find((credit) => credit?.pod_id?.toString() === pnodeInfo?.devnet_pnode.toString());
+                const mainnetCredit = mainnetPodCredits?.pods_credits?.find((credit) => credit?.pod_id?.toString() === pnodeInfo?.mainnet_pnode.toString());
 
                 return {
                     ...pnodeInfo,
                     devnetCredits: devnetCredit ? devnetCredit?.credits : 0,
+                    mainnetCredits: mainnetCredit ? mainnetCredit?.credits : 0,
                 };
             });
 
@@ -346,6 +349,14 @@ export const OwnerView: FC = ({ }) => {
                     setEditValue('');
                     return;
                 }
+                // check if the new pnode value matches the opposite network in the same row
+                else if ((col === 'devnet_pnode' && updatedData[row].mainnet_pnode?.toString() === newValue) ||
+                    (col === 'mainnet_pnode' && updatedData[row].devnet_pnode?.toString() === newValue)) {
+                    notify({ type: 'error', message: 'This pNode Public Key is already registered.' });
+                    setEditingCell(null);
+                    setEditValue('');
+                    return;
+                }
                 // check if the new pnode value is already exists in other rows
                 else if (updatedData.some((item, index) => index !== row && item.devnet_pnode?.toString() === newValue)) {
                     notify({ type: 'error', message: 'This devnet pNode Public Key is already registered.' });
@@ -395,7 +406,7 @@ export const OwnerView: FC = ({ }) => {
 
     return (
         <>
-            <div className='flex flex-col gap-8 bg-tiles border-xnd w-full text-white p-5  relative md:mb-0 mb-28 text-base'>
+            <div className='flex flex-col gap-8 bg-tiles border-xnd w-full text-white p-5 relative md:mb-0 mb-28 text-base'>
                 <div className="absolute -inset-2 -z-10 bg-gradient-to-r from-[#fda31b] via-[#622657] to-[#198476] border-xnd blur  "></div>
 
                 {!isLoading && (!wallet?.connected || !wallet?.publicKey) ?
@@ -414,6 +425,8 @@ export const OwnerView: FC = ({ }) => {
                                 <tr className="border-b border-gray-400">
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Index</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Registration Time</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Mainnet pNode PubKey</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Mainnet Credits</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet pNode PubKey</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet Credits</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Manager</th>
@@ -425,7 +438,7 @@ export const OwnerView: FC = ({ }) => {
                                 isLoading ?
                                     <tbody>
                                         <tr>
-                                            <td colSpan={7} className="bg-tiles-dark text-center">
+                                            <td colSpan={9} className="bg-tiles-dark text-center">
                                                 <div className="flex flex-col items-center justify-center my-2">
                                                     <Loader />
                                                 </div>
@@ -436,7 +449,7 @@ export const OwnerView: FC = ({ }) => {
                                     !hasPnode ?
                                         <tbody>
                                             <tr>
-                                                <td colSpan={7} className="bg-tiles-dark text-center">
+                                                <td colSpan={9} className="bg-tiles-dark text-center">
                                                     <div className="flex flex-col items-center justify-center my-5 text-[#fda31b]">
                                                         <span className="text-lg">No pNodes found</span>
                                                     </div>
@@ -467,6 +480,50 @@ export const OwnerView: FC = ({ }) => {
                                                                         : '-'}
                                                                 </span>
                                                             </div>
+                                                        </td>
+
+                                                        {/*Mainnet pNode PubKey */}
+                                                        <td className="bg-tiles-dark text-center relative group">
+                                                            <div className="flex flex-row items-center justify-center gap-3 h-full min-h-[40px]">
+                                                                {editingCell?.row === index && editingCell?.col === 'mainnet_pnode' ? (
+                                                                    <input
+                                                                        ref={inputRef}
+                                                                        type="text"
+                                                                        value={editValue}
+                                                                        onChange={(e) => setEditValue(e.target.value)}
+                                                                        onBlur={saveEdit}
+                                                                        onKeyDown={handleKeyDown}
+                                                                        className="bg-gray-800 text-white text-center w-32 px-2 py-1 rounded text-xs"
+                                                                        placeholder="Enter pubkey..."
+                                                                    />
+                                                                ) : (
+                                                                    <>
+                                                                        {
+                                                                            processPublicKey(pnode?.mainnet_pnode) == '' ?
+                                                                                '-' :
+                                                                                <span
+                                                                                    className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
+                                                                                    onClick={() => copyToClipboard(processPublicKey(pnode?.mainnet_pnode) || '')}
+                                                                                >
+                                                                                    {processPublicKey(pnode?.mainnet_pnode)?.slice(0, 4)}...{processPublicKey(pnode?.mainnet_pnode)?.slice(-4)}
+                                                                                </span>
+                                                                        }
+                                                                        <button
+                                                                            onClick={() => startEditing(index, 'mainnet_pnode', pnode.mainnet_pnode)}
+                                                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        >
+                                                                            <EditIcon fontSize="small" className="text-gray-400" />
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Mainnet Credits */}
+                                                        <td className="bg-tiles-dark text-center">
+                                                            <span>
+                                                                {processPublicKey(pnode?.mainnet_pnode) == '' && pnode?.mainnetCredits == 0 ? '-' : pnode?.mainnetCredits?.toLocaleString() || '0'}
+                                                            </span>
                                                         </td>
 
                                                         {/*devnet pNode PubKey */}
@@ -508,9 +565,9 @@ export const OwnerView: FC = ({ }) => {
 
                                                         {/* Devnet Credits */}
                                                         <td className="bg-tiles-dark text-center">
-                                                            <div className="flex items-center justify-center h-full min-h-[40px]">
-                                                                {pnode?.devnetCredits?.toLocaleString() || '0'}
-                                                            </div>
+                                                            <span>
+                                                                {processPublicKey(pnode?.devnet_pnode) == '' && pnode?.devnetCredits == 0 ? '-' : pnode?.devnetCredits?.toLocaleString() || '0'}
+                                                            </span>
                                                         </td>
 
                                                         {/* Manager */}
