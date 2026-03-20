@@ -1,10 +1,14 @@
 import axios from "axios";
 
+// Retrieve the API Key from environment variables
+const API_KEY = process.env.NEXT_PUBLIC_XANDMINER_API_KEY;
+
 // POST request to call api service to start or stop a service
 export const callService = async (action: string, service: string) => {
     try {
         const headers = {
             'content-type': 'application/json',
+            'x-api-key': API_KEY || '', // Attach the API Key to the request
         };
 
         const options = {
@@ -29,6 +33,7 @@ export const getServiceStatus = async () => {
     try {
         const headers = {
             'content-type': 'application/json',
+            'x-api-key': API_KEY || '', // Attach the API Key to the request
         };
         const options = {
             method: 'GET',
