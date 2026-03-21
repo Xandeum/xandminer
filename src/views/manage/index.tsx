@@ -242,7 +242,7 @@ export const ManageView: FC = ({ }) => {
     };
 
     return (
-        <div className="container flex mx-auto flex-col items-center w-full max-w-6xl p-4 mb-10 relative">
+        <div className="container flex mx-auto flex-col items-center w-full p-4 mb-10 relative">
 
             <div className="flex flex-row items-center justify-center absolute left-0 hover:cursor-pointer" onClick={() => { window.history.back() }}>
                 <ArrowBackIosIcon fontSize="small" className="text-gray-400 " />
