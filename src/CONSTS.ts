@@ -24,7 +24,7 @@ export const KEYPAIR_PATH = "../xandminerd/keypairs/pnode-keypair.json";
 
 export const PROGRAM = new PublicKey("CZ9bXL6D4uiLXGsSk5s8KAgTFEVp3gdpxPxTCrgm3VoL"); // mainnet
 
-export const VERSION_NO = "v1.3.0";
+export const VERSION_NO = "v1.3.1";
 export const VERSION_NAME = "Cologne";
 
 export const getVersionName = (versionNo: string) => {
