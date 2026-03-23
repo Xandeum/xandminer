@@ -118,6 +118,24 @@ export function deserializeCoupon(data) {
     );
 }
 
+function writeInt64LECompat(buffer: Buffer, value: number | bigint, offset: number) {
+    const maybeWriteBigInt64LE = (buffer as any).writeBigInt64LE;
+    if (typeof maybeWriteBigInt64LE === 'function') {
+        maybeWriteBigInt64LE.call(buffer, BigInt(value), offset);
+        return;
+    }
+
+    // Browser Buffer polyfills may not expose writeBigInt64LE.
+    // Fallback: write signed 64-bit little-endian manually.
+    let v = BigInt(value);
+    if (v < BigInt(0)) {
+        v = (BigInt(1) << BigInt(64)) + v; // two's complement
+    }
+    for (let i = 0; i < 8; i++) {
+        buffer[offset + i] = Number((v >> BigInt(8 * i)) & BigInt(255));
+    }
+}
+
 function serializePnodeUpdateData(pnodeUpdate) {
     const buffer = Buffer.alloc(PNODE_UPDATE_DATA_SIZE);
     let offset = 0;
@@ -137,7 +155,7 @@ function serializePnodeUpdateData(pnodeUpdate) {
     pnodeUpdate.manager.toBuffer().copy(buffer, offset);
     offset += 32;
 
-    buffer.writeBigInt64LE(BigInt(pnodeUpdate.registration_time), offset);
+    writeInt64LECompat(buffer, pnodeUpdate.registration_time, offset);
     offset += 8;
 
     buffer.writeUInt32LE(pnodeUpdate.manager_commission, offset);
