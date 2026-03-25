@@ -27,8 +27,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { notify } from 'utils/notifications';
 import Loader from 'components/Loader';
 import { FeatureInfoModal } from 'modals/featureInfoModal';
-import { createPnode, getPnode } from 'services/pnodeServices';
-import { getPnodeManagerAccountData } from 'helpers/pNodeHelpers';
+import { getPnode } from 'services/pnodeServices';
 import { dedicateSpace } from 'services/driveServices';
 import InstallPod from 'views/install-pod';
 
@@ -141,20 +140,21 @@ export const HomeView: FC = ({ }) => {
       if (response.ok) {
         setIsKeypairGenerated(true);
         setIsPnodeCheck(true);
-        getPnode().then((data) => {
-          if (data?.ok) {
-            setIsPnodeRegistered(true);
+        if (wallet?.connected) {
+          getPnode(wallet?.publicKey?.toString()).then((data) => {
+            if (data?.ok) {
+              setIsPnodeRegistered(true);
+              setIsPnodeCheck(false);
+              return;
+            }
+            setIsPnodeRegistered(false);
             setIsPnodeCheck(false);
-            return;
-          }
-          setIsPnodeRegistered(false);
-          setIsPnodeCheck(false);
-        }).catch((error) => {
-          setIsPnodeRegistered(false);
-          setIsPnodeCheck(false);
-          console.log("error while reading pnode registry", error);
-        });
-
+          }).catch((error) => {
+            setIsPnodeRegistered(false);
+            setIsPnodeCheck(false);
+            console.log("error while reading pnode registry", error);
+          });
+        }
         setKeypairPubkey(response.data);
         return;
       }
@@ -167,7 +167,7 @@ export const HomeView: FC = ({ }) => {
       setIsPnodeCheck(false);
     }
     );
-  }, [setIsConnectionError]);
+  }, [setIsConnectionError, wallet?.connected]);
 
   //function to set the initial values for dedicating amnt
   const setDedicatedInitialAmnt = (data: Array<any>) => {
