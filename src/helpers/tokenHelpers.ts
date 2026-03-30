@@ -22,7 +22,15 @@ export const readMetaplexMetadata = async (connection: string, owner: string) =>
         // check if digitalAssets?.metadata?.name is includes one of the following strings: titan, dragon, coyote, rabbit, cricket
         const filteredAssets = digitalAssets?.filter(asset => {
             const name = asset?.metadata?.name?.toLowerCase();
-            return name?.includes("titan") || name?.includes("dragon") || name?.includes("coyote") || name?.includes("rabbit") || name?.includes("cricket");
+            return name?.includes("titan") ||
+                name?.includes("dragon") ||
+                name?.includes("coyote") ||
+                name?.includes("rabbit") ||
+                name?.includes("cricket") ||
+                name?.includes("bitoku") ||
+                name?.includes("eno") ||
+                name?.includes("xeno")
+                ;
         });
 
         // return filteredAssets mapped to an array of objects with the following properties: address, mint, name, logoURI
