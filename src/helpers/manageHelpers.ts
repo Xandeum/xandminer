@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { Connection, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, TransactionInstruction } from "@solana/web3.js";
-import { GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_OFFSET, MANAGER_SEED, OWNER_SEED, PNODE_ACCOUNT_SIZE, PNODE_OWNER_SEED, PNODE_UPDATE_DATA_SIZE, PROGRAM } from "CONSTS";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, GLOBAL_SEED, MANAGER_ACCOUNT_SIZE, MANAGER_OFFSET, MANAGER_SEED, METAPLEX_PROGRAM_ID, NFT_VAULT_SEED, OWNER_SEED, PNODE_ACCOUNT_SIZE, PNODE_OWNER_SEED, PNODE_UPDATE_DATA_SIZE, PROGRAM, TOKEN_PROGRAM_ID } from "CONSTS";
 import { derivePnodeAccountPda, readPnodeAccount, readPnodeInfoArray } from "./pNodeHelpers";
 
 function arrayToNum32(array) {
@@ -41,6 +41,16 @@ export function serializeBorshString(str) {
     const lengthBuffer = Buffer.alloc(4);
     lengthBuffer.writeUInt32LE(length, 0);
     return Buffer.concat([lengthBuffer, utf8Bytes]);
+}
+
+export function getAssociatedTokenAddressSync(mint, owner, allowOwnerOffCurve = false) {
+    const seeds = [
+        owner.toBuffer(),
+        TOKEN_PROGRAM_ID.toBuffer(),
+        mint.toBuffer(),
+    ];
+    const [address] = PublicKey.findProgramAddressSync(seeds, ASSOCIATED_TOKEN_PROGRAM_ID);
+    return address;
 }
 
 // Data Classes
@@ -449,6 +459,13 @@ export async function fetchManagerData(connection: Connection, managerPubkey: Pu
     return deserializeManager(accountInfo.value.data);
 }
 
+export function deriveMetadataPda(mint) {
+    return PublicKey.findProgramAddressSync(
+        [Buffer.from("metadata"), METAPLEX_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+        METAPLEX_PROGRAM_ID
+    );
+}
+
 export async function fetchAllManagers(connection: Connection) {
 
 
@@ -645,7 +662,7 @@ export async function registerRewardWallet(publicKey: PublicKey, rewardWalletPub
     }
 }
 
-export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null, expectedSigner: PublicKey, pNodeKeyChanging: boolean, isManager: boolean, managerPubkey?: PublicKey): Promise<TransactionInstruction> {
+export async function updatePnodeDetails(connection: Connection, ownerWallet: PublicKey, index: number, pnodeInfo: any, oldManagerPubkey: PublicKey | null = null, expectedSigner: PublicKey, pNodeKeyChanging: boolean, isManager: boolean, managerPubkey?: PublicKey): Promise<TransactionInstruction> {
 
     const [pnodeOwnerPda] = PublicKey.findProgramAddressSync(
         [Buffer.from(PNODE_OWNER_SEED), ownerWallet?.toBuffer()],
@@ -659,6 +676,13 @@ export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, 
         PROGRAM
     );
 
+    const [vaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from(NFT_VAULT_SEED)],
+        PROGRAM
+    );
+
+    const currentPnodeAccount = await readPnodeAccount(connection, ownerWallet, index);
+
     // Determine old and new manager PDAs
     const oldManagerPda = oldManagerPubkey ?
         PublicKey.findProgramAddressSync(
@@ -671,6 +695,43 @@ export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, 
             [Buffer.from(MANAGER_SEED), pnodeInfo.manager.toBuffer()],
             PROGRAM
         )[0] : PublicKey.default;
+
+    let nftMintSlot1 = SystemProgram.programId;
+    let metadataSlot1 = SystemProgram.programId;
+    let ownerAtaSlot1 = SystemProgram.programId;
+    let vaultAtaSlot1 = SystemProgram.programId;
+
+    const oldSlot1 = currentPnodeAccount?.nft_slot_1 || PublicKey.default;
+    const oldSlot2 = currentPnodeAccount?.nft_slot_2 || PublicKey.default;
+    const newSlot1 = pnodeInfo.nft_slot_1;
+    const newSlot2 = pnodeInfo.nft_slot_2;
+    const slot1Changing = !oldSlot1.equals(newSlot1);
+    const slot2Changing = !oldSlot2.equals(newSlot2);
+
+    if (slot1Changing && slot2Changing) {
+        throw new Error("Cannot change both NFT slots in the same transaction");
+    }
+
+    if (slot1Changing) {
+        const activeMint = newSlot1.equals(PublicKey.default) ? oldSlot1 : newSlot1;
+        nftMintSlot1 = activeMint;
+        metadataSlot1 = deriveMetadataPda(activeMint)[0];
+        ownerAtaSlot1 = getAssociatedTokenAddressSync(activeMint, ownerWallet, true);
+        vaultAtaSlot1 = getAssociatedTokenAddressSync(activeMint, vaultPda, true);
+    }
+
+    let nftMintSlot2 = SystemProgram.programId;
+    let metadataSlot2 = SystemProgram.programId;
+    let ownerAtaSlot2 = SystemProgram.programId;
+    let vaultAtaSlot2 = SystemProgram.programId;
+
+    if (slot2Changing) {
+        const activeMint = newSlot2.equals(PublicKey.default) ? oldSlot2 : newSlot2;
+        nftMintSlot2 = activeMint;
+        metadataSlot2 = deriveMetadataPda(activeMint)[0];
+        ownerAtaSlot2 = getAssociatedTokenAddressSync(activeMint, ownerWallet, true);
+        vaultAtaSlot2 = getAssociatedTokenAddressSync(activeMint, vaultPda, true);
+    }
 
     const keys = [
         {
@@ -717,7 +778,61 @@ export async function updatePnodeDetails(ownerWallet: PublicKey, index: number, 
             pubkey: SYSVAR_RENT_PUBKEY,
             isSigner: false,
             isWritable: false
-        }
+        },
+        {
+            pubkey: nftMintSlot1,
+            isSigner: false,
+            isWritable: false
+        },
+        {
+            pubkey: metadataSlot1,
+            isSigner: false,
+            isWritable: false
+        },
+        {
+            pubkey: ownerAtaSlot1,
+            isSigner: false,
+            isWritable: slot1Changing
+        },
+        {
+            pubkey: vaultAtaSlot1,
+            isSigner: false,
+            isWritable: slot1Changing
+        },
+        {
+            pubkey: nftMintSlot2,
+            isSigner: false,
+            isWritable: false
+        },
+        {
+            pubkey: metadataSlot2,
+            isSigner: false,
+            isWritable: false
+        },
+        {
+            pubkey: ownerAtaSlot2,
+            isSigner: false,
+            isWritable: slot2Changing
+        },
+        {
+            pubkey: vaultAtaSlot2,
+            isSigner: false,
+            isWritable: slot2Changing
+        },
+        {
+            pubkey: TOKEN_PROGRAM_ID,
+            isSigner: false,
+            isWritable: false
+        },
+        {
+            pubkey: vaultPda,
+            isSigner: false, isWritable: false
+        },
+        {
+            pubkey: ASSOCIATED_TOKEN_PROGRAM_ID,
+            isSigner: false,
+            isWritable: false
+        },
     ];
 
     // Instruction tag 6 for UpdatePnodeDetails

@@ -155,12 +155,12 @@ export const OwnerView: FC = ({ }) => {
                     ...pnodeInfo,
                     manager: new PublicKey(DEFAULT_VALUE),
                 };
-            } else if (type === 'nft1') {
+            } else if (type === 'nft_1') {
                 pnodeInfo = {
                     ...pnodeInfo,
                     nft_slot_1: new PublicKey(DEFAULT_VALUE),
                 };
-            } else if (type === 'nft2') {
+            } else if (type === 'nft_2') {
                 pnodeInfo = {
                     ...pnodeInfo,
                     nft_slot_2: new PublicKey(DEFAULT_VALUE),
@@ -220,7 +220,7 @@ export const OwnerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(wallet.publicKey, pnodeInfo?.index, pnodeInfo, oldManager, expectedSigner, (isDeletingPnode ? false : pNodeKeyChanging), false);
+            const txIx = await updatePnodeDetails(connection, wallet.publicKey, pnodeInfo?.index, pnodeInfo, oldManager, expectedSigner, (isDeletingPnode ? false : pNodeKeyChanging), false);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -323,7 +323,7 @@ export const OwnerView: FC = ({ }) => {
         setEditValue(String(currentValue || ''));
 
         // Open modal if needed
-        if (col === 'nft') {
+        if (col === 'nft_1' || col === 'nft_2') {
             setShowPopupSelectNFT(true);
         } else if (col === 'manager') {
             setShowPopupSelectManager(true);
@@ -429,6 +429,8 @@ export const OwnerView: FC = ({ }) => {
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Mainnet Credits</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet pNode PubKey</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet Credits</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">NFT #1</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">NFT #2</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Manager</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Commission</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Actions</th>
@@ -568,6 +570,80 @@ export const OwnerView: FC = ({ }) => {
                                                             <span>
                                                                 {processPublicKey(pnode?.devnet_pnode) == '' && pnode?.devnetCredits == 0 ? '-' : pnode?.devnetCredits?.toLocaleString() || '0'}
                                                             </span>
+                                                        </td>
+
+                                                        {/* NFT #1 */}
+                                                        <td className="bg-tiles-dark text-center">
+                                                            <div className="flex items-center justify-center h-full min-h-[40px] gap-2">
+                                                                {showPopupSelectNFT && editingCell?.row === index && editingCell?.col === 'nft_1' ? (
+                                                                    <span className="text-xs text-orange-400">Selecting NFT...</span>
+                                                                ) : processPublicKey(pnode?.nft_slot_1) ? (
+                                                                    <>
+                                                                        <span
+                                                                            className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
+                                                                            onClick={() => copyToClipboard(pnode?.nft_slot_1?.toString())}
+                                                                        >
+                                                                            {pnode?.nft_slot_1?.toString().slice(0, 4)}...{pnode?.nft_slot_1?.toString().slice(-4)}
+                                                                        </span>
+                                                                        <div className="flex gap-1">
+                                                                            <button onClick={() => startEditing(index, 'nft_1', pnode?.nft_slot_1)}>
+                                                                                <EditIcon fontSize="small" className="text-gray-400" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => window.confirm('Remove NFT #1?') && onHandleChanges(index, 'nft_1')}
+                                                                                className="text-red-500 hover:text-red-400"
+                                                                                disabled={isSaving}
+                                                                            >
+                                                                                {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <Delete fontSize="small" />}
+                                                                            </button>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <button
+                                                                        className="btn btn-xs bg-[#d98c18] hover:bg-[#fda31b] text-white"
+                                                                        onClick={() => startEditing(index, 'nft_1', '')}
+                                                                    >
+                                                                        Select NFT #1
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+
+                                                        {/* NFT #2 */}
+                                                        <td className="bg-tiles-dark text-center">
+                                                            <div className="flex items-center justify-center h-full min-h-[40px] gap-2">
+                                                                {showPopupSelectNFT && editingCell?.row === index && editingCell?.col === 'nft_2' ? (
+                                                                    <span className="text-xs text-orange-400">Selecting NFT...</span>
+                                                                ) : processPublicKey(pnode?.nft_slot_2) ? (
+                                                                    <>
+                                                                        <span
+                                                                            className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
+                                                                            onClick={() => copyToClipboard(pnode?.nft_slot_2?.toString())}
+                                                                        >
+                                                                            {pnode?.nft_slot_2?.toString().slice(0, 4)}...{pnode?.nft_slot_2?.toString().slice(-4)}
+                                                                        </span>
+                                                                        <div className="flex gap-1">
+                                                                            <button onClick={() => startEditing(index, 'nft_2', pnode?.nft_slot_2)}>
+                                                                                <EditIcon fontSize="small" className="text-gray-400" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => window.confirm('Remove NFT #2?') && onHandleChanges(index, 'nft_2')}
+                                                                                className="text-red-500 hover:text-red-400"
+                                                                                disabled={isSaving}
+                                                                            >
+                                                                                {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <Delete fontSize="small" />}
+                                                                            </button>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <button
+                                                                        className="btn btn-xs bg-[#d98c18] hover:bg-[#fda31b] text-white"
+                                                                        onClick={() => startEditing(index, 'nft_2', '')}
+                                                                    >
+                                                                        Select NFT #2
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </td>
 
                                                         {/* Manager */}
