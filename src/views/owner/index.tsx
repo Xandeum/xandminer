@@ -802,10 +802,24 @@ export const OwnerView: FC = ({ }) => {
                                                     <button
                                                         className="btn btn-sm text-white bg-[#FDA31B] hover:bg-[#e5941a] w-full normal-case mt-2"
                                                         onClick={() => {
-                                                            if (editingCell?.col === 'nft') {
+                                                            if (editingCell?.col === 'nft_1') {
                                                                 const row = editingCell.row;
                                                                 const updatedData = [...data];
-                                                                updatedData[row] = { ...updatedData[row], nft: new PublicKey(nft?.mint) };
+                                                                updatedData[row] = { ...updatedData[row], nft_slot_1: new PublicKey(nft?.mint) };
+                                                                setData(updatedData);
+
+                                                                // Track modification
+                                                                const rowChanged = JSON.stringify(updatedData[row]) !== JSON.stringify(pNodeData[row]);
+                                                                setModifiedRows(prev =>
+                                                                    rowChanged ? [...new Set([...prev, row])] : prev.filter(i => i !== row)
+                                                                );
+
+                                                                setEditingCell(null);
+                                                                setShowPopupSelectNFT(false);
+                                                            } else if (editingCell?.col === 'nft_2') {
+                                                                const row = editingCell.row;
+                                                                const updatedData = [...data];
+                                                                updatedData[row] = { ...updatedData[row], nft_slot_2: new PublicKey(nft?.mint) };
                                                                 setData(updatedData);
 
                                                                 // Track modification
