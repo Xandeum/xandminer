@@ -1,5 +1,5 @@
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { ComputeBudgetProgram, Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import Loader from "components/Loader";
 import { fetchAllManagers, fetchOwnerData, fetchPNodeOwnerData, updatePnodeDetails } from "helpers/manageHelpers";
 import dynamic from "next/dynamic";
@@ -228,6 +228,7 @@ export const OwnerView: FC = ({ }) => {
                 return;
             }
 
+            transaction.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 100_000 }))
             transaction.add(txIx as TransactionInstruction);
 
             const { context: { slot: minContextSlot }, value: { blockhash, lastValidBlockHeight } } =
