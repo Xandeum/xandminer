@@ -228,7 +228,7 @@ export const OwnerView: FC = ({ }) => {
                 return;
             }
 
-            transaction.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 100_000 }))
+            transaction.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }))
             transaction.add(txIx as TransactionInstruction);
 
             const { context: { slot: minContextSlot }, value: { blockhash, lastValidBlockHeight } } =
