@@ -650,7 +650,7 @@ export const OwnerView: FC = ({ }) => {
                                                         </td>
 
                                                         {/* Boost Value */}
-                                                        <td className="bg-black text-center">
+                                                        <td className="bg-tiles-dark text-center">
                                                             <span>
                                                                 {pnode?.boostValue > 0 ? `${pnode.boostValue}X` : '-'}
                                                             </span>
