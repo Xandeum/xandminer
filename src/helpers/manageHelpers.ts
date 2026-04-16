@@ -708,16 +708,25 @@ export async function updatePnodeDetails(connection: Connection, ownerWallet: Pu
     const slot1Changing = !oldSlot1.equals(newSlot1);
     const slot2Changing = !oldSlot2.equals(newSlot2);
 
+    const crossSlotValidationNeeded =
+        (slot1Changing || slot2Changing) &&
+        !newSlot1.equals(PublicKey.default) &&
+        !newSlot2.equals(PublicKey.default);
+
     if (slot1Changing && slot2Changing) {
         throw new Error("Cannot change both NFT slots in the same transaction");
     }
 
-    if (slot1Changing) {
-        const activeMint = newSlot1.equals(PublicKey.default) ? oldSlot1 : newSlot1;
+    if (slot1Changing || crossSlotValidationNeeded) {
+        const activeMint = slot1Changing
+            ? (newSlot1.equals(PublicKey.default) ? oldSlot1 : newSlot1)
+            : newSlot1;
         nftMintSlot1 = activeMint;
         metadataSlot1 = deriveMetadataPda(activeMint)[0];
-        ownerAtaSlot1 = getAssociatedTokenAddressSync(activeMint, ownerWallet, true);
-        vaultAtaSlot1 = getAssociatedTokenAddressSync(activeMint, vaultPda, true);
+        if (slot1Changing) {
+            ownerAtaSlot1 = getAssociatedTokenAddressSync(activeMint, ownerWallet, true);
+            vaultAtaSlot1 = getAssociatedTokenAddressSync(activeMint, vaultPda, true);
+        }
     }
 
     let nftMintSlot2 = SystemProgram.programId;
@@ -725,14 +734,17 @@ export async function updatePnodeDetails(connection: Connection, ownerWallet: Pu
     let ownerAtaSlot2 = SystemProgram.programId;
     let vaultAtaSlot2 = SystemProgram.programId;
 
-    if (slot2Changing) {
-        const activeMint = newSlot2.equals(PublicKey.default) ? oldSlot2 : newSlot2;
+    if (slot2Changing || crossSlotValidationNeeded) {
+        const activeMint = slot2Changing
+            ? (newSlot2.equals(PublicKey.default) ? oldSlot2 : newSlot2)
+            : newSlot2;
         nftMintSlot2 = activeMint;
         metadataSlot2 = deriveMetadataPda(activeMint)[0];
-        ownerAtaSlot2 = getAssociatedTokenAddressSync(activeMint, ownerWallet, true);
-        vaultAtaSlot2 = getAssociatedTokenAddressSync(activeMint, vaultPda, true);
+        if (slot2Changing) {
+            ownerAtaSlot2 = getAssociatedTokenAddressSync(activeMint, ownerWallet, true);
+            vaultAtaSlot2 = getAssociatedTokenAddressSync(activeMint, vaultPda, true);
+        }
     }
-
     const keys = [
         {
             pubkey: isManager ? managerPubkey : ownerWallet,

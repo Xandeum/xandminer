@@ -26,6 +26,7 @@ export const PNODE_UPDATE_DATA_SIZE = 172;
 export const PNODE_ACCOUNT_SIZE = 205;
 export const MANAGER_OFFSET = 32 + 1 + 32 + 32 + 32 + 32;
 export const KEYPAIR_PATH = "../xandminerd/keypairs/pnode-keypair.json";
+export const BOOST_FACTOR = "16";
 
 export const PROGRAM = new PublicKey("CZ9bXL6D4uiLXGsSk5s8KAgTFEVp3gdpxPxTCrgm3VoL"); // mainnet
 

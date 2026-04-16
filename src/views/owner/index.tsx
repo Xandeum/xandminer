@@ -9,7 +9,7 @@ import { Telegram, Delete, Search } from "@mui/icons-material";
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { notify } from "utils/notifications";
 import { readPnodeAccount, readPnodeInfoArray } from "helpers/pNodeHelpers";
-import { readMetaplexMetadata } from "helpers/tokenHelpers";
+import { getpNodeInfoWithBoost, readMetaplexMetadata } from "helpers/tokenHelpers";
 import { NftLogo } from "components/NftLogo";
 
 import { InputAdornment, TextField } from "@mui/material";
@@ -112,7 +112,8 @@ export const OwnerView: FC = ({ }) => {
             });
 
             if (Number(pNodeOwnerData?.pnode)) {
-                setPNodeData(enrichedPNodeInfoData?.slice(0, pNodeOwnerData?.pnode));
+                const enrichedPNodeInfoDataWithBoost = await getpNodeInfoWithBoost(connection.rpcEndpoint, enrichedPNodeInfoData);
+                setPNodeData(enrichedPNodeInfoDataWithBoost?.slice(0, pNodeOwnerData?.pnode));
             } else {
                 setManagers([]);
                 setIsLoading(false);
@@ -432,8 +433,9 @@ export const OwnerView: FC = ({ }) => {
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet Credits</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">NFT #1</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">NFT #2</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Boost<br />Value</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Manager</th>
-                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Commission</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Manager<br />Commission</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Actions</th>
                                 </tr>
                             </thead>
@@ -441,7 +443,7 @@ export const OwnerView: FC = ({ }) => {
                                 isLoading ?
                                     <tbody>
                                         <tr>
-                                            <td colSpan={9} className="bg-tiles-dark text-center">
+                                            <td colSpan={12} className="bg-tiles-dark text-center">
                                                 <div className="flex flex-col items-center justify-center my-2">
                                                     <Loader />
                                                 </div>
@@ -452,7 +454,7 @@ export const OwnerView: FC = ({ }) => {
                                     !hasPnode ?
                                         <tbody>
                                             <tr>
-                                                <td colSpan={9} className="bg-tiles-dark text-center">
+                                                <td colSpan={12} className="bg-tiles-dark text-center">
                                                     <div className="flex flex-col items-center justify-center my-5 text-[#fda31b]">
                                                         <span className="text-lg">No pNodes found</span>
                                                     </div>
@@ -645,6 +647,13 @@ export const OwnerView: FC = ({ }) => {
                                                                     </button>
                                                                 )}
                                                             </div>
+                                                        </td>
+
+                                                        {/* Boost Value */}
+                                                        <td className="bg-black text-center">
+                                                            <span>
+                                                                {pnode?.boostValue > 0 ? `${pnode.boostValue}X` : '-'}
+                                                            </span>
                                                         </td>
 
                                                         {/* Manager */}
