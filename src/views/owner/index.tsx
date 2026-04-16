@@ -1,5 +1,5 @@
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import { ComputeBudgetProgram, Connection, Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import Loader from "components/Loader";
 import { fetchAllManagers, fetchOwnerData, fetchPNodeOwnerData, updatePnodeDetails } from "helpers/manageHelpers";
 import dynamic from "next/dynamic";
@@ -9,7 +9,7 @@ import { Telegram, Delete, Search } from "@mui/icons-material";
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { notify } from "utils/notifications";
 import { readPnodeAccount, readPnodeInfoArray } from "helpers/pNodeHelpers";
-import { readMetaplexMetadata } from "helpers/tokenHelpers";
+import { getpNodeInfoWithBoost, readMetaplexMetadata } from "helpers/tokenHelpers";
 import { NftLogo } from "components/NftLogo";
 
 import { InputAdornment, TextField } from "@mui/material";
@@ -112,7 +112,8 @@ export const OwnerView: FC = ({ }) => {
             });
 
             if (Number(pNodeOwnerData?.pnode)) {
-                setPNodeData(enrichedPNodeInfoData?.slice(0, pNodeOwnerData?.pnode));
+                const enrichedPNodeInfoDataWithBoost = await getpNodeInfoWithBoost(connection.rpcEndpoint, enrichedPNodeInfoData);
+                setPNodeData(enrichedPNodeInfoDataWithBoost?.slice(0, pNodeOwnerData?.pnode));
             } else {
                 setManagers([]);
                 setIsLoading(false);
@@ -155,12 +156,12 @@ export const OwnerView: FC = ({ }) => {
                     ...pnodeInfo,
                     manager: new PublicKey(DEFAULT_VALUE),
                 };
-            } else if (type === 'nft1') {
+            } else if (type === 'nft_1') {
                 pnodeInfo = {
                     ...pnodeInfo,
                     nft_slot_1: new PublicKey(DEFAULT_VALUE),
                 };
-            } else if (type === 'nft2') {
+            } else if (type === 'nft_2') {
                 pnodeInfo = {
                     ...pnodeInfo,
                     nft_slot_2: new PublicKey(DEFAULT_VALUE),
@@ -220,7 +221,7 @@ export const OwnerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(wallet.publicKey, pnodeInfo?.index, pnodeInfo, oldManager, expectedSigner, (isDeletingPnode ? false : pNodeKeyChanging), false);
+            const txIx = await updatePnodeDetails(connection, wallet.publicKey, pnodeInfo?.index, pnodeInfo, oldManager, expectedSigner, (isDeletingPnode ? false : pNodeKeyChanging), false);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
@@ -228,6 +229,7 @@ export const OwnerView: FC = ({ }) => {
                 return;
             }
 
+            transaction.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }))
             transaction.add(txIx as TransactionInstruction);
 
             const { context: { slot: minContextSlot }, value: { blockhash, lastValidBlockHeight } } =
@@ -323,7 +325,7 @@ export const OwnerView: FC = ({ }) => {
         setEditValue(String(currentValue || ''));
 
         // Open modal if needed
-        if (col === 'nft') {
+        if (col === 'nft_1' || col === 'nft_2') {
             setShowPopupSelectNFT(true);
         } else if (col === 'manager') {
             setShowPopupSelectManager(true);
@@ -429,8 +431,11 @@ export const OwnerView: FC = ({ }) => {
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Mainnet Credits</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet pNode PubKey</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Devnet Credits</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">NFT #1</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">NFT #2</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Boost<br />Value</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Manager</th>
-                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Commission</th>
+                                    <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Manager<br />Commission</th>
                                     <th className="bg-tiles-dark text-white normal-case font-medium text-base text-center">Actions</th>
                                 </tr>
                             </thead>
@@ -438,7 +443,7 @@ export const OwnerView: FC = ({ }) => {
                                 isLoading ?
                                     <tbody>
                                         <tr>
-                                            <td colSpan={9} className="bg-tiles-dark text-center">
+                                            <td colSpan={12} className="bg-tiles-dark text-center">
                                                 <div className="flex flex-col items-center justify-center my-2">
                                                     <Loader />
                                                 </div>
@@ -449,7 +454,7 @@ export const OwnerView: FC = ({ }) => {
                                     !hasPnode ?
                                         <tbody>
                                             <tr>
-                                                <td colSpan={9} className="bg-tiles-dark text-center">
+                                                <td colSpan={12} className="bg-tiles-dark text-center">
                                                     <div className="flex flex-col items-center justify-center my-5 text-[#fda31b]">
                                                         <span className="text-lg">No pNodes found</span>
                                                     </div>
@@ -567,6 +572,87 @@ export const OwnerView: FC = ({ }) => {
                                                         <td className="bg-tiles-dark text-center">
                                                             <span>
                                                                 {processPublicKey(pnode?.devnet_pnode) == '' && pnode?.devnetCredits == 0 ? '-' : pnode?.devnetCredits?.toLocaleString() || '0'}
+                                                            </span>
+                                                        </td>
+
+                                                        {/* NFT #1 */}
+                                                        <td className="bg-tiles-dark text-center">
+                                                            <div className="flex items-center justify-center h-full min-h-[40px] gap-2">
+                                                                {showPopupSelectNFT && editingCell?.row === index && editingCell?.col === 'nft_1' ? (
+                                                                    <span className="text-xs text-orange-400">Selecting NFT...</span>
+                                                                ) : processPublicKey(pnode?.nft_slot_1) ? (
+                                                                    <>
+                                                                        <span
+                                                                            className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
+                                                                            onClick={() => copyToClipboard(pnode?.nft_slot_1?.toString())}
+                                                                        >
+                                                                            {pnode?.nft_slot_1?.toString().slice(0, 4)}...{pnode?.nft_slot_1?.toString().slice(-4)}
+                                                                        </span>
+                                                                        <div className="flex gap-1">
+                                                                            <button onClick={() => startEditing(index, 'nft_1', pnode?.nft_slot_1)}>
+                                                                                <EditIcon fontSize="small" className="text-gray-400" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => window.confirm('Remove NFT #1?') && onHandleChanges(index, 'nft_1')}
+                                                                                className="text-red-500 hover:text-red-400"
+                                                                                disabled={isSaving}
+                                                                            >
+                                                                                {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <Delete fontSize="small" />}
+                                                                            </button>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <button
+                                                                        className="btn btn-xs bg-[#d98c18] hover:bg-[#fda31b] text-white"
+                                                                        onClick={() => startEditing(index, 'nft_1', '')}
+                                                                    >
+                                                                        Select NFT #1
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+
+                                                        {/* NFT #2 */}
+                                                        <td className="bg-tiles-dark text-center">
+                                                            <div className="flex items-center justify-center h-full min-h-[40px] gap-2">
+                                                                {showPopupSelectNFT && editingCell?.row === index && editingCell?.col === 'nft_2' ? (
+                                                                    <span className="text-xs text-orange-400">Selecting NFT...</span>
+                                                                ) : processPublicKey(pnode?.nft_slot_2) ? (
+                                                                    <>
+                                                                        <span
+                                                                            className="text-xs hover:cursor-pointer hover:text-[#FDA31B]"
+                                                                            onClick={() => copyToClipboard(pnode?.nft_slot_2?.toString())}
+                                                                        >
+                                                                            {pnode?.nft_slot_2?.toString().slice(0, 4)}...{pnode?.nft_slot_2?.toString().slice(-4)}
+                                                                        </span>
+                                                                        <div className="flex gap-1">
+                                                                            <button onClick={() => startEditing(index, 'nft_2', pnode?.nft_slot_2)}>
+                                                                                <EditIcon fontSize="small" className="text-gray-400" />
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => window.confirm('Remove NFT #2?') && onHandleChanges(index, 'nft_2')}
+                                                                                className="text-red-500 hover:text-red-400"
+                                                                                disabled={isSaving}
+                                                                            >
+                                                                                {isSaving ? <span className="loading loading-spinner loading-xs"></span> : <Delete fontSize="small" />}
+                                                                            </button>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <button
+                                                                        className="btn btn-xs bg-[#d98c18] hover:bg-[#fda31b] text-white"
+                                                                        onClick={() => startEditing(index, 'nft_2', '')}
+                                                                    >
+                                                                        Select NFT #2
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Boost Value */}
+                                                        <td className="bg-black text-center">
+                                                            <span>
+                                                                {pnode?.boostValue > 0 ? `${pnode.boostValue}X` : '-'}
                                                             </span>
                                                         </td>
 
@@ -726,10 +812,24 @@ export const OwnerView: FC = ({ }) => {
                                                     <button
                                                         className="btn btn-sm text-white bg-[#FDA31B] hover:bg-[#e5941a] w-full normal-case mt-2"
                                                         onClick={() => {
-                                                            if (editingCell?.col === 'nft') {
+                                                            if (editingCell?.col === 'nft_1') {
                                                                 const row = editingCell.row;
                                                                 const updatedData = [...data];
-                                                                updatedData[row] = { ...updatedData[row], nft: new PublicKey(nft?.mint) };
+                                                                updatedData[row] = { ...updatedData[row], nft_slot_1: new PublicKey(nft?.mint) };
+                                                                setData(updatedData);
+
+                                                                // Track modification
+                                                                const rowChanged = JSON.stringify(updatedData[row]) !== JSON.stringify(pNodeData[row]);
+                                                                setModifiedRows(prev =>
+                                                                    rowChanged ? [...new Set([...prev, row])] : prev.filter(i => i !== row)
+                                                                );
+
+                                                                setEditingCell(null);
+                                                                setShowPopupSelectNFT(false);
+                                                            } else if (editingCell?.col === 'nft_2') {
+                                                                const row = editingCell.row;
+                                                                const updatedData = [...data];
+                                                                updatedData[row] = { ...updatedData[row], nft_slot_2: new PublicKey(nft?.mint) };
                                                                 setData(updatedData);
 
                                                                 // Track modification

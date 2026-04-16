@@ -410,7 +410,7 @@ export const ManagerView: FC = ({ }) => {
             }
 
             const transaction = new Transaction();
-            const txIx = await updatePnodeDetails(pNodeOwnerPubkey, pnodeInfo?.index, pnodeInfo, oldManager, walletToSign?.publicKey, (isDeletingPnode ? false : pNodeKeyChanging), true, pnodeInfo?.manager);
+            const txIx = await updatePnodeDetails(connection, pNodeOwnerPubkey, pnodeInfo?.index, pnodeInfo, oldManager, walletToSign?.publicKey, (isDeletingPnode ? false : pNodeKeyChanging), true, pnodeInfo?.manager);
 
             if (txIx && typeof txIx === 'object' && 'error' in txIx) {
                 notify({ type: 'error', message: `${(txIx as any).error}` });
