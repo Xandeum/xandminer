@@ -247,3 +247,20 @@ export async function readPnodeAccount(connection: Connection, ownerPubkey: Publ
     return pnodeAccount;
 }
 
+
+export async function getAssignedNftQty(connection: Connection, ownerPubkey: PublicKey, pNodesQty: number) {
+    const pnodeInfo = await readPnodeInfoArray(connection, ownerPubkey, pNodesQty);
+
+    let assignedNftQty = 0;
+
+    for (const pnode of pnodeInfo) {
+        if (pnode.nft_slot_1.toString() !== PublicKey.default.toString()) {
+            assignedNftQty++;
+        }
+        if (pnode.nft_slot_2.toString() !== PublicKey.default.toString()) {
+            assignedNftQty++;
+        }
+    }
+
+    return assignedNftQty;
+}

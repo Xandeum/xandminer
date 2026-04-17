@@ -15,6 +15,7 @@ import { notify } from "utils/notifications";
 import { readMetaplexMetadata } from "helpers/tokenHelpers";
 import { OwnerView } from "views/owner";
 import Link from "next/link";
+import { getAssignedNftQty } from "helpers/pNodeHelpers";
 const WalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
     { ssr: false }
@@ -27,6 +28,7 @@ export const ManageView: FC = ({ }) => {
 
     const [pnodesQty, setPnodesQty] = useState<number>(0);
     const [nftQty, setNftQty] = useState<number>(0);
+    const [assignedNftQty, setAssignedNftQty] = useState<number>(0);
 
     const [isLoading, setIsLoading] = useState(true);
     const [hasPnode, setHasPNode] = useState(false);
@@ -61,6 +63,8 @@ export const ManageView: FC = ({ }) => {
             setHasPNode(Number(pNodeOwnerData?.pnode) > 0);
 
             if (pNodeOwnerData?.pnode && Number(pNodeOwnerData?.pnode) > 0) {
+                const assignedNftQty = await getAssignedNftQty(connection, wallet.publicKey, Number(pNodeOwnerData?.pnode));
+                setAssignedNftQty(assignedNftQty);
                 setRewardsWallet(prev => ({ ...prev, value: OwnerData?.rewardsWallet?.toString() || '' }));
                 setPnodesQty(Number(pNodeOwnerData?.pnode));
                 setIsLoading(false);
@@ -292,6 +296,16 @@ export const ManageView: FC = ({ }) => {
                                         </div>
                                         <div className='flex flex-row items-center justify-center font-bold text-lg text-[#FDA31B]'>
                                             {nftQty}
+                                        </div>
+                                    </div>
+
+
+                                    <div className='flex flex-col w-full justify-between bg-tiles-dark border-xnd gap-4 p-4'>
+                                        <div className='flex flex-row items-center justify-center font-normal'>
+                                            Assigned NFTs:
+                                        </div>
+                                        <div className='flex flex-row items-center justify-center font-bold text-lg text-[#FDA31B]'>
+                                            {assignedNftQty ?? "-"}
                                         </div>
                                     </div>
 

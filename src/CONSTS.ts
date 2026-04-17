@@ -30,7 +30,7 @@ export const BOOST_FACTOR = "16";
 
 export const PROGRAM = new PublicKey("CZ9bXL6D4uiLXGsSk5s8KAgTFEVp3gdpxPxTCrgm3VoL"); // mainnet
 
-export const VERSION_NO = "v1.3.3";
+export const VERSION_NO = "v1.3.4";
 export const VERSION_NAME = "Cologne";
 
 export const getVersionName = (versionNo: string) => {
