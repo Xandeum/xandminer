@@ -5,7 +5,7 @@
   "license": "MIT",
   "private": false,
   "scripts": {
-    "dev": "next dev -p 3000 --hostname 127.0.0.1",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start -p 3000 --hostname 127.0.0.1",
     "lint": "next lint"
@@ -31,7 +31,7 @@
     "date-fns": "^2.29.3",
     "humanize-duration-ts": "^2.1.1",
     "immer": "^9.0.12",
-    "next": "^16.2.0",
+    "next": "^16.2.6",
     "next-compose-plugins": "^2.2.1",
     "next-transpile-modules": "^10.0.0",
     "pretty-bytes": "^6.1.1",
